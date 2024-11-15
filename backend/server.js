@@ -14,9 +14,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 connectDb();
 app.use('/api',router);
-app.get('/',(req,res)={
-    res.json({msg:"Working!"})
-})
+
 
 app.listen(NEW_PORT,()=>{
     console.log("backend listening on 4000...");
