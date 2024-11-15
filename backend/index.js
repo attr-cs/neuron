@@ -6,7 +6,12 @@ const cors = require('cors');
 const router = require('./routes/index');
 const app = express();
 
-app.use(cors());
+const corsOptions = {
+    origin: process.env.CLIENT_URL, 
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], 
+    credentials: true, 
+};
+app.use(cors(corsOptions));
 connectDb();
 app.use('/api',router);
 
