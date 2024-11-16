@@ -8,7 +8,7 @@ import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { Menu, MenuItem, Drawer, List, ListItem, IconButton, ListItemText, ListItemIcon, styled, ListItemButton } from "@mui/material";
 
-// import MainLogo from "../assets/logo.png"
+
 import defaultImage from "../assets/default_profile_avatar.png"
 
 function Navbar() {
