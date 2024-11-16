@@ -33,7 +33,7 @@ export default function CheckEmailPage() {
     setCanResend(false)
     setCountdown(60)
     setIsResending(false)
-    // Here you would typically call an API to resend the email
+    
   }
 
   return (
