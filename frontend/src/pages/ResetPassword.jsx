@@ -36,7 +36,7 @@ function ResetPassword() {
       return
     }
 
-    // Simulate API call
+   
     await new Promise(resolve => setTimeout(resolve, 1500))
 
     try {
