@@ -59,7 +59,7 @@ function CreatePassword() {
       setUser((prevUser) => ({
         user: {
           ...prevUser.user,
-          isOAuthUser: false // Updated `isOAuthUser` to indicate password creation is complete
+          isOAuthUser: false 
         }
       }));
 
