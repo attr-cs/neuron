@@ -12,8 +12,8 @@ import { useRecoilState } from 'recoil';
 function CreatePassword() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
-  const [auth] = useRecoilState(authState); // Only read auth
-  const [user, setUser] = useRecoilState(userState); // Update user data
+  const [auth] = useRecoilState(authState); 
+  const [user, setUser] = useRecoilState(userState); 
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -22,7 +22,7 @@ function CreatePassword() {
     return <Navigate to="/request-reset" replace />;
 }
 
-  // Password strength checker
+  
   const passwordStrength = (password) => {
     let strength = 0;
     if (password.length >= 8) strength++;
@@ -32,30 +32,30 @@ function CreatePassword() {
     return (strength / 4) * 100;
   };
 
-  // Form submit handler
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Ensure passwords match
+    
     if (password !== confirmPassword) {
       setError("Passwords don't match");
       return;
     }
     
-    // Ensure strong password
+    
     if (passwordStrength(password) < 75) {
       setError("Password is not strong enough");
       return;
     }
 
     try {
-      // Make request to create password
+      
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/create-password`, {
         userId: auth.userId,
         newPassword: confirmPassword
       });
 
-      // Update `isOAuthUser` to false upon successful password creation
+     
       setUser((prevUser) => ({
         user: {
           ...prevUser.user,
@@ -63,7 +63,7 @@ function CreatePassword() {
         }
       }));
 
-      // Navigate to user's profile page
+   
       navigate(`/profile/${auth.username}`);
     } catch (err) {
       console.log("Failed to create password:", err);
@@ -110,13 +110,13 @@ function CreatePassword() {
           />
         </div>
 
-        {/* Password Strength Indicator */}
+      
         <div className="space-y-2">
           <Label>Password Strength</Label>
           <Progress value={passwordStrength(password)} className="w-full" />
         </div>
 
-        {/* Password Requirements */}
+       
         <div className="space-y-2">
           <p className="text-sm font-medium">Password must contain:</p>
           <ul className="text-sm space-y-1">
@@ -139,7 +139,7 @@ function CreatePassword() {
           </ul>
         </div>
 
-        {/* Error Message */}
+       
         {error && <p className="text-red-600 text-sm">{error}</p>}
         
         <Button type="submit" className="w-full">Create Password</Button>
