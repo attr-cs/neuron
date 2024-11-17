@@ -40,7 +40,7 @@ function ProfilePage() {
     }, [username, auth, loggedInUser]);
 
     if (!userData) {
-        return <div>Loading...</div>; // Loading state
+        return <div>Loading...</div>;
     }
 
     return (<>
