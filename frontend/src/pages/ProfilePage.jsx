@@ -26,7 +26,7 @@ function ProfilePage() {
   const [followingsCount, setFollowingsCount] = useState(0);
   const [error, setError] = useState(null);
 
-<<<<<<< HEAD
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -88,10 +88,9 @@ function ProfilePage() {
       }
     } catch (err) {
       console.log("Error toggling follow status:", err);
-=======
     if (!userData) {
         return <div>Loading...</div>;
->>>>>>> b28af4260aab39c87fa0be51b5630689a991a806
+
     }
   };
 
