@@ -10,7 +10,7 @@ import {Visibility, VisibilityOff} from "@mui/icons-material"
 import {Box, Divider, IconButton} from "@mui/material"
 import NeuralNetwork from "../assets/neural_network_actual.png"
 
-// google auth
+
 import {GoogleLogin} from '@react-oauth/google'
 
 function Signup(){
@@ -204,7 +204,7 @@ function Signup(){
                     />
                     {usernameError? <p className="w-full my-3 text-base text-red-600 text-center font-bold">{usernameError}</p> : null}
 
-                    {/* password hide/show implementation */}
+                
                     
                     <div className="relative h-16">
                         <input 

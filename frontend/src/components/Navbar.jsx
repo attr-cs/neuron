@@ -1,5 +1,6 @@
 'use client'
 
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
@@ -29,6 +30,10 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+=======
+
+import defaultImage from "../assets/default_profile_avatar.png"
+>>>>>>> b28af4260aab39c87fa0be51b5630689a991a806
 
 import defaultImage from '../assets/default_profile_avatar.png';
 

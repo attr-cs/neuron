@@ -14,7 +14,7 @@ function Home(){
         </header>
         <main>
              <h2>Latest Posts</h2>
-             {/* random posts with no capabilities to interact with posts */}
+            
             <section>
                 <h3>Join Our Community</h3>
                 {!auth.isAuthenticated && (
