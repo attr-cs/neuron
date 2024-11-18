@@ -1,6 +1,4 @@
-'use client'
 
-<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
