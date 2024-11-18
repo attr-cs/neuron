@@ -18,3 +18,8 @@ export const userState = atom({
     key: 'userState',
     default: initialUserState
 })
+
+export const themeState = atom({
+    key: 'themeState',
+    default: 'light',
+})

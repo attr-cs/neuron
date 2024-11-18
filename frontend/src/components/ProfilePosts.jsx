@@ -4,7 +4,7 @@ import samplePostImage from '../assets/neural_network_actual.png';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Image } from 'lucide-react';
 
-function Posts({userData}) {
+function ProfilePosts({userData}) {
 
     return (<>
         <div className="w-full flex flex-col gap-3 py-7 text-lg my-5">
@@ -68,4 +68,4 @@ function Posts({userData}) {
         </div>
     </>)
 }
-export default Posts
+export default ProfilePosts

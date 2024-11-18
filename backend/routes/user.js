@@ -7,6 +7,7 @@ const {User} = require('../models/userModel');
 const jwt = require('jsonwebtoken');
 const verifyToken = require('../middlewares/verifyToken');
 const { sendResetEmail } = require('../services/emailService.js');
+const {toggleFollow, checkFollowStatus} = require('../controllers/userController');
 
 userRouter.use(express.json());
 
@@ -210,6 +211,14 @@ userRouter.post('/reset-password/:token', async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 });
+
+
+
+userRouter.post('/follow', verifyToken, toggleFollow);
+
+userRouter.get('/follow-status', verifyToken, checkFollowStatus)
+
+
 
 const generateUniqueUsername = async (baseUsername)=>{
     let username = baseUsername;

@@ -28,7 +28,7 @@ import fetchUserData from './utils/fetchUserData';
 function App() {
 
   const location = useLocation();
-  const pathsWithNoNavbar = ['/signup', '/create-password', '/request-reset', '/email-sent', '/reset-password'];
+  const pathsWithNoNavbar = ['/signup', '/signin', '/create-password', '/request-reset', '/email-sent', '/reset-password'];
 const pathsWithNoFooter = ['/signup', '/signin', '/create-password', '/request-reset', '/email-sent', '/reset-password'];
 
 const shouldHideNavbar = pathsWithNoNavbar.some(path => location.pathname.includes(path));
