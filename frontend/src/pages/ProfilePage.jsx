@@ -12,7 +12,7 @@ import { MoreVert } from "@mui/icons-material";
 import axios from 'axios'
 import { Button } from "@/components/ui/button";
 import { MessageSquare, UserCheck, UserPlus } from "lucide-react";
-
+ 
 function ProfilePage() {
   const auth = useRecoilValue(authState);
   const { username } = useParams();
