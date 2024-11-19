@@ -89,8 +89,9 @@ const HomePage = () => {
           autoPlay
           loop
           muted
+          preload="auto"
           className="absolute w-full h-full object-cover"
-        //   poster=""
+          // poster="https://picsum.photos/seed/op/1280/720"
         > 
           <source src="https://apivideo-demo.s3.amazonaws.com/hello.mp4" type="video/mp4" />
           Your browser does not support the video tag.
@@ -101,7 +102,7 @@ const HomePage = () => {
             className={`text-5xl md:text-7xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
             variants={itemVariants}
           >
-            Welcome to Neuron
+            Welcome to <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">NΞURON</span>
           </motion.h1>
           <motion.p
             className={`text-xl md:text-2xl mb-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
@@ -189,8 +190,9 @@ const HomePage = () => {
     <video
       id="neuronVideo"
       className="w-full h-full object-cover"
-    //   poster="https://picsum.photos/seed/animation/1280/720" // High-quality sample thumbnail
+      poster="https://picsum.photos/seed/animation/1280/720" // High-quality sample thumbnail
       controls={false}
+      preload="auto"
       crossOrigin="anonymous"
       referrerPolicy="no-referrer"
       onPlay={() => setShowPlayButton(false)} // Hide play button on play
