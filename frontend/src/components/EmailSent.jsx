@@ -28,7 +28,7 @@ export default function CheckEmailPage() {
 
   const handleResend = async () => {
     setIsResending(true)
-    // Simulating resend action
+    
     await new Promise(resolve => setTimeout(resolve, 2000))
     setCanResend(false)
     setCountdown(60)

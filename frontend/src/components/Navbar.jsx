@@ -1,6 +1,3 @@
-'use client'
-
-<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
@@ -30,12 +27,10 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-=======
 
-import defaultImage from "../assets/default_profile_avatar.png"
->>>>>>> b28af4260aab39c87fa0be51b5630689a991a806
 
-import defaultImage from '../assets/default_profile_avatar.png';
+import defaultImage from "../assets/default_profile_avatar.png" 
+
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -68,7 +63,7 @@ export default function Navbar() {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
-    navigate('/signin');
+    navigate('/home');
   }
 
   function handleSearch(e) {
@@ -111,7 +106,7 @@ export default function Navbar() {
 
   return (
     <TooltipProvider>
-      <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50 transition-colors duration-200">
+      <header className="bg-white  dark:bg-gray-900 shadow-sm sticky top-0 z-50 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -223,7 +218,7 @@ export default function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.user?.profileImageUrl || defaultImage} alt="Profile" />
+                        <AvatarImage src={user.user?.profileImageUrl || defaultImage} alt="Profile" referrerPolicy="no-referrer" />
                         <AvatarFallback>
                           {user.user?.firstname?.[0]}
                           {user.user?.lastname?.[0]}

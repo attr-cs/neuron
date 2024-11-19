@@ -71,6 +71,7 @@ const shouldHideFooter = pathsWithNoFooter.some(path => location.pathname.includ
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   
   return (
+    <div className="flex flex-col min-h-screen">
     <div className="app-container">
     <GoogleOAuthProvider clientId={clientId}>
       <div>
@@ -105,6 +106,7 @@ const shouldHideFooter = pathsWithNoFooter.some(path => location.pathname.includ
         
         </div>    
         </GoogleOAuthProvider>
+    </div>
     </div>
   )
 }
