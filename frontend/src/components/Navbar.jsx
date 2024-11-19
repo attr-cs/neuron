@@ -32,7 +32,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 import defaultImage from "../assets/default_profile_avatar.png" 
 
-import defaultImage from '../assets/default_profile_avatar.png';
 
 export default function Navbar() {
   const navigate = useNavigate();
