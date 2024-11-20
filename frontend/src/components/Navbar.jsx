@@ -30,7 +30,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 
 import defaultImage from "../assets/default_profile_avatar.png" 
-
+import neuronLightLogo from "../assets/logo_circle_light.png"
+import neuronDarkLogo from "../assets/logo_circle_dark.png"
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -116,6 +117,7 @@ export default function Navbar() {
                   transition={{ duration: 0.5 }}
                   className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-2"
                 >
+                  {/* <img src={neuronDarkLogo} alt="Neuron logo" /> */}
                   <Brain className="w-6 h-6 text-white" />
                 </motion.div>
                 <motion.span

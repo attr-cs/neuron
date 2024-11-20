@@ -12,26 +12,28 @@ const {toggleFollow, checkFollowStatus} = require('../controllers/userController
 userRouter.use(express.json());
 
 // signup api
-userRouter.post('/signup',async (req,res)=>{
+userRouter.post('/signup', async (req, res) => {
     const data = req.body;
-    const {success,error} = userZod.safeParse(data);
-    if(!success){
-        return res.status(400).json({msg:"Invalid Data Format!",error:error});
+    const { success, error } = userZod.safeParse(data);
+
+    if (!success) {
+        return res.status(400).json({ msg: "Invalid Data Format!", error: error });
     }
+
     const isExist = await User.findOne({
-        $or: [{email: data.email},{username:data.username}]
+        $or: [{ email: data.email }, { username: data.username }]
     });
-    if(isExist){
-        if(isExist.email === data.email){
-            return res.status(400).json({msg:"Email already registered!"})
+
+    if (isExist) {
+        if (isExist.email === data.email) {
+            return res.status(400).json({ msg: "Email already registered!" });
         }
-        if(isExist.username === data.username){
-            return res.status(400).json({msg:"Username is already taken!"})
+        if (isExist.username === data.username) {
+            return res.status(400).json({ msg: "Username is already taken!" });
         }
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
-
 
     const newUser = await User.create({
         email: data.email,
@@ -39,38 +41,40 @@ userRouter.post('/signup',async (req,res)=>{
         lastname: data.lastname,
         username: data.username,
         password: hashedPassword
-    })
-    const userId = newUser._id;
-    const jwtSign = jwt.sign({userId:userId, username: data.username},process.env.JWT_SECRET,{expiresIn:'30d'});
+    });
 
-    res.status(200).json({msg:"User created successfully!",token:jwtSign,userId:userId, username: data.username})
-})
+    const userId = newUser._id;
+    const jwtSign = jwt.sign({ userId, username: data.username }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+    res.status(200).json({ msg: "User created successfully!", token: jwtSign, userId, username: data.username });
+});
 
 // signin api
-userRouter.post('/signin',async(req,res)=>{
-    const identifier = req.body.username;
-    const password = req.body.password;
+userRouter.post('/signin', async (req, res) => {
+    const { username: identifier, password } = req.body;
+
     if (!identifier || !password) {
         return res.status(400).json({ message: "Identifier and Password are required" });
     }
+
     const fetchedUser = await User.findOne({
-        $or: [{username: identifier},{email: identifier}]
+        $or: [{ username: identifier }, { email: identifier }]
     });
 
-    if(!fetchedUser){
-        return res.status(401).json({"msg":"User not found!"});
+    if (!fetchedUser) {
+        return res.status(401).json({ msg: "User not found!" });
     }
 
     const isMatch = await bcrypt.compare(password, fetchedUser.password);
-    if(!isMatch){
-        return res.status(401).json({message: 'Invalid Password'});
+    if (!isMatch) {
+        return res.status(401).json({ message: 'Invalid Password' });
     }
 
     const userId = fetchedUser._id;
-    const token = jwt.sign({userId:userId,  username: fetchedUser.username},process.env.JWT_SECRET,{expiresIn:'30d'});
-    
-    return res.status(200).json({token: token,userId: userId,username:fetchedUser.username});
-})
+    const token = jwt.sign({ userId, username: fetchedUser.username }, process.env.JWT_SECRET, { expiresIn: '30d' });
+
+    return res.status(200).json({ token, userId, username: fetchedUser.username });
+});
 
 
 // users list api

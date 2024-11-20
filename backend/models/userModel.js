@@ -1,137 +1,134 @@
 const mongoose = require("mongoose");
 
-const userSchema = new mongoose.Schema({
+const userSchema = new mongoose.Schema(
+  {
     username: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        minLength: 3,
-        maxLength: 30,
-        index: true
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      minLength: 3,
+      maxLength: 30,
+      index: true,
     },
     email: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        minLength: 3,
-        maxLength: 30,
-        index: true
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
+      index: true,
     },
     firstname: {
-        type: String,
-        required: true,
-        trim: true,
-        maxLength: 50
+      type: String,
+      required: true,
+      trim: true,
+      maxLength: 50,
     },
     lastname: {
-        type: String,
-        required: true,
-        trim: true,
-        maxLength: 50
+      type: String,
+      required: true,
+      trim: true,
+      maxLength: 50,
     },
     password: {
-        type: String,
-        default: ""
+      type: String,
+      default: "",
     },
     dateJoined: {
-        type: Date,
-        default: Date.now
+      type: Date,
+      default: Date.now,
     },
     profileImageUrl: {
-        type: String,
-        default: ''
+      type: String,
+      default: "",
     },
     bio: {
-        type: String,
-        maxLength: 150,
-        default: ''
+      type: String,
+      maxLength: 150,
+      default: "",
     },
     gender: {
-        type: String,
-        enum: ['Male','Female','Other', 'Prefer not to say']
+      type: String,
+      enum: ["Male", "Female", "Other", "Prefer not to say"],
     },
     location: {
-        type: String,
-        maxLength: 60,
-        default: ''
+      type: String,
+      maxLength: 60,
+      default: "",
     },
     birthdate: {
-        type: Date,
+      type: Date,
     },
     bannerImageUrl: {
-        type: String,
-        default: '',
+      type: String,
+      default: "",
     },
     followers: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            index: true
-        },
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
     ],
     following: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
-            index: true
-        },
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
     ],
     isOnline: {
-        type: Boolean,
-        default: false,
-        index: true
+      type: Boolean,
+      default: false,
+      index: true,
     },
     isOAuthUser: {
-        type: Boolean,
-        default: false,
+      type: Boolean,
+      default: false,
     },
     websiteUrl: {
-        type: String,
-        default: ''
+      type: String,
+      default: "",
     },
     posts: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Posts'
-        },
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Posts",
+      },
     ],
     isVerified: {
-        type: Boolean,
-        default: false,
+      type: Boolean,
+      default: false,
     },
     isAdmin: {
-        type: Boolean,
-        default: false,
+      type: Boolean,
+      default: false,
     },
-    loginAttemps: {
-        type: Number,
-        default: 0,
+    loginAttempts: {
+      type: Number,
+      default: 0,
     },
-    recentActivity: [     // like a post, followed a user
-        {
-            type: String,
-        },
+    recentActivity: [
+      {
+        type: String,
+      },
     ],
     notifications: [
-        {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Notification'
-        },
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Notification",
+      },
     ],
     resetToken: {
-        type:String,
+      type: String,
     },
     resetTokenExpiry: {
-        type: Date
+      type: Date,
     },
-    
-}, { timestamps: true });
+  },
+  { timestamps: true }
+);
 
-
-const User = mongoose.model('users', userSchema);
+const User = mongoose.model("users", userSchema);
 
 module.exports = { User };
