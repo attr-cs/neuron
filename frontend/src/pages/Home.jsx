@@ -83,7 +83,7 @@ const HomePage = () => {
       animate="visible"
       variants={containerVariants}
     >
-      {/* Hero Section */}
+     
       <div className="relative h-screen flex items-center justify-center overflow-hidden">
         <video
           autoPlay
@@ -177,7 +177,7 @@ const HomePage = () => {
           </motion.div>
         </motion.div>
 
-{/* Video Section */}
+
 <motion.div variants={containerVariants} className="mb-24">
   <h2
     className={`text-4xl font-bold mb-12 text-center ${
