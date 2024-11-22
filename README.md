@@ -43,12 +43,12 @@ Neuron is not just another social media app - it's a comprehensive platform desi
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/yourusername/neuron-social.git
+   git clone https://github.com/attr-cs/neuron.git
    ```
 
 2. Navigate to the project directory
    ```sh
-   cd neuron-social
+   cd neuron
    ```
 
 3. Install dependencies
@@ -58,9 +58,9 @@ Neuron is not just another social media app - it's a comprehensive platform desi
 
 4. Set up environment variables
    ```sh
-   cp .env.example .env.local
+   cp .env
    ```
-   Edit `.env.local` with your configuration
+   Edit `.env` with your configuration
 
 5. Run the development server
    ```sh
