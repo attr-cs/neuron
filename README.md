@@ -11,7 +11,7 @@
 
   Connect, Share, Evolve - The Next Generation Social Media Experience
 
-  [Live Demo](https://neuron-social.com) | [Report Bug](https://github.com/yourusername/neuron-social/issues) | [Request Feature](https://github.com/yourusername/neuron-social/issues)
+  [Live Demo](https://neuronix.vercel.app) | [Report Bug](https://github.com/attr-cs/neuron/issues) | [Request Feature](https://github.com/attr-cs/neuron/issues)
 
 </div>
 
@@ -80,7 +80,7 @@ After logging in, you can:
 - Explore trending content
 - Manage your privacy settings
 
-For detailed documentation, visit our [Wiki](https://github.com/yourusername/neuron-social/wiki).
+For detailed documentation, visit our [Wiki](https://github.com/attr-cs/neuron/wiki).
 
 ## 🤝 Contributing
 
