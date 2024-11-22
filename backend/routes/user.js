@@ -193,7 +193,7 @@ userRouter.post("/request-reset",async (req,res)=>{
 })
 
 
-// Reset password route
+
 userRouter.post('/reset-password/:token', async (req, res) => {
     const { token } = req.params;
     const { newPassword } = req.body;
