@@ -9,6 +9,7 @@ const createTransporter = async ()=>{
         auth: {
             user: process.env.GMAIL,
             pass: process.env.GMAIL_PASS
+            // ethereal username password 
             // user: 'alena.runte@ethereal.email',
             // pass: 'ymucR8mGjMh5spegjZ'
         },
