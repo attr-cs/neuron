@@ -24,7 +24,7 @@ export const themeState = atom({
     default: 'light',
 })
 
- });
+
 
 
 
