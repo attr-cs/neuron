@@ -49,7 +49,6 @@ userRouter.post('/signup', async (req, res) => {
     res.status(200).json({ msg: "User created successfully!", token: jwtSign, userId, username: data.username });
 });
 
-// signin api
 userRouter.post('/signin', async (req, res) => {
     const { username: identifier, password } = req.body;
 
