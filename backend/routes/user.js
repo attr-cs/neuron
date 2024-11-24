@@ -76,7 +76,7 @@ userRouter.post('/signin', async (req, res) => {
 });
 
 
-// users list api
+
 userRouter.get('/userslist',async (req,res)=>{
     // const users = await User.find({},'username bio firstname lastname');
     try{
@@ -97,7 +97,7 @@ userRouter.post('/check-username', async(req,res)=>{
 })
 
 
-// details of a user api
+
 userRouter.get('/userdetails/:username', verifyToken, async(req,res)=>{
     const username = req.params.username;
     const user = await User.findOne({username:username});
