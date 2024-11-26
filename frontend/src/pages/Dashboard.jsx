@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/react-popover"
 import { MessageSquare, Heart, Share2, Camera, Image as ImageIcon, MapPin, Smile, Settings, LogOut, ThumbsUp, ThumbsDown, Bookmark, Send, X, Moon, Sun, MoreVertical } from 'lucide-react'
 
 const fakePosts = [
