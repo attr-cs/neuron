@@ -97,4 +97,6 @@ export default function CheckEmailPage() {
       </motion.div>
     </div>
   )
+
+
 }
