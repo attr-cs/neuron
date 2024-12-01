@@ -49,16 +49,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-process.on('SIGINT', async () => {
-  try {
-    await mongoose.connection.close();
-    server.close(() => process.exit(0));
-  } catch (err) {
-    console.error("Error during shutdown:", err);
-    process.exit(1);
-  }
-});
-
 const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
