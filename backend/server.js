@@ -18,6 +18,8 @@ if (!process.env.CLIENT_URL || !process.env.DB_URL) {
 
 connectDb();
 
+app.set('trust proxy', 1);
+
 const corsOptions = {
   origin: process.env.CLIENT_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -28,14 +30,14 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(helmet());
+app.use(compression());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 100,
+  keyGenerator: (req) => req.ip,
 });
 app.use(limiter);
-
-app.use(compression());
 
 app.use('/api', router);
 
