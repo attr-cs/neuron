@@ -461,45 +461,7 @@ export default function Component() {
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="sm:max-w-[425px]">
-                                <ScrollArea className="h-[60vh]">
-                                  <div className="space-y-4 p-4">
-                                    {post.comments.map((comment) => (
-                                      <div key={comment.id} className="space-y-2">
-                                        <div className="flex space-x-2">
-                                          <Avatar>
-                                            <AvatarFallback>{comment.user[0]}</AvatarFallback>
-                                          </Avatar>
-                                          <div>
-                                            <p className="font-semibold">{comment.user}</p>
-                                            <p>{comment.content}</p>
-                                            <div className="flex items-center space-x-2 mt-1">
-                                              <Button variant="ghost" size="sm" onClick={() => handleCommentLike(post.id, comment.id)}>
-                                                <ThumbsUp className="h-3 w-3 mr-1" />
-                                                {comment.likes}
-                                              </Button>
-                                              <Button variant="ghost" size="sm">Reply</Button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        {comment.replies && comment.replies.map((reply) => (
-                                          <div key={reply.id} className="flex space-x-2 ml-8">
-                                            <Avatar>
-                                              <AvatarFallback>{reply.user[0]}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                              <p className="font-semibold">{reply.user}</p>
-                                              <p>{reply.content}</p>
-                                              <Button variant="ghost" size="sm" onClick={() => handleCommentLike(post.id, comment.id, reply.id)}>
-                                                <ThumbsUp className="h-3 w-3 mr-1" />
-                                                {reply.likes}
-                                              </Button>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </ScrollArea>
+                                
                                 <div className="flex items-center mt-4">
                                   <Input placeholder="Add a comment..." className="flex-grow mr-2" />
                                   <Button size="icon" onClick={() => handleAddComment(post.id, 'New comment')}>

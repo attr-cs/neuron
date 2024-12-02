@@ -1,198 +1,252 @@
-import { useRecoilState, useRecoilValue } from "recoil";
-import { userState } from "../store/atoms";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { authState, userBasicInfoState, userProfileState } from "../store/atoms";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import debounce from "lodash.debounce";
-import InputCustom from './EditProfileInput' 
+import InputCustom from './EditProfileInput';
 import { Link } from "react-router-dom";
-import { IconButton } from "@mui/material";
 import { Button } from '@/components/ui/button';
-import { LocationOn, Man, Notes, People } from "@mui/icons-material";
-import { AccountCircle, CalendarMonth, Person } from "@mui/icons-material";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
+import { 
+  LocationOn, 
+  Man, 
+  Notes, 
+  People, 
+  AccountCircle, 
+  CalendarMonth, 
+  Person,
+  Link as LinkIcon
+} from "@mui/icons-material";
 
-function EditProfile({ isEdited,setIsEdited }) {
-    const [formData, setFormData] = useState({
-        username: "",
-        firstname: "",
-        lastname: "",
-        bio: "",
-        location: "",
-        birthdate: "",
-        websiteUrl: "",
-        gender: ""
+function EditProfile({ isEdited, setIsEdited }) {
+  const auth = useRecoilValue(authState);
+  const basicInfo = useRecoilValue(userBasicInfoState);
+  const profile = useRecoilValue(userProfileState);
+  const setBasicInfo = useSetRecoilState(userBasicInfoState);
+  const setProfile = useSetRecoilState(userProfileState);
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
 
-    })
+  const [formData, setFormData] = useState({
+    username: basicInfo.username || "",
+    firstname: basicInfo.firstname || "",
+    lastname: basicInfo.lastname || "",
+    bio: profile.bio || "",
+    location: profile.location || "",
+    birthdate: profile.birthdate || "",
+    websiteUrl: profile.websiteUrl || "",
+    gender: profile.gender || ""
+  });
 
-    const [error, setError] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [loggedInUser, setLoggedInUser] = useRecoilState(userState);
-    const [usernameError, setUsernameError] = useState("");
-    
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
 
-
-
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/signup`, formData);
-            if (response.status == 200) {
-                const { token, userId, username } = response.data;
-            }
-        } catch (err) {
-            setError("Error: " + err);
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_BACKEND_URL}/user/update-profile`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+            'Content-Type': 'application/json'
+          }
         }
+      );
+
+      if (response.status === 200) {
+        // Update local state
+        setBasicInfo(prev => ({
+          ...prev,
+          username: formData.username,
+          firstname: formData.firstname,
+          lastname: formData.lastname
+        }));
+
+        setProfile(prev => ({
+          ...prev,
+          bio: formData.bio,
+          location: formData.location,
+          birthdate: formData.birthdate,
+          websiteUrl: formData.websiteUrl,
+          gender: formData.gender
+        }));
+
+        setIsEdited(false);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update profile");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const usernameCheck = debounce(async (value) => {
+    if (value === basicInfo.username) {
+      setUsernameError("");
+      return;
     }
 
-    function handleChange(e) {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    }
-
-
-
-    const usernameCheck = debounce(async (value) => {
-
-
-        try {
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/check-username`, { username: value });
-            if (response.data.exists) {
-                setUsernameError("This Username is already taken!");
-            }
-            else {
-                setUsernameError(null);
-            }
-        } catch (err) {
-            console.log(err);
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/check-username`,
+        { username: value },
+        {
+          headers: {
+            Authorization: `Bearer ${auth.token}`
+          }
         }
-    }, 300);
-    useEffect(() => {
-        if (formData.username) usernameCheck(formData.username);
-    }, [formData.username, usernameCheck])
+      );
+      
+      setUsernameError(response.data.exists ? "Username already taken" : "");
+    } catch (err) {
+      console.error("Username check failed:", err);
+    }
+  }, 300);
 
+  useEffect(() => {
+    if (formData.username) usernameCheck(formData.username);
+  }, [formData.username]);
 
-    return (<>
-        <div className="w-full">
-            <form onSubmit={handleSubmit}>
-                
-                
-            
+  return (
+    <div className="w-full">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <InputCustom
+          icon={<AccountCircle />}
+          type="text"
+          placeholder="Username"
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+          disabled={isSubmitting}
+          error={usernameError}
+        />
 
-                <InputCustom
-                    icon={<AccountCircle />}
-                    type={"text"}
-                    placeholder={"joseph56"}
-                    name={"username"}
-                    value={formData.username}
-                    onChange={handleChange}
-                />
-                {usernameError ? <p className="w-full my-3 text-base text-red-600 text-center font-bold">{usernameError}</p> : null}
+        <div className="flex gap-2">
+          <InputCustom
+            icon={<Person />}
+            type="text"
+            placeholder="First Name"
+            name="firstname"
+            value={formData.firstname}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
 
-                <div className="flex gap-1">
-
-                    <InputCustom
-                        icon={<Person />}
-                        type={"text"}
-                        placeholder={"Joseph"}
-                        name={"firstname"}
-                        value={formData.firstname}
-                        onChange={handleChange}
-                    />
-
-                    <InputCustom
-                        icon={<Person />}
-                        type={"text"}
-                        placeholder={"Peterson"}
-                        name={"lastname"}
-                        value={formData.lastname}
-                        onChange={handleChange}
-                    />
-
-                </div>
-
-
-
-                <div className="w-full outline-none bg-white border-gray-300 border-2 text-black px-6 pl-3 py-2 rounded-md mb-2 flex gap-4">
-
-                    <Notes />
-                    <textarea
-                        className="w-full outline-none"
-                        type={"text"}
-                        placeholder={"I like to program and surf on the web..."}
-                        name={"bio"}
-                        value={formData.bio}
-                        onChange={handleChange}
-                        rows={2}
-                    ></textarea>
-
-                </div>
-
-                <div className="flex gap-1">
-
-
-
-
-                    <InputCustom
-                        icon={<CalendarMonth />}
-                        type={"date"}
-                        // placeholder={"Peterson"} 
-                        name={"birthdate"}
-                        value={formData.birthdate || "1947-08-15"}
-                        onChange={handleChange}
-                    />
-
-
-
-
-                    <div className="w-full outline-none bg-white border-gray-300 border-2 text-black px-6 pl-3 py-2 rounded-md mb-2 flex gap-4">
-
-                        <Man />
-                        <select
-                            className="w-full"
-                            name="gender"
-                            value={formData.gender}
-                            onChange={handleChange}
-                        >
-                            <option value="Male"> Male</option>
-                            <option value="Female"> Female</option>
-                            <option value="Other"><People /> Other</option>
-                            <option value="Prefer not to say">Prefer not to say</option>
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <InputCustom
-                    icon={<LocationOn />}
-                    type="text"
-                    placeholder="New York, USA"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleChange}
-                />
-
-                <InputCustom
-                    icon={<Link />}
-                    type="text"
-                    placeholder="https://www.domain.com/portfolio"
-                    name="websiteUrl"
-                    value={formData.websiteUrl}
-                    onChange={handleChange}
-                />
-                
-                <div className="flex gap-1">
-
-                    <button onClick={()=>setIsEdited(!isEdited)} className="bg-black rounded-md mb-5 text-white w-full text-center font-bold py-2 " type="submit">Cancel</button>
-                    <button className="bg-black rounded-md mb-5 text-white w-full text-center font-bold py-2 " type="submit">Update</button>
-                </div>
-                
-                {error && <p className="w-full my-3 text-base text-red-600 text-center font-bold">{error}</p>}
-            </form>
+          <InputCustom
+            icon={<Person />}
+            type="text"
+            placeholder="Last Name"
+            name="lastname"
+            value={formData.lastname}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
         </div>
-    </>)
+
+        <div className="relative">
+          <Notes className="absolute left-3 top-3 text-gray-400" />
+          <textarea
+            className="w-full min-h-[100px] pl-10 pr-4 py-2 rounded-md border-2 border-gray-300 focus:border-blue-500 outline-none resize-none"
+            placeholder="Bio"
+            name="bio"
+            value={formData.bio}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <InputCustom
+            icon={<CalendarMonth />}
+            type="date"
+            name="birthdate"
+            value={formData.birthdate}
+            onChange={handleChange}
+            disabled={isSubmitting}
+          />
+
+          <div className="relative flex-1">
+            <Man className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <select
+              className="w-full pl-10 pr-4 py-2 rounded-md border-2 border-gray-300 focus:border-blue-500 outline-none"
+              name="gender"
+              value={formData.gender}
+              onChange={handleChange}
+              disabled={isSubmitting}
+            >
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+              <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+
+        <InputCustom
+          icon={<LocationOn />}
+          type="text"
+          placeholder="Location"
+          name="location"
+          value={formData.location}
+          onChange={handleChange}
+          disabled={isSubmitting}
+        />
+
+        <InputCustom
+          icon={<LinkIcon />}
+          type="url"
+          placeholder="Website URL"
+          name="websiteUrl"
+          value={formData.websiteUrl}
+          onChange={handleChange}
+          disabled={isSubmitting}
+        />
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setIsEdited(false)}
+            disabled={isSubmitting}
+            className="w-full"
+          >
+            Cancel
+          </Button>
+          
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || !!usernameError}
+            className="w-full"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              'Update Profile'
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
-
-export default EditProfile
+export default EditProfile;

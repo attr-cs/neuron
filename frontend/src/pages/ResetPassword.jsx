@@ -1,54 +1,50 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useState } from 'react'
-import { Eye, EyeOff, Lock, CheckCircle, Loader2 } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useState } from 'react';
+import { Eye, EyeOff, Lock, CheckCircle, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 function ResetPassword() {
-    const { token } = useParams();
-    const navigate = useNavigate();
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const { token } = useParams();
+  const navigate = useNavigate();
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setIsSubmitting(true)
+    e.preventDefault();
+    setError('');
+    setIsSubmitting(true);
 
     if (password !== confirmPassword) {
-      setError("Passwords don't match")
-      setIsSubmitting(false)
-      return
+      setError("Passwords don't match");
+      setIsSubmitting(false);
+      return;
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters long")
-      setIsSubmitting(false)
-      return
+      setError("Password must be at least 8 characters long");
+      setIsSubmitting(false);
+      return;
     }
-
-   
-    await new Promise(resolve => setTimeout(resolve, 1500))
 
     try {
-        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/reset-password/${token}`, { password });
-        setError(response.data.message);
-        setIsSubmitting(false)
-        setSuccess(true)
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/reset-password/${token}`, { password });
+      setSuccess(true);
+      setIsSubmitting(false);
     } catch (err) {
-        setIsSubmitting(false)
-        setError('Error: ' + err.response?.data?.message || 'Failed to reset password');
+      setIsSubmitting(false);
+      setError(err.response?.data?.message || 'Failed to reset password');
     }
-  }
+  };
 
   if (success) {
     return (
@@ -79,7 +75,7 @@ function ResetPassword() {
           </Card>
         </motion.div>
       </div>
-    )
+    );
   }
 
   return (
@@ -108,11 +104,13 @@ function ResetPassword() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
                     required
+                    disabled={isSubmitting}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    disabled={isSubmitting}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -130,6 +128,7 @@ function ResetPassword() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
@@ -158,7 +157,7 @@ function ResetPassword() {
         </Card>
       </motion.div>
     </div>
-  )
+  );
 }
 
 export default ResetPassword;

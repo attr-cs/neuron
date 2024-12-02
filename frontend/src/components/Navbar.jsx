@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
-import { authState, userState, themeState } from '../store/atoms';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { authState, userBasicInfoState, themeState } from '../store/atoms';
 import { Home, User, Users, LogOut, UserPlus, LogIn, Menu, Search, Brain, Settings, Bell, BookOpen, Moon, Sun, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [auth, setAuth] = useRecoilState(authState);
-  const [user, setUser] = useRecoilState(userState);
+  const userBasicInfo = useRecoilValue(userBasicInfoState);
   const [theme, setTheme] = useRecoilState(themeState);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,7 +60,6 @@ export default function Navbar() {
 
   function handleLogOut() {
     setAuth({ isAuthenticated: false, token: null, userId: null, username: null });
-    setUser({ user: null });
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
@@ -220,10 +219,10 @@ export default function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user.user?.profileImageUrl || defaultImage} alt="Profile" referrerPolicy="no-referrer" />
+                        <AvatarImage src={userBasicInfo.profileImageUrl || defaultImage} alt="Profile" referrerPolicy="no-referrer" />
                         <AvatarFallback>
-                          {user.user?.firstname?.[0]}
-                          {user.user?.lastname?.[0]}
+                          {userBasicInfo.firstname?.[0]}
+                          {userBasicInfo.lastname?.[0]}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
@@ -231,7 +230,7 @@ export default function Navbar() {
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user.user?.firstname} {user.user?.lastname}</p>
+                        <p className="text-sm font-medium leading-none">{userBasicInfo.firstname} {userBasicInfo.lastname}</p>
                         <p className="text-xs leading-none text-muted-foreground">@{auth.username}</p>
                       </div>
                     </DropdownMenuLabel>

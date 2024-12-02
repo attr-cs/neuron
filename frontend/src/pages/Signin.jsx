@@ -1,20 +1,3 @@
-
-// import React, { useState } from "react"
-// import { useNavigate, Link } from "react-router-dom"
-// import { useRecoilState } from "recoil"
-// import axios from "axios"
-// import { GoogleLogin } from '@react-oauth/google'
-// import { jwtDecode } from 'jwt-decode'
-// import { authState, userState } from "../store/atoms"
-// import fetchUserData from "../utils/fetchUserData"
-
-// import { Button } from "@/components/ui/button"
-// import { Input } from "@/components/ui/input"
-// import { Label } from "@/components/ui/label"
-// import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-// import { Separator } from "@/components/ui/separator"
-// import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
-
 import React, { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { useRecoilState, useSetRecoilState } from "recoil"
@@ -22,7 +5,7 @@ import axios from 'axios'
 import debounce from 'lodash.debounce'
 import { jwtDecode } from 'jwt-decode'
 import { GoogleLogin } from '@react-oauth/google'
-import { authState, userState } from "../store/atoms/index"
+import { authState, userBasicInfoState, userProfileState, userSocialState, userContentState } from "../store/atoms/index"
 import fetchUserData from "../utils/fetchUserData"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -32,7 +15,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, EyeOff, User, Mail, Lock, Brain, ArrowRight, UserPlus, LogIn, CheckCircle, XCircle } from 'lucide-react'
+import { Eye, EyeOff, User, Mail, Lock, Brain, ArrowRight, UserPlus, LogIn, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import NeuralNetwork from "../assets/neural_network_actual.png"
 import BrainWaves from "../assets/neural_network_actual.png"
@@ -67,171 +51,15 @@ const InputWithIcon = ({ icon: Icon, ...props }) => (
   )
   
 
-// function Signin() {
-//   const navigate = useNavigate()
-//   const [, setAuth] = useRecoilState(authState)
-//   const [, setUser] = useRecoilState(userState)
-//   const [showPassword, setShowPassword] = useState(false)
-  
-//   const [formData, setFormData] = useState({
-//     username: "",
-//     password: ""
-//   })
-//   const [error, setError] = useState("")
-
-//   function handleChange(e) {
-//     const { name, value } = e.target
-//     setFormData({ ...formData, [name]: value })
-//   }
-
-//   function togglePasswordVisibility() {
-//     setShowPassword(!showPassword)
-//   }
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault()
-//     try {
-//       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/signin`, formData)
-      
-//       if (response.status === 200) {
-//         const { token, userId, username } = response.data
-
-//         setAuth({ isAuthenticated: true, token: token, userId: userId, username: username })
-//         localStorage.setItem("token", token)
-//         localStorage.setItem("userId", userId)
-//         localStorage.setItem("username", username)
-
-//         const userData = await fetchUserData(username, token)
-//         setUser({ user: userData })
-
-//         navigate("/dashboard")
-//       }
-//     } catch (err) {
-//       setError("Error: " + err)
-//     }
-//   }
-
-//   const onSignInSuccess = async (tokenResponse) => {
-//     const { email, given_name, family_name, picture } = jwtDecode(JSON.stringify(tokenResponse))
-
-//     const user = {
-//       email: email,
-//       firstname: given_name,
-//       lastname: family_name,
-//       profileImageUrl: picture
-//     }
-    
-//     try {
-//       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/google-auth`, user)
-    
-//       const { token, userId, username } = response.data
-//       setAuth({ isAuthenticated: true, token: token, userId: userId, username: username })
-//       localStorage.setItem("token", token)
-//       localStorage.setItem("userId", userId)
-//       localStorage.setItem("username", username)
-//       navigate('/dashboard')
-
-//       const userData = await fetchUserData(username, token)
-//       setUser({ user: userData })
-//     } catch (err) {
-//       console.log(err)
-//     }
-//   }
-
-//   return (
-//     <div className="container mx-auto flex justify-center items-center min-h-screen px-4">
-//       <Card className="w-full max-w-md">
-//         <CardHeader className="space-y-1">
-//           <CardTitle className="text-2xl font-bold text-center">Log In</CardTitle>
-//           <CardDescription className="text-center">
-//             Enter your credentials to access your account
-//           </CardDescription>
-//         </CardHeader>
-//         <CardContent>
-//           <form onSubmit={handleSubmit} className="space-y-4">
-//             <div className="space-y-2">
-//               <Label htmlFor="username">Username/Email</Label>
-//               <div className="relative">
-//                 <Input
-//                   id="username"
-//                   type="text"
-//                   name="username"
-//                   placeholder="Enter your username or email"
-//                   value={formData.username}
-//                   onChange={handleChange}
-//                   required
-//                   className="pl-10"
-//                 />
-//                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-//               </div>
-//             </div>
-//             <div className="space-y-2">
-//               <Label htmlFor="password">Password</Label>
-//               <div className="relative">
-//                 <Input
-//                   id="password"
-//                   type={showPassword ? "text" : "password"}
-//                   name="password"
-//                   placeholder="Enter your password"
-//                   value={formData.password}
-//                   onChange={handleChange}
-//                   required
-//                   className="pl-10 pr-10"
-//                 />
-//                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-//                 <Button
-//                   type="button"
-//                   variant="ghost"
-//                   size="icon"
-//                   className="absolute right-2 top-1/2 transform -translate-y-1/2"
-//                   onClick={togglePasswordVisibility}
-//                 >
-//                   {showPassword ? (
-//                     <EyeOff className="h-5 w-5 text-gray-400" />
-//                   ) : (
-//                     <Eye className="h-5 w-5 text-gray-400" />
-//                   )}
-//                   <span className="sr-only">Toggle password visibility</span>
-//                 </Button>
-//               </div>
-//             </div>
-//             <Button type="submit" className="w-full">
-//               Log In
-//             </Button>
-//           </form>
-//           {error && <p className="mt-4 text-sm text-red-600 text-center">{error}</p>}
-//           <div className="mt-4">
-//             <Link to="/request-reset" className="text-sm text-blue-600 hover:underline">
-//               Forgot Password?
-//             </Link>
-//           </div>
-//         </CardContent>
-//         <Separator className="my-4" />
-//         <CardFooter className="flex flex-col space-y-4">
-//           <div className="text-sm text-gray-500 text-center">Or continue with</div>
-//           <div className="flex justify-center w-full">
-//             <GoogleLogin
-//               onSuccess={onSignInSuccess}
-//               onError={(err) => console.log("Failed Signup: ", err)}
-//               size="large"
-//             />
-//           </div>
-//           <div className="text-sm text-gray-500 text-center">
-//             Not registered yet?{" "}
-//             <Link to="/signup" className="text-blue-600 hover:underline">
-//               Register Now
-//             </Link>
-//           </div>
-//         </CardFooter>
-//       </Card>
-//     </div>
-//   )
-// }
-
 function Signin() {
     const navigate = useNavigate()
-    const [, setAuth] = useRecoilState(authState)
-    const [, setUser] = useRecoilState(userState)
+    const setAuth = useSetRecoilState(authState)
+    const setBasicInfo = useSetRecoilState(userBasicInfoState)
+    const setProfile = useSetRecoilState(userProfileState)
+    const setSocial = useSetRecoilState(userSocialState)
+    const setContent = useSetRecoilState(userContentState)
+    
+    const [isSubmitting, setIsSubmitting] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     
     const [formData, setFormData] = useState({
@@ -251,24 +79,75 @@ function Signin() {
   
     const handleSubmit = async (e) => {
       e.preventDefault()
+      setIsSubmitting(true)
+      setError("")
+
       try {
-        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/signin`, formData)
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/user/signin`, 
+          formData,
+          {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
         
         if (response.status === 200) {
           const { token, userId, username } = response.data
-  
-          setAuth({ isAuthenticated: true, token: token, userId: userId, username: username })
+
+          // Set auth state
+          setAuth({ 
+            isAuthenticated: true, 
+            token, 
+            userId, 
+            username 
+          })
+
+          // Store in localStorage
           localStorage.setItem("token", token)
           localStorage.setItem("userId", userId)
           localStorage.setItem("username", username)
-  
+
+          // Fetch and set user data
           const userData = await fetchUserData(username, token)
-          setUser({ user: userData })
-  
+          
+          // Update all atoms with user data
+          setBasicInfo({
+            username: userData.username,
+            firstname: userData.firstname,
+            lastname: userData.lastname,
+            profileImageUrl: userData.profileImageUrl,
+            isVerified: userData.isVerified,
+            isAdmin: userData.isAdmin,
+            isOAuthUser: userData.isOAuthUser
+          })
+
+          setProfile({
+            bio: userData.bio,
+            location: userData.location,
+            websiteUrl: userData.websiteUrl,
+            birthdate: userData.birthdate,
+            gender: userData.gender
+          })
+
+          setSocial({
+            followers: userData.followers,
+            following: userData.following,
+            isOnline: userData.isOnline
+          })
+
+          setContent({
+            posts: userData.posts,
+            recentActivity: userData.recentActivity
+          })
+
           navigate("/dashboard")
         }
       } catch (err) {
-        setError("Error: " + err)
+        setError(err.response?.data?.message || "Invalid credentials")
+      } finally {
+        setIsSubmitting(false)
       }
     }
   
@@ -293,7 +172,31 @@ function Signin() {
         navigate('/dashboard')
   
         const userData = await fetchUserData(username, token)
-        setUser({ user: userData })
+        setBasicInfo({
+          username: userData.username,
+          firstname: userData.firstname,
+          lastname: userData.lastname,
+          profileImageUrl: userData.profileImageUrl,
+          isVerified: userData.isVerified,
+          isAdmin: userData.isAdmin,
+          isOAuthUser: userData.isOAuthUser
+        })
+        setProfile({
+          bio: userData.bio,
+          location: userData.location,
+          websiteUrl: userData.websiteUrl,
+          birthdate: userData.birthdate,
+          gender: userData.gender
+        })
+        setSocial({
+          followers: userData.followers,
+          following: userData.following,
+          isOnline: userData.isOnline
+        })
+        setContent({
+          posts: userData.posts,
+          recentActivity: userData.recentActivity
+        })
       } catch (err) {
         console.log(err)
       }
@@ -351,8 +254,22 @@ function Signin() {
                     togglePasswordVisibility={togglePasswordVisibility}
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  Log In
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Sign In
+                    </>
+                  )}
                 </Button>
               </form>
               <AnimatePresence>

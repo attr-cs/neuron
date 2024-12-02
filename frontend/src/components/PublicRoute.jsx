@@ -1,6 +1,6 @@
 
 import { useRecoilValue } from 'recoil';
-import { authState } from '../store/atoms/index'; 
+import { authState } from '../store/atoms'; 
 import { Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 

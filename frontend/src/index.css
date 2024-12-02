@@ -1,5 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Poppins:wght@300;400;500;700&display=swap');
 
+/* Custom Scrollbar Styles */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--background));
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground)/0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Then your existing Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

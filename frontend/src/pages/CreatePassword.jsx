@@ -3,26 +3,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Eye, EyeOff, Check, X } from "lucide-react";
-import { authState, userState } from '../store/atoms';
+import { Eye, EyeOff, Check, X, LoaderIcon } from "lucide-react";
+import { authState, userBasicInfoState } from '../store/atoms';
 import axios from 'axios';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 function CreatePassword() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
-  const [auth] = useRecoilState(authState); 
-  const [user, setUser] = useRecoilState(userState); 
+  const auth = useRecoilValue(authState);
+  const setBasicInfo = useSetRecoilState(userBasicInfoState);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
-  if (user?.isOAuthUser === false) {
+  const userInfo = useRecoilValue(userBasicInfoState);
+  
+  if (!userInfo.isOAuthUser) {
     return <Navigate to="/request-reset" replace />;
-}
+  }
 
-  
   const passwordStrength = (password) => {
     let strength = 0;
     if (password.length >= 8) strength++;
@@ -32,50 +34,53 @@ function CreatePassword() {
     return (strength / 4) * 100;
   };
 
- 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     
     if (password !== confirmPassword) {
       setError("Passwords don't match");
       return;
     }
     
-    
     if (passwordStrength(password) < 75) {
       setError("Password is not strong enough");
       return;
     }
 
+    setIsLoading(true);
     try {
-      
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/create-password`, {
-        userId: auth.userId,
-        newPassword: confirmPassword
-      });
-
-     
-      setUser((prevUser) => ({
-        user: {
-          ...prevUser.user,
-          isOAuthUser: false 
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/create-password`,
+        {
+          userId: auth.userId,
+          newPassword: confirmPassword
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${auth.token}`
+          }
         }
-      }));
+      );
 
-   
-      navigate(`/profile/${auth.username}`);
+      if (response.status === 200) {
+        setBasicInfo(prev => ({
+          ...prev,
+          isOAuthUser: false
+        }));
+        navigate(`/profile/${auth.username}`);
+      }
     } catch (err) {
-      console.log("Failed to create password:", err);
+      setError(err.response?.data?.message || "Failed to create password");
+      console.error("Failed to create password:", err);
+    } finally {
+      setIsLoading(false);
     }
-    setError('');
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
-      <h1 className="text-2xl font-bold mb-6 text-center">Create Password</h1>
+    <div className="max-w-md mx-auto mt-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-6 text-center dark:text-white">Create Password</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        
         {/* Password Input */}
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
@@ -87,13 +92,18 @@ function CreatePassword() {
               onChange={(e) => setPassword(e.target.value)}
               className="pr-10"
               required
+              disabled={isLoading}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              disabled={isLoading}
             >
-              {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+              {showPassword ? 
+                <EyeOff className="h-4 w-4 text-gray-400" /> : 
+                <Eye className="h-4 w-4 text-gray-400" />
+              }
             </button>
           </div>
         </div>
@@ -107,6 +117,7 @@ function CreatePassword() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            disabled={isLoading}
           />
         </div>
 
@@ -140,12 +151,27 @@ function CreatePassword() {
         </div>
 
        
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && (
+          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+        )}
         
-        <Button type="submit" className="w-full">Create Password</Button>
+        <Button 
+          type="submit" 
+          className="w-full"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
+              Creating Password...
+            </>
+          ) : (
+            "Create Password"
+          )}
+        </Button>
       </form>
     </div>
-  )
+  );
 }
 
 export default CreatePassword;

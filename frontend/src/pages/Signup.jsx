@@ -5,7 +5,7 @@ import axios from 'axios'
 import debounce from 'lodash.debounce'
 import { jwtDecode } from 'jwt-decode'
 import { GoogleLogin } from '@react-oauth/google'
-import { authState, userState } from "../store/atoms/index"
+import { authState, userBasicInfoState, userProfileState, userSocialState, userContentState } from "../store/atoms/index"
 import fetchUserData from "../utils/fetchUserData"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff, User, Mail, Lock, Brain, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, User, Mail, Lock, Brain, ArrowRight, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import NeuralNetwork from "../assets/neural_network_actual.png"
 
@@ -87,8 +88,13 @@ const FormStep = ({ title, fields, formData, handleChange, showPassword, toggleP
 
 function Signup() {
   const navigate = useNavigate()
-  const setUser = useSetRecoilState(userState)
-  const [, setAuth] = useRecoilState(authState)
+  const setAuth = useSetRecoilState(authState)
+  const setBasicInfo = useSetRecoilState(userBasicInfoState)
+  const setProfile = useSetRecoilState(userProfileState)
+  const setSocial = useSetRecoilState(userSocialState)
+  const setContent = useSetRecoilState(userContentState)
+  
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     firstname: "",
@@ -108,20 +114,76 @@ function Signup() {
       nextStep()
       return
     }
+
+    setIsSubmitting(true)
+    setError("")
+
     try {
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/signup`, formData)
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/signup`, 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
       if (response.status === 200) {
         const { token, userId, username } = response.data
-        setAuth({ isAuthenticated: true, token: token, userId: userId, username: username })
+        
+        // Set auth state
+        setAuth({ 
+          isAuthenticated: true, 
+          token, 
+          userId, 
+          username 
+        })
+
+        // Store in localStorage
         localStorage.setItem("token", token)
         localStorage.setItem("userId", userId)
         localStorage.setItem("username", username)
+
+        // Fetch and set user data
         const userData = await fetchUserData(username, token)
-        setUser({ user: userData })
+        
+        // Update all atoms with user data
+        setBasicInfo({
+          username: userData.username,
+          firstname: userData.firstname,
+          lastname: userData.lastname,
+          profileImageUrl: userData.profileImageUrl,
+          isVerified: userData.isVerified,
+          isAdmin: userData.isAdmin,
+          isOAuthUser: userData.isOAuthUser
+        })
+
+        setProfile({
+          bio: userData.bio,
+          location: userData.location,
+          websiteUrl: userData.websiteUrl,
+          birthdate: userData.birthdate,
+          gender: userData.gender
+        })
+
+        setSocial({
+          followers: userData.followers,
+          following: userData.following,
+          isOnline: userData.isOnline
+        })
+
+        setContent({
+          posts: userData.posts,
+          recentActivity: userData.recentActivity
+        })
+
         navigate("/dashboard")
       }
     } catch (err) {
-      setError("Error: " + err)
+      setError(err.response?.data?.message || "Failed to create account")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -175,7 +237,7 @@ function Signup() {
       localStorage.setItem("username", username)
       navigate('/dashboard')
       const userData = await fetchUserData(username, token)
-      setUser({ user: userData })
+      setAuth({ user: userData })
     } catch (err) {
       console.log(err)
     }
@@ -256,10 +318,17 @@ function Signup() {
                 )}
                 <Button 
                   type="submit" 
-                  disabled={!isFormValid} 
-                  className={`ml-auto flex items-center ${currentStep === formSteps.length - 1 ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-600 hover:bg-purple-700'}`}
+                  disabled={!isFormValid || isSubmitting} 
+                  className={`ml-auto flex items-center ${
+                    currentStep === formSteps.length - 1 ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-600 hover:bg-purple-700'
+                  }`}
                 >
-                  {currentStep === formSteps.length - 1 ? (
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : currentStep === formSteps.length - 1 ? (
                     <>Sign Up <CheckCircle className="ml-2 h-4 w-4" /></>
                   ) : (
                     <>Next <ArrowRight className="ml-2 h-4 w-4" /></>
