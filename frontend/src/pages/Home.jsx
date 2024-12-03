@@ -174,7 +174,6 @@ const HomePage = () => {
           </motion.div>
         </motion.div>
 
-
 <motion.div variants={containerVariants} className="mb-24">
   <h2
     className={`text-4xl font-bold mb-12 text-center ${
@@ -184,7 +183,7 @@ const HomePage = () => {
     See Neuron in Action
   </h2>
   <div className="relative aspect-video max-w-4xl mx-auto rounded-xl overflow-hidden shadow-2xl">
-    <video
+    {/* <video
       id="neuronVideo"
       className="w-full h-full object-cover"
       poster="https://picsum.photos/seed/animation/1280/720" // High-quality sample thumbnail
@@ -217,7 +216,12 @@ const HomePage = () => {
           <Play className="w-8 h-8 text-white" />
         </button>
       </div>
-    )}
+    )} */}
+    <img
+      src="https://picsum.photos/seed/op/1280/720"
+      alt="Neuron Demo"
+      className="w-full h-full object-cover"
+    />
   </div>
 </motion.div>
 
