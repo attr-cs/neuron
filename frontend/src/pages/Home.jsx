@@ -85,17 +85,14 @@ const HomePage = () => {
     >
      
       <div className="relative h-screen flex items-center justify-center overflow-hidden">
-        <video
-          autoPlay
-          loop
-          muted
-          preload="auto"
-          className="absolute w-full h-full object-cover"
-          // poster="https://picsum.photos/seed/op/1280/720"
-        > 
-          <source src="https://apivideo-demo.s3.amazonaws.com/hello.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+<img
+    src="https://picsum.photos/seed/op/1280/720"
+    alt="Neuron Banner"
+    className="absolute w-full h-full object-cover"
+  />
+
+       //   <source src="https://apivideo-demo.s3.amazonaws.com/hello.mp4" type="video/mp4" />
+   
         <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-black' : 'bg-white'} bg-opacity-70`} />
         <div className="relative z-10 text-center px-4">
           <motion.h1
