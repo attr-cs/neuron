@@ -33,6 +33,7 @@ import Settings from './pages/Settings';
 import Signup from './pages/Signup';
 import Signin from './pages/Signin';
 import Home from './pages/Home';
+import DirectMessage from "./pages/DirectMessage";
 
 // Utils
 import fetchUserData from './utils/fetchUserData';
@@ -51,8 +52,10 @@ function App() {
   // Pages where header/navbar should be hidden
   const noHeaderPages = ['/signin', '/signup', '/request-reset', '/create-password', '/reset-password', '/email-sent'];
   const shouldHideHeader = noHeaderPages.includes(location.pathname);
-  const noFooterPages = ['/signin', '/signup', '/request-reset', '/create-password', '/reset-password', '/email-sent'];
-  const shouldHideFooter = noFooterPages.includes(location.pathname);
+  const noFooterPages = ['/signin', '/signup','/messages' , '/request-reset', '/create-password', '/reset-password', '/email-sent'];
+  const shouldHideFooter =
+  noFooterPages.includes(location.pathname) ||
+  location.pathname.startsWith('/messages');
 
 
   useEffect(() => {
@@ -143,13 +146,13 @@ function App() {
                 <Route path="/users" element={<ProtectedRoutes><UsersPage /></ProtectedRoutes>} />
                 <Route path="/create-password" element={<ProtectedRoutes><CreatePassword /></ProtectedRoutes>} />
                 <Route path="/settings" element={<ProtectedRoutes><Settings /></ProtectedRoutes>} />
+                <Route path="/messages/:username" element={<ProtectedRoutes><DirectMessage /></ProtectedRoutes>} />
 
 
 
                 <Route path="/request-reset" element={<RequestReset />} />
                 <Route path="/email-sent" element={<EmailSent />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
-
 
                 {/* Redirects Unknown paths to home */}
                 <Route path='*' element={<Home />} />

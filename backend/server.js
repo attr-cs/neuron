@@ -7,8 +7,11 @@ const router = require('./routes/index');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
+const { createServer } = require('http');
+const initializeSocket = require('./socket');
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 4000;
 
 if (!process.env.CLIENT_URL || !process.env.DB_URL) {
@@ -26,10 +29,13 @@ const corsOptions = {
   credentials: true,
   maxAge: 86400,
 };
-app.use(cors(corsOptions));
 
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+}));
 app.use(compression());
 
 const limiter = rateLimit({
@@ -49,6 +55,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-const server = app.listen(PORT, () => {
+// Initialize Socket.IO
+const io = initializeSocket(httpServer);
+
+// Store io instance on app for potential use in routes
+app.set('io', io);
+
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  httpServer.close(() => {
+    console.log('HTTP server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
 });

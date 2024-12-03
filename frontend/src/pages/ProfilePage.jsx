@@ -229,9 +229,15 @@ function ProfilePage() {
                         )}
                         {isFollowLoading ? "Processing..." : isFollowing ? "Following" : "Follow"}
                       </Button>
-                      <Button variant="outline">
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
+                      <Button
+  onClick={() => navigate(`/messages/${username}`)}
+  variant="outline"
+  size="sm"
+  className="flex items-center gap-2"
+>
+  <MessageSquare className="h-4 w-4" />
+  Message
+</Button>
                     </div>
                   )}
                 </div>

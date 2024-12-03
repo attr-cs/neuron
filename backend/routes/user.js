@@ -237,5 +237,24 @@ const generateUniqueUsername = async (baseUsername)=>{
     return username;
 }
 
+// Add this new route after your existing routes
+userRouter.get('/profile/:username', verifyToken, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username }, 
+      'username firstname lastname email profileImageUrl createdAt'
+    );
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
 module.exports = userRouter;
