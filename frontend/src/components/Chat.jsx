@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useRecoilValue } from 'recoil';
-import { authState } from '../store/atoms';
+import { authState } from './store/atoms';
 import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardHeader } from '@/components/ui/card';
+import { Send, Smile, Phone, Video, MoreVertical } from 'lucide-react';
+import { Avatar } from '@/components/ui/avatar';
+import { Card } from '@/components/ui/card';
 
 const Chat = ({ recipientId, recipientName, recipientImage }) => {
   const [socket, setSocket] = useState(null);
@@ -20,7 +21,9 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef(null);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const chatContainerRef = useRef(null);
 
+  // Socket connection and message handling logic remains the same
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_BACKEND_URL.replace('/api', ''), {
       path: '/socket.io',
@@ -36,11 +39,8 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
     });
 
     newSocket.on('connect', () => {
-      console.log('Socket connected with ID:', newSocket.id);
       setSocket(newSocket);
-      console.log('Emitting user_connected for userId:', auth.userId);
       newSocket.emit('user_connected', auth.userId);
-      
       const roomId = [auth.userId, recipientId].sort().join('-');
       newSocket.emit('join_room', roomId);
     });
@@ -67,9 +67,7 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
       });
     });
 
-    // Request initial status
     if (newSocket.connected) {
-      console.log('Requesting initial status for:', recipientId);
       newSocket.emit('get_user_status', recipientId);
     }
 
@@ -82,6 +80,7 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
     };
   }, [auth.userId, recipientId]);
 
+  // Fetch messages effect remains the same
   useEffect(() => {
     let isMounted = true;
 
@@ -100,7 +99,6 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
           setMessages(response.data);
         }
       } catch (error) {
-        console.error('Error fetching messages:', error);
         if (isMounted) {
           setError(error.response?.data?.message || 'Failed to fetch messages');
         }
@@ -116,6 +114,7 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
     };
   }, [auth.userId, recipientId, auth.token]);
 
+  // Emoji picker click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
@@ -160,7 +159,6 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
         content: message
       });
     } catch (err) {
-      console.error('Error sending message:', err);
       setError('Failed to send message');
     }
   };
@@ -171,93 +169,143 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
 
   const isRecipientOnline = onlineUsers.has(recipientId);
 
+  const messageVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
-    <Card className="w-full h-[85vh] max-w-4xl mx-auto shadow-lg">
-      <CardHeader className="border-b bg-gray-50/50 dark:bg-gray-900/50">
-        <div className="flex items-center gap-3">
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            className="relative"
-          >
-            <Avatar className="w-12 h-12">
-              <AvatarImage src={recipientImage} referrerPolicy="no-referrer" />
-              <AvatarFallback className="bg-purple-100 text-purple-600">
-                {recipientName[0]}
-              </AvatarFallback>
-            </Avatar>
-            <span 
-              className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-                isRecipientOnline ? 'bg-green-500' : 'bg-gray-400'
-              }`}
-            />
-          </motion.div>
-          <div>
-            <h2 className="text-lg font-semibold">{recipientName}</h2>
-            <p className="text-sm text-gray-500">
-              {isRecipientOnline ? 'Online' : 'Offline'}
-            </p>
-          </div>
-        </div>
-      </CardHeader>
-      <div className="flex-grow overflow-y-auto p-4 bg-gray-50">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`flex mb-4 ${msg.sender._id === auth.userId ? 'justify-end' : 'justify-start'}`}
-          >
-            <div className={`max-w-[70%] p-3 rounded-lg ${
-              msg.sender._id === auth.userId
-                ? 'bg-blue-500 text-white'
-                : 'bg-white border border-gray-300 text-gray-800'
-            }`}>
-              <p className="text-sm">{msg.content}</p>
-              <span className="text-xs opacity-75 mt-1 block">
-                {new Date(msg.timestamp).toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </span>
+    <Card className="w-full h-[100vh] md:h-[85vh] max-w-5xl mx-auto shadow-2xl bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden">
+      {/* Header */}
+      <motion.div 
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="p-4 border-b bg-white dark:bg-gray-800 shadow-sm"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative"
+            >
+              <Avatar className="w-12 h-12 ring-2 ring-offset-2 ring-purple-500">
+                <img src={recipientImage} alt={recipientName} className="object-cover" referrerPolicy="no-referrer" />
+                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-800 bg-green-500"></span>
+              </Avatar>
+            </motion.div>
+            <div>
+              <h2 className="text-lg font-semibold">{recipientName}</h2>
+              <p className="text-sm text-gray-500">
+                {isRecipientOnline ? 'Active now' : 'Offline'}
+              </p>
             </div>
           </div>
-        ))}
+          <div className="flex items-center gap-4">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Phone className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Video className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Messages */}
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800"
+      >
+        <AnimatePresence>
+          {messages.map((msg, index) => (
+            <motion.div
+              key={index}
+              initial="hidden"
+              animate="visible"
+              variants={messageVariants}
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              className={`flex ${msg.sender._id === auth.userId ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[80%] md:max-w-[70%] p-3 rounded-2xl ${
+                  msg.sender._id === auth.userId
+                    ? 'bg-purple-500 text-white ml-12'
+                    : 'bg-gray-100 dark:bg-gray-700 dark:text-white mr-12'
+                }`}
+              >
+                <p className="text-sm md:text-base">{msg.content}</p>
+                <span className="text-xs opacity-75 mt-1 block">
+                  {new Date(msg.timestamp).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} className="p-4 bg-white border-t border-gray-200">
+      {/* Input Form */}
+      <motion.form
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        onSubmit={sendMessage}
+        className="p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700"
+      >
         <div className="flex items-end space-x-2">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-grow p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Type your message..."
+            className="flex-grow p-3 rounded-full border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white"
           />
-          <button
-            type="submit"
-            className="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Send
-          </button>
           <div ref={emojiPickerRef} className="relative">
-            <button
+            <motion.button
               type="button"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="bg-gray-200 p-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
             >
-              😊
-            </button>
+              <Smile className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+            </motion.button>
             {showEmojiPicker && (
-              <div className="absolute bottom-12 right-0">
+              <div className="absolute bottom-14 right-0 z-50">
                 <EmojiPicker onEmojiClick={onEmojiClick} />
               </div>
             )}
           </div>
+          <motion.button
+            type="submit"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="p-3 rounded-full bg-purple-500 hover:bg-purple-600 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+          >
+            <Send className="w-6 h-6" />
+          </motion.button>
         </div>
-      </form>
+      </motion.form>
     </Card>
   );
 };
 
 export default Chat;
-
