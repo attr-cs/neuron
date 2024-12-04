@@ -125,6 +125,10 @@ const userSchema = new mongoose.Schema(
     resetTokenExpiry: {
       type: Date,
     },
+    lastSeen: {
+      type: Date,
+      default: Date.now
+    },
   },
   { timestamps: true }
 );

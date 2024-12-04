@@ -18,8 +18,9 @@ function initializeSocket(server) {
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    socket.on('user_connected', (userId) => {
+    socket.on('user_connected', async (userId) => {
       console.log('User connected with ID:', userId);
+      await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
       onlineUsers.set(userId, socket.id);
       
       // Broadcast to all clients that this user is online
@@ -38,11 +39,12 @@ function initializeSocket(server) {
       });
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       let disconnectedUserId;
       for (const [userId, socketId] of onlineUsers.entries()) {
         if (socketId === socket.id) {
           disconnectedUserId = userId;
+          await User.findByIdAndUpdate(disconnectedUserId, { lastSeen: new Date() });
           break;
         }
       }
@@ -52,7 +54,8 @@ function initializeSocket(server) {
         // Broadcast to all clients that this user is offline
         io.emit('user_status_change', { 
           userId: disconnectedUserId, 
-          status: 'offline' 
+          status: 'offline',
+          lastSeen: new Date()
         });
       }
     });
@@ -88,6 +91,20 @@ function initializeSocket(server) {
         console.error('Error saving message:', error);
         socket.emit('error', { message: 'Failed to send message' });
       }
+    });
+
+    socket.on('typing_start', (data) => {
+      socket.to(data.roomId).emit('typing_notify', {
+        userId: data.userId,
+        isTyping: true
+      });
+    });
+
+    socket.on('typing_end', (data) => {
+      socket.to(data.roomId).emit('typing_notify', {
+        userId: data.userId,
+        isTyping: false
+      });
     });
   });
 

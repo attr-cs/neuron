@@ -59,4 +59,46 @@ chatRouter.delete('/messages/:roomId', verifyToken, async (req, res) => {
   }
 });
 
+// Pin/unpin message
+chatRouter.post('/pin-message', verifyToken, async (req, res) => {
+  try {
+    const { messageId, roomId } = req.body;
+    const [user1, user2] = roomId.split('-');
+    
+    if (req.user.id !== user1 && req.user.id !== user2) {
+      return res.status(403).json({ message: 'Unauthorized to pin messages in this chat' });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // If we're pinning a message, unpin any existing pinned message
+    if (!message.isPinned) {
+      await Message.updateMany(
+        { roomId: message.roomId, isPinned: true },
+        { isPinned: false, pinnedBy: null, pinnedAt: null }
+      );
+    }
+
+    message.isPinned = !message.isPinned;
+    message.pinnedBy = message.isPinned ? req.user.id : null;
+    message.pinnedAt = message.isPinned ? new Date() : null;
+    await message.save();
+
+    // Get all messages to return updated state
+    const messages = await Message.find({ roomId: message.roomId })
+      .populate('sender')
+      .sort({ timestamp: 1 });
+
+    res.json({ 
+      messages,
+      pinnedMessage: message.isPinned ? message : null
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating pin status' });
+  }
+});
+
 module.exports = chatRouter; 

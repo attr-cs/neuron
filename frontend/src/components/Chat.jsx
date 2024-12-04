@@ -5,10 +5,50 @@ import { authState } from '../store/atoms';
 import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Phone, Video, MoreVertical, ArrowLeft } from 'lucide-react';
+import { Send, Smile, Phone, Video, MoreVertical, ArrowLeft, Copy } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { useLongPress } from '@uidotdev/usehooks';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+
+export const MobileContextMenu = ({ isOpen, position, onClose, children }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 z-50"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            style={{
+              position: 'fixed',
+              left: position.x,
+              top: position.y,
+              zIndex: 51
+            }}
+            className="bg-gray-800 rounded-lg shadow-lg py-2 min-w-[150px]"
+          >
+            {children}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const Chat = ({ recipientId, recipientName, recipientImage }) => {
   const [socket, setSocket] = useState(null);
@@ -25,6 +65,16 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
   const chatContainerRef = useRef(null);
   const navigate = useNavigate();
   const [isRecipientOnline, setIsRecipientOnline] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [recipientIsTyping, setRecipientIsTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
+  const [lastSeen, setLastSeen] = useState(null);
+  const [copyTooltip, setCopyTooltip] = useState('');
+  const [copyStatus, setCopyStatus] = useState({});
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [selectedMessageId, setSelectedMessageId] = useState(null);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_BACKEND_URL.replace('/api', ''), {
@@ -57,13 +107,16 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
       setOnlineUsers(new Set(users));
     });
 
-    newSocket.on('user_status_change', ({ userId, status }) => {
+    newSocket.on('user_status_change', ({ userId, status, lastSeen }) => {
       setOnlineUsers(prev => {
         const newSet = new Set(prev);
         if (status === 'online') {
           newSet.add(userId);
         } else {
           newSet.delete(userId);
+        }
+        if (status === 'offline' && lastSeen) {
+          setLastSeen(new Date(lastSeen));
         }
         return newSet;
       });
@@ -206,13 +259,158 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
     navigate(-1);
   };
 
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('typing_notify', (data) => {
+      if (data.userId === recipientId) {
+        setRecipientIsTyping(data.isTyping);
+      }
+    });
+
+    return () => {
+      socket.off('typing_notify');
+    };
+  }, [socket, recipientId]);
+
+  const handleTyping = (e) => {
+    setMessage(e.target.value);
+    
+    if (!socket) return;
+    
+    if (!isTyping) {
+      setIsTyping(true);
+      socket.emit('typing_start', {
+        roomId: [auth.userId, recipientId].sort().join('-'),
+        userId: auth.userId
+      });
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      socket.emit('typing_end', {
+        roomId: [auth.userId, recipientId].sort().join('-'),
+        userId: auth.userId
+      });
+    }, 1000);
+  };
+
+  const handleCopyMessage = async (content) => {
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch (err) {
+      console.error('Failed to copy message:', err);
+    }
+  };
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile('ontouchstart' in window);
+    };
+    checkMobile();
+  }, []);
+
+  const longPressConfig = useLongPress((e) => {
+    e.preventDefault();
+    const target = e.target.closest('.message-container');
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      setContextMenuPosition({
+        x: rect.left,
+        y: rect.top
+      });
+      setShowContextMenu(true);
+    }
+  }, {
+    threshold: 500,
+    cancelOnMovement: true
+  });
+
+  const handleContextMenu = (e, msg) => {
+    e.preventDefault();
+    setSelectedMessageId(msg._id);
+    setContextMenuPosition({
+      x: e.clientX,
+      y: e.clientY
+    });
+    setShowContextMenu(true);
+  };
+
+  const renderMessage = (msg, index) => (
+    <motion.div
+      key={msg._id || index}
+      initial="hidden"
+      animate="visible"
+      variants={messageVariants}
+      layout
+      className={`flex ${msg.sender._id === auth.userId ? 'justify-end' : 'justify-start'}`}
+    >
+      <div
+        className={`message-container relative max-w-[80%] md:max-w-[60%] p-3 rounded-2xl ${
+          msg.sender._id === auth.userId
+            ? 'bg-purple-500 text-white ml-12'
+            : 'bg-gray-800 text-white mr-12'
+        }`}
+        {...(isMobile ? longPressConfig : { onContextMenu: (e) => handleContextMenu(e, msg) })}
+      >
+        <p className="text-sm md:text-base break-words">{msg.content}</p>
+        <span className="text-xs opacity-75 mt-1 block">
+          {new Date(msg.timestamp).toLocaleTimeString()}
+        </span>
+      </div>
+    </motion.div>
+  );
+
+  const ContextMenu = () => (
+    <AnimatePresence>
+      {showContextMenu && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 z-50"
+            onClick={() => setShowContextMenu(false)}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            style={{
+              position: 'fixed',
+              left: contextMenuPosition.x,
+              top: contextMenuPosition.y,
+              zIndex: 51
+            }}
+            className="bg-gray-800 rounded-lg shadow-lg py-2 min-w-[150px]"
+          >
+            <button
+              onClick={() => {
+                const message = messages.find(m => m._id === selectedMessageId);
+                if (message) handleCopyMessage(message.content);
+              }}
+              className="w-full px-4 py-2 text-left text-white hover:bg-gray-700 flex items-center gap-2"
+            >
+              <Copy className="w-4 h-4" />
+              Copy
+            </button>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+
   return (
     <motion.div
       initial="hidden"
       animate="visible"
       exit="exit"
       variants={containerVariants}
-      className="fixed inset-0 bg-white dark:bg-gray-900 z-10 flex flex-col"
+      className="fixed inset-0 bg-gray-900 z-10 flex flex-col"
     >
       <Card className="w-full h-screen max-w-none mx-auto bg-white dark:bg-gray-900 overflow-hidden rounded-none flex flex-col pt-16 pb-20">
         {/* Header */}
@@ -242,9 +440,9 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
                 </div>
                 <div>
                   <h2 className="text-base font-semibold dark:text-white">{recipientName}</h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {isRecipientOnline ? 'Active now' : 'Offline'}
-                  </p>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {isRecipientOnline ? 'Active now' : lastSeen && `Last seen ${formatDistanceToNow(lastSeen, { addSuffix: true })}`}
+                  </div>
                 </div>
               </div>
             </div>
@@ -274,39 +472,43 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
           </div>
         </motion.div>
 
+        {recipientIsTyping && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute top-16 left-0 right-0 flex justify-center"
+          >
+            <div className="bg-blue-500 text-white  mt-3 px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
+              <div className="flex gap-1">
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="w-1 h-1 bg-white rounded-full"
+                />
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                  className="w-1 h-1 bg-white rounded-full"
+                />
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+                  className="w-1 h-1 bg-white rounded-full"
+                />
+              </div>
+              {/* <span>{recipientName} is typing</span> */}
+            </div>
+          </motion.div>
+        )}
+
         {/* Messages */}
         <div 
           ref={chatContainerRef}
           className="flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800"
         >
           <AnimatePresence mode="popLayout">
-            {messages.map((msg, index) => (
-              <motion.div
-                key={index}
-                initial="hidden"
-                animate="visible"
-                variants={messageVariants}
-                layout
-                className={`flex ${msg.sender._id === auth.userId ? 'justify-end' : 'justify-start'}`}
-              >
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className={`max-w-[80%] md:max-w-[60%] p-3 rounded-2xl ${
-                    msg.sender._id === auth.userId
-                      ? 'bg-purple-500 text-white ml-12'
-                      : 'bg-gray-100 dark:bg-gray-800 dark:text-white mr-12'
-                  }`}
-                >
-                  <p className="text-sm md:text-base">{msg.content}</p>
-                  <span className="text-xs opacity-75 mt-1 block">
-                    {new Date(msg.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </motion.div>
-              </motion.div>
-            ))}
+            {messages.map((msg, index) => renderMessage(msg, index))}
           </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>
@@ -322,7 +524,7 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
             <input
               type="text"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={handleTyping}
               placeholder="Type your message..."
               className="flex-grow p-3 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:text-white text-sm transition-shadow"
             />
@@ -360,6 +562,7 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
           </div>
         </motion.form>
       </Card>
+      <ContextMenu />
     </motion.div>
   );
 };
