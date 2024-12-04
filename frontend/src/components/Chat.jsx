@@ -130,7 +130,7 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
    
     return () => {
       if (newSocket) {
-        newSocket.off();
+    
         newSocket.disconnect();
       }
     };
