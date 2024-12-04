@@ -127,9 +127,10 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
     }
 
     setLoading(false);
-
+   
     return () => {
       if (newSocket) {
+        newSocket.off();
         newSocket.disconnect();
       }
     };
