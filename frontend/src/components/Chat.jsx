@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useRecoilValue } from 'recoil';
-import { authState } from './store/atoms';
+import { authState } from '.m/store/atoms';
 import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
