@@ -50,8 +50,9 @@ function App() {
 
   // Pages where footer should be hidden
   // Pages where header/navbar should be hidden
-  const noHeaderPages = ['/signin', '/signup', '/request-reset', '/create-password', '/reset-password', '/email-sent'];
-  const shouldHideHeader = noHeaderPages.includes(location.pathname);
+  const noHeaderPages = ['/signin', '/signup', '/request-reset', '/messages', '/create-password', '/reset-password', '/email-sent'];
+  const shouldHideHeader = noHeaderPages.includes(location.pathname)||
+  location.pathname.startsWith('/messages');
   const noFooterPages = ['/signin', '/signup','/messages' , '/request-reset', '/create-password', '/reset-password', '/email-sent'];
   const shouldHideFooter =
   noFooterPages.includes(location.pathname) ||
