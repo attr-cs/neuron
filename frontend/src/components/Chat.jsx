@@ -50,7 +50,7 @@ export const MobileContextMenu = ({ isOpen, position, onClose, children }) => {
   );
 };
 
-const Chat = ({ recipientId, recipientName, recipientImage }) => {
+const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage }) => {
   const [socket, setSocket] = useState(null);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
@@ -257,7 +257,7 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
   };
 
   const handleBack = () => {
-    navigate(-1);
+    navigate(`/user/${recipientUsername}`);
   };
 
   useEffect(() => {
@@ -478,7 +478,7 @@ const Chat = ({ recipientId, recipientName, recipientImage }) => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute top-16 left-0 right-0 flex justify-center"
+            className="absolute bottom-24 left-0 right-0 flex justify-center"
           >
             <div className="bg-blue-500 text-white  mt-3 px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
               <div className="flex gap-1">
