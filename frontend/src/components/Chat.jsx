@@ -17,6 +17,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import AdminBadge from '@/components/ui/AdminBadge';
 
 const messageVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -79,7 +80,7 @@ export const MobileContextMenu = ({ isOpen, position, onClose, children }) => {
   );
 };
 
-const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage }) => {
+const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, recipientIsAdmin }) => {
   const [socket, setSocket] = useState(null);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
@@ -537,7 +538,10 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage })
                   )}
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-gray-100">{recipientName}</h2>
+                  <h2 className="text-base font-semibold text-gray-100 flex items-center gap-2">
+                    {recipientName}
+                    {recipientIsAdmin && <AdminBadge />}
+                  </h2>
                   <div className="text-xs text-gray-400">
                     {isRecipientOnline ? 'Active now' : lastSeen && `Last seen ${formatDistanceToNow(lastSeen, { addSuffix: true })}`}
                   </div>

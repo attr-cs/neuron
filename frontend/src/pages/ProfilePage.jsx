@@ -15,6 +15,7 @@ import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, UserCheck, UserPlus, LoaderIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import AdminBadge from '@/components/ui/AdminBadge';
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -190,8 +191,9 @@ function ProfilePage() {
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold">
+                    <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
                       {userData.firstname} {userData.lastname}
+                      {userData.isAdmin && <AdminBadge />}
                     </h1>
                     <p className="text-gray-600">@{userData.username}</p>
                   </div>

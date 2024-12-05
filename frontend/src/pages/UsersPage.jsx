@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import AdminBadge from '@/components/ui/AdminBadge';
 
 function UsersPage() {
   const navigate = useNavigate();
@@ -172,12 +173,12 @@ function UsersPage() {
                     onClick={() => navigate(`/profile/${user.username}`)}
                   />
                   <div className="flex-grow">
-                    <CardTitle 
-                      className="cursor-pointer hover:text-purple-600"
-                      onClick={() => navigate(`/profile/${user.username}`)}
-                    >
-                      {`${user.firstname} ${user.lastname}`}
-                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold">
+                        {user.firstname} {user.lastname}
+                      </h2>
+                      {user.isAdmin && <AdminBadge />}
+                    </div>
                     <CardDescription>@{user.username}</CardDescription>
                   </div>
                   <Button

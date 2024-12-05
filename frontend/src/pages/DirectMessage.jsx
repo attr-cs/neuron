@@ -65,6 +65,7 @@ function DirectMessage() {
           recipientName={`${recipient.firstname} ${recipient.lastname}`} 
           recipientImage={recipient.profileImageUrl}
           recipientUsername={recipient.username}
+          recipientIsAdmin={recipient.isAdmin}
         />
       )}
     </div>
