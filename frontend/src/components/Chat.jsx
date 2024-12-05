@@ -419,6 +419,80 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage })
     }
   `;
 
+  const DateSeparator = ({ date }) => (
+    <div className="flex items-center justify-center my-4">
+      <div className="bg-[#2A2A2A] text-gray-400 text-xs px-4 py-1 rounded-full">
+        {formatMessageDate(date)}
+      </div>
+    </div>
+  );
+
+  // Add this utility function
+  const formatMessageDate = (date) => {
+    const messageDate = new Date(date);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (messageDate.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (messageDate.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return messageDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: messageDate.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
+      });
+    }
+  };
+
+  useEffect(() => {
+    const fetchLastSeen = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/user/status/${recipientId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${auth.token}`
+            }
+          }
+        );
+        if (response.data.lastSeen) {
+          setLastSeen(new Date(response.data.lastSeen));
+        }
+      } catch (error) {
+        console.error('Error fetching last seen:', error);
+      }
+    };
+
+    fetchLastSeen();
+
+    socket?.on('online_users_list', (users) => {
+      setOnlineUsers(new Set(users));
+    });
+
+    socket?.on('user_status_change', ({ userId, status, lastSeen }) => {
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        if (status === 'online') {
+          newSet.add(userId);
+        } else {
+          newSet.delete(userId);
+        }
+        if (status === 'offline' && lastSeen) {
+          setLastSeen(new Date(lastSeen));
+        }
+        return newSet;
+      });
+    });
+
+    return () => {
+      socket?.off('online_users_list');
+      socket?.off('user_status_change');
+    };
+  }, [recipientId, socket, auth.token]);
+
   return (
     <motion.div
       initial="hidden"
@@ -480,20 +554,33 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage })
 
         {/* Messages Container */}
         <div 
-          ref={chatContainerRef}
-          className="messages-container flex-1 overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-[#111111] to-[#0A0A0A] scroll-smooth"
-        >
+  ref={chatContainerRef}
+  className="messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4 bg-gradient-to-b from-[#111111] to-[#0A0A0A] scroll-smooth"
+>
           <AnimatePresence mode="popLayout">
-            {messages.map((msg, index) => (
-              <MessageBubble
-                key={msg._id || index}
-                message={msg}
-                isOwn={msg.sender._id === auth.userId}
-                handleContextMenu={handleContextMenu}
-                isMobile={isMobile}
-                longPressConfig={longPressConfig}
-              />
-            ))}
+            {messages.reduce((acc, msg, index) => {
+              const messageDate = new Date(msg.timestamp).toDateString();
+              const prevMessageDate = index > 0 ? new Date(messages[index - 1].timestamp).toDateString() : null;
+
+              if (messageDate !== prevMessageDate) {
+                acc.push(
+                  <DateSeparator key={`date-${msg.timestamp}`} date={msg.timestamp} />
+                );
+              }
+
+              acc.push(
+                <MessageBubble
+                  key={msg._id || index}
+                  message={msg}
+                  isOwn={msg.sender._id === auth.userId}
+                  handleContextMenu={handleContextMenu}
+                  isMobile={isMobile}
+                  longPressConfig={longPressConfig}
+                />
+              );
+
+              return acc;
+            }, [])}
           </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>

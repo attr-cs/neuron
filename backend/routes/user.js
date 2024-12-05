@@ -11,6 +11,24 @@ const {toggleFollow, checkFollowStatus} = require('../controllers/userController
 
 userRouter.use(express.json());
 
+
+userRouter.get('/status/:userId', verifyToken, async (req, res) => {
+    try {
+      const user = await User.findById(req.params.userId)
+        .select('lastSeen')
+        .lean();
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      res.json({ lastSeen: user.lastSeen });
+    } catch (error) {
+      console.error('Error fetching user status:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
 // signup api
 userRouter.post('/signup', async (req, res) => {
     const data = req.body;
