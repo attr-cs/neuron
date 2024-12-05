@@ -24,6 +24,34 @@
   background: hsl(var(--muted-foreground));
 }
 
+/* Chat scrollbar styles */
+.messages-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.messages-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Add smooth scrolling to all elements */
+* {
+  scroll-behavior: smooth;
+}
+
 /* Then your existing Tailwind directives */
 @tailwind base;
 @tailwind components;
