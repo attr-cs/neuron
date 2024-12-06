@@ -9,16 +9,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Menu, MenuItem, Drawer, List, ListItem, IconButton, ListItemText, ListItemIcon, styled, ListItemButton } from "@mui/material";
-import { Link, useNavigate } from "react-router-dom";
-import { useRecoilState } from "recoil";
-import { authState, userState } from "../store/atoms";
-import { useState } from "react";
+import { Drawer, List, ListItem, IconButton, ListItemText, ListItemIcon, styled, ListItemButton } from "@mui/material";
 import { HiHome, HiUser, HiUsers, HiLogout, HiUserAdd, HiLogin } from "react-icons/hi";
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-
 
 import {
   DropdownMenu,
@@ -38,10 +33,15 @@ import {
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
+import defaultImage from "../assets/default_profile_avatar.png";
 
-import defaultImage from "../assets/default_profile_avatar.png" 
-import neuronLightLogo from "../assets/logo_circle_light.png"
-import neuronDarkLogo from "../assets/logo_circle_dark.png"
+const ListItemCustom = styled(ListItem)(({ theme }) => ({
+  marginBottom: '8px',
+  borderRadius: '4px',
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  }
+}));
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
- 
+
   useEffect(() => {
     setIsOpen(false);
   }, [location]);
@@ -68,9 +68,6 @@ export default function Navbar() {
     }
     setIsOpen(open);
   };
-
-
-
 
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
@@ -242,7 +239,7 @@ export default function Navbar() {
                 </DropdownMenu>
               )}
 
-<Drawer anchor="left" open={isOpen} onClose={toggleDrawer(false)}
+              <Drawer anchor="left" open={isOpen} onClose={toggleDrawer(false)}
                     slotProps={{
                         backdrop:{
                             sx: {
