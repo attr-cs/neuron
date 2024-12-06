@@ -171,3 +171,30 @@ a {
     animation: slide-left 0.2s ease-out;
   }
 }
+
+
+@keyframes slide-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-right {
+  animation: slide-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* Override default dialog positioning */
+[data-dialog-content] {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: auto !important;
+  transform: none !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+}

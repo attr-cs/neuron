@@ -227,12 +227,14 @@ export default function Navbar() {
                     <Menu className="h-6 w-6" />
                     <span className="sr-only">Open menu</span>
                   </Button>
-                 </DialogTrigger>
+                </DialogTrigger>
                 <DialogContent 
-                  className="fixed right-0 top-0 h-full w-[300px] sm:w-[400px] rounded-l-2xl border-l shadow-lg animate-slide-left overflow-hidden"
+                  className="fixed right-0 top-0 h-full w-[300px] sm:w-[400px] rounded-l-2xl border-l shadow-lg animate-slide-right"
                   style={{ 
                     backgroundColor: 'hsl(var(--background)/95)',
                     backdropFilter: 'blur(8px)',
+                    transform: 'translateX(0)',
+                    transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                   }}
                 >
                   <div className="flex flex-col h-full">
