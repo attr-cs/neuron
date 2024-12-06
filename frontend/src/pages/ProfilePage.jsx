@@ -10,7 +10,7 @@ import { IconButton } from "@mui/material";
 import ProfileInfo from "../components/ProfileInfo";
 import ProfilePosts from "../components/ProfilePosts";
 import EditProfile from "../components/EditProfile";
-import { MoreVert, Pencil, User2 } from "@mui/icons-material";
+import { MoreVert, Edit, Person } from "@mui/icons-material";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, UserCheck, UserPlus, LoaderIcon } from "lucide-react";
@@ -170,16 +170,17 @@ function ProfilePage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-background/30 hover:bg-background/40 text-background backdrop-blur-sm"
+              className="h-10 w-10 rounded-full bg-background hover:bg-background/90 text-muted-foreground backdrop-blur-sm"
+              
             >
-              <Pencil className="h-5 w-5" />
+              <Edit className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full  dark:bg-background/30 hover:bg-background/40 backdrop-blur-sm"
+              className="h-10 w-10 rounded-full text-muted-foreground dark:bg-background/30 hover:bg-background/90 bg-background backdrop-blur-sm"
             >
-              <MoreVert fontSize="medium" sx={{ color: "white" }} className="h-7 w-7" />
+              <MoreVert fontSize="large" sx={{ color: "grey" }}  />
             </Button>
           </div>
         )}
@@ -208,7 +209,7 @@ function ProfilePage() {
                     size="icon"
                     className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-background shadow-md hover:bg-background/90 text-muted-foreground"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Edit className="h-4 w-4" />
                   </Button>
                 )}
               </motion.div>
@@ -312,7 +313,7 @@ function ProfilePage() {
                 className="relative px-4 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent hover:bg-transparent"
               >
                 <span className="flex items-center gap-2">
-                  <User2 className="h-4 w-4" />
+                  <Person className="h-4 w-4" />
                   <span className="font-medium">About</span>
                 </span>
                 {isEdited && <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />}
