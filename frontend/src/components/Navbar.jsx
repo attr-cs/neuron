@@ -1,13 +1,25 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useRecoilState, useRecoilValue } from "recoil";
-import { authState, userBasicInfoState, themeState } from "../store/atoms";
-import { Home, User, Users, LogOut, UserPlus, LogIn, Moon, Sun } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { authState, userBasicInfoState, themeState } from '../store/atoms';
+import { Home, User, Users, LogOut, UserPlus, LogIn, Menu, Search, Brain, Settings, Bell, BookOpen, Moon, Sun, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Menu, MenuItem, Drawer, List, ListItem, IconButton, ListItemText, ListItemIcon, styled, ListItemButton } from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
+import { useRecoilState } from "recoil";
+import { authState, userState } from "../store/atoms";
+import { useState } from "react";
+import { HiHome, HiUser, HiUsers, HiLogout, HiUserAdd, HiLogin } from "react-icons/hi";
+import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,21 +28,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuGroup,
-} from "@/components/ui/dropdown-menu";
-
-import Drawer from "@mui/material/Drawer";
-import IconButton from "@mui/material/IconButton";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import MenuIcon from "@mui/icons-material/Menu";
-import MenuOpenIcon from "@mui/icons-material/MenuOpen";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import { HiHome, HiUser, HiUsers, HiLogout } from "react-icons/hi";
-
-
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogClose,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
