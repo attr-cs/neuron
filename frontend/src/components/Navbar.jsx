@@ -114,16 +114,16 @@ export default function Navbar() {
                 <motion.div
                   whileHover={{ rotate: 360 }}
                   transition={{ duration: 0.5 }}
-                  className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-2"
+                  className="w-10 h-10 bg-transparent rounded-full flex items-center justify-center mr-2"
                 >
                   {/* <img src={neuronDarkLogo} alt="Neuron logo" /> */}
-                  <Brain className="w-6 h-6 text-white" />
+                  <Brain className="w-6 h-6 text-black dark:text-white" />
                 </motion.div>
                 <motion.span
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600"
+                  className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-black dark:from-white dark:to-white"
                 >
                   NΞURON
                 </motion.span>
