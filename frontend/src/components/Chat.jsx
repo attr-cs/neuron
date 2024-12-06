@@ -106,6 +106,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_BACKEND_URL.replace('/api', ''), {
       path: '/socket.io',
@@ -539,11 +540,16 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                 </div>
                 <div>
                   <h2 className="text-base font-semibold text-gray-100 flex items-center gap-2">
-                    {recipientName}
-                    {recipientIsAdmin && <AdminBadge />}
+                    <span className="truncate max-w-[200px]">
+                      {recipientName}
+                    </span>
+                    {recipientIsAdmin && (
+                      <AdminBadge className="flex-shrink-0" />
+                    )}
                   </h2>
                   <div className="text-xs text-gray-400">
-                    {isRecipientOnline ? 'Active now' : lastSeen && `Last seen ${formatDistanceToNow(lastSeen, { addSuffix: true })}`}
+                    {isRecipientOnline ? 'Active now' : 'offline'}
+                    {/* {isRecipientOnline ? 'Active now' : lastSeen && `Last seen ${formatDistanceToNow(lastSeen, { addSuffix: true })}`} */}
                   </div>
                 </div>
               </div>

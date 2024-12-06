@@ -10,12 +10,15 @@ import { IconButton } from "@mui/material";
 import ProfileInfo from "../components/ProfileInfo";
 import ProfilePosts from "../components/ProfilePosts";
 import EditProfile from "../components/EditProfile";
-import { MoreVert } from "@mui/icons-material";
+import { MoreVert, Pencil, User2 } from "@mui/icons-material";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, UserCheck, UserPlus, LoaderIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import AdminBadge from '@/components/ui/AdminBadge';
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapPin, Users, BookOpen } from "lucide-react";
 
 function ProfilePage() {
   const navigate = useNavigate();
@@ -157,124 +160,189 @@ function ProfilePage() {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="min-h-screen bg-slate-50"
+      className="min-h-screen bg-background"
     >
       {/* Banner Section */}
-      <div className="relative h-48 md:h-64 bg-gradient-to-r from-cyan-500 to-blue-500">
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          className="absolute top-4 right-4 p-2 rounded-full bg-white/20 text-white hover:bg-white/30"
-        >
-          <MoreVert />
-        </motion.button>
+      <div className="relative h-48 md:h-64 bg-gradient-to-r from-primary/80 to-primary overflow-hidden">
+        <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm"></div>
+        {isOwnProfile && (
+          <div className="absolute top-4 right-4 flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full bg-background/30 hover:bg-background/40 text-background backdrop-blur-sm"
+            >
+              <Pencil className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full  dark:bg-background/30 hover:bg-background/40 backdrop-blur-sm"
+            >
+              <MoreVert fontSize="medium" sx={{ color: "white" }} className="h-7 w-7" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Profile Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative -mt-24">
-          {/* Profile Header */}
-          <motion.div variants={itemVariants} className="bg-white rounded-xl shadow-sm p-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Card className="relative -mt-24 border-none bg-background/60 backdrop-blur-md shadow-lg">
+          <div className="p-6">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar */}
-              <motion.img
+              <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                src={userData.profileImageUrl || defaultImage}
-                alt="profile"
-                className="w-32 h-32 rounded-full border-4 border-white shadow-md"
-                referrerPolicy="no-referrer"
-              />
+                className="relative group"
+              >
+                <img
+                  src={userData.profileImageUrl || defaultImage}
+                  alt="profile"
+                  className="w-32 h-32 rounded-full border-4 border-background shadow-xl object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                {isOwnProfile && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-background shadow-md hover:bg-background/90 text-muted-foreground"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
+              </motion.div>
 
               {/* User Info */}
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex-1 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-foreground">
                       {userData.firstname} {userData.lastname}
                       {userData.isAdmin && <AdminBadge />}
                     </h1>
-                    <p className="text-gray-600">@{userData.username}</p>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span>@{userData.username}</span>
+                      {userData.location && (
+                        <>
+                          <span>•</span>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            <span>{userData.location}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   {/* Action Buttons */}
-                  {isOwnProfile ? (
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button onClick={() => setIsEdited(!isEdited)}>
-                        {isEdited ? "Cancel" : "Edit Profile"}
-                      </Button>
-                      {userData?.isOAuthUser ? (
-                        <Link to="/create-password">
-                          <Button variant="default">Create Password</Button>
-                        </Link>
-                      ) : (
-                        <Link to="/request-reset">
-                          <Button variant="destructive">Reset Password</Button>
-                        </Link>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        variant={isFollowing ? "secondary" : "default"}
-                        onClick={handleToggleFollow}
-                        disabled={isFollowLoading}
-                        className="w-full sm:w-auto"
-                      >
-                        {isFollowLoading ? (
-                          <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
-                        ) : isFollowing ? (
-                          <UserCheck className="mr-2 h-4 w-4" />
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {isOwnProfile ? (
+                      <>
+                        <Button onClick={() => setIsEdited(!isEdited)}>
+                          {isEdited ? "Cancel" : "Edit Profile"}
+                        </Button>
+                        {userData?.isOAuthUser ? (
+                          <Link to="/create-password">
+                            <Button variant="outline">Create Password</Button>
+                          </Link>
                         ) : (
-                          <UserPlus className="mr-2 h-4 w-4" />
+                          <Link to="/request-reset">
+                            <Button variant="outline">Reset Password</Button>
+                          </Link>
                         )}
-                        {isFollowLoading ? "Processing..." : isFollowing ? "Following" : "Follow"}
-                      </Button>
-                      <Button
-  onClick={() => navigate(`/messages/${username}`)}
-  variant="outline"
-  size="sm"
-  className="flex items-center gap-2"
->
-  <MessageSquare className="h-4 w-4" />
-  Message
-</Button>
-                    </div>
-                  )}
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant={isFollowing ? "secondary" : "default"}
+                          onClick={handleToggleFollow}
+                          disabled={isFollowLoading}
+                        >
+                          {isFollowLoading ? (
+                            <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
+                          ) : isFollowing ? (
+                            <UserCheck className="mr-2 h-4 w-4" />
+                          ) : (
+                            <UserPlus className="mr-2 h-4 w-4" />
+                          )}
+                          {isFollowLoading ? "Processing..." : isFollowing ? "Following" : "Follow"}
+                        </Button>
+                        <Button
+                          onClick={() => navigate(`/messages/${username}`)}
+                          variant="outline"
+                        >
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Message
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Stats */}
-                <motion.div 
-                  variants={itemVariants}
-                  className="flex gap-6 mt-4 text-sm md:text-base"
-                >
-                  <div>
+                <div className="flex gap-6 pt-4 border-t border-border/40">
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
                     <span className="font-semibold">{userData.followers?.length || 0}</span>
-                    <span className="text-gray-600 ml-1">Followers</span>
-                  </div>
-                  <div>
+                    <span className="text-muted-foreground">Followers</span>
+                  </Button>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
                     <span className="font-semibold">{userData.following?.length || 0}</span>
-                    <span className="text-gray-600 ml-1">Following</span>
-                  </div>
-                  <div>
+                    <span className="text-muted-foreground">Following</span>
+                  </Button>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
                     <span className="font-semibold">{userData.posts?.length || 0}</span>
-                    <span className="text-gray-600 ml-1">Posts</span>
-                  </div>
-                </motion.div>
+                    <span className="text-muted-foreground">Posts</span>
+                  </Button>
+                </div>
               </div>
             </div>
-          </motion.div>
-
-          {/* Profile Info and Posts */}
-          <div className="mt-6">
-            {isEdited ? (
-              <EditProfile isEdited={isEdited} setIsEdited={setIsEdited} />
-            ) : (
-              <ProfileInfo userData={userData} />
-            )}
-            <ProfilePosts userData={userData} />
           </div>
+        </Card>
+
+        {/* Tabs Section */}
+        <div className="mt-6">
+          <Tabs defaultValue="about" className="w-full">
+            <TabsList className="w-full justify-start border-b rounded-none p-0 h-auto bg-transparent space-x-8">
+              <TabsTrigger 
+                value="about" 
+                className="relative px-4 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent hover:bg-transparent"
+              >
+                <span className="flex items-center gap-2">
+                  <User2 className="h-4 w-4" />
+                  <span className="font-medium">About</span>
+                </span>
+                {isEdited && <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />}
+              </TabsTrigger>
+              <TabsTrigger 
+                value="posts" 
+                className="relative px-4 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent hover:bg-transparent"
+              >
+                <span className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  <span className="font-medium">Posts</span>
+                </span>
+                {userData.posts?.length > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    {userData.posts.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="about" className="mt-6">
+              {isEdited ? (
+                <EditProfile isEdited={isEdited} setIsEdited={setIsEdited} />
+              ) : (
+                <ProfileInfo userData={userData} />
+              )}
+            </TabsContent>
+            <TabsContent value="posts" className="mt-6">
+              <ProfilePosts userData={userData} />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </motion.div>

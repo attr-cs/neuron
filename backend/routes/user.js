@@ -260,7 +260,7 @@ userRouter.get('/profile/:username', verifyToken, async (req, res) => {
   try {
     const { username } = req.params;
     const user = await User.findOne({ username }, 
-      'username firstname lastname email profileImageUrl createdAt'
+      'username firstname lastname email profileImageUrl createdAt isAdmin'
     );
     
     if (!user) {

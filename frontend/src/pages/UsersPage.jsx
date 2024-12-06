@@ -5,7 +5,7 @@ import { authState } from '../store/atoms';
 import { useRecoilValue } from "recoil";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserCircle, Mail, Calendar, Search, Loader2, UserPlus, UserCheck } from 'lucide-react';
+import { UserCircle, Search, Loader2, UserPlus, UserCheck } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -14,7 +14,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import AdminBadge from '@/components/ui/AdminBadge';
 
@@ -94,139 +93,115 @@ function UsersPage() {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.firstname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.lastname.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  console.log("Current state:", { 
-    loading, 
-    users: users.length, 
-    error, 
-    filteredUsers: filteredUsers.length 
-  });
-
-  if (!auth.token) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Alert variant="destructive">
-          <AlertDescription>Please login to view users</AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-purple-600" />
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="max-w-7xl mx-auto space-y-8"
       >
-        <h1 className="text-4xl font-bold mb-8 text-center">Users</h1>
-      </motion.div>
-
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-        <Input
-          type="text"
-          placeholder="Search users..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
-      <AnimatePresence>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map((user) => (
-            <motion.div
-              key={user._id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              whileHover={{ scale: 1.02 }}
-              className="relative"
-            >
-              <Card className="h-full">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <img
-                    referrerPolicy="no-referrer"
-                    src={user.profileImageUrl || defaultImage}
-                    alt="profile_image"
-                    className="w-16 h-16 rounded-full object-cover cursor-pointer"
-                    onClick={() => navigate(`/profile/${user.username}`)}
-                  />
-                  <div className="flex-grow">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold">
-                        {user.firstname} {user.lastname}
-                      </h2>
-                      {user.isAdmin && <AdminBadge />}
-                    </div>
-                    <CardDescription>@{user.username}</CardDescription>
-                  </div>
-                  <Button
-                    variant={user.followers?.includes(auth.userId) ? "secondary" : "default"}
-                    size="sm"
-                    disabled={followLoading[user._id]}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFollowToggle(user._id);
-                    }}
-                  >
-                    {followLoading[user._id] ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : user.followers?.includes(auth.userId) ? (
-                      <UserCheck className="h-4 w-4" />
-                    ) : (
-                      <UserPlus className="h-4 w-4" />
-                    )}
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Mail className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">Hidden due to privacy</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">
-                      Joined {new Date(user.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+        <div className="flex flex-col items-center space-y-4">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-indigo-600 dark:from-indigo-400 dark:to-indigo-600">
+            Connect with Others
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Discover and connect with like-minded individuals
+          </p>
         </div>
-      </AnimatePresence>
 
-      {filteredUsers.length === 0 && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center mt-8"
-        >
-          <UserCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-xl text-gray-600">No users found</p>
-        </motion.div>
-      )}
+        {error && (
+          <Alert variant="destructive" className="bg-destructive/10 border border-destructive/20">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="relative max-w-xl mx-auto">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+          <Input
+            type="text"
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-12 bg-background/50 backdrop-blur-sm border-muted focus:border-primary/50 transition-all duration-300"
+          />
+        </div>
+
+        <AnimatePresence>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {users.filter(user =>
+              user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              user.firstname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              user.lastname.toLowerCase().includes(searchTerm.toLowerCase())
+            ).map((user) => (
+              <motion.div
+                key={user._id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="group"
+              >
+                <Card className="backdrop-blur-sm bg-card/50 border-muted hover:border-primary/20 transition-all duration-300">
+                  <CardHeader className="flex flex-row items-center gap-4 p-6">
+                    <motion.img
+                      whileHover={{ scale: 1.05 }}
+                      src={user.profileImageUrl || defaultImage}
+                      alt="profile_image"
+                      className="w-16 h-16 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all"
+                      onClick={() => navigate(`/profile/${user.username}`)}
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="flex-grow">
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {user.firstname} {user.lastname}
+                        </h2>
+                        {user.isAdmin && <AdminBadge />}
+                      </div>
+                      <CardDescription className="text-muted-foreground">
+                        @{user.username}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant={user.followers?.includes(auth.userId) ? "secondary" : "default"}
+                      size="sm"
+                      disabled={followLoading[user._id]}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFollowToggle(user._id);
+                      }}
+                      className={`transition-all duration-300 ${
+                        user.followers?.includes(auth.userId)
+                          ? "bg-primary/10 hover:bg-primary/20 text-primary"
+                          : "bg-primary hover:bg-primary/90"
+                      }`}
+                    >
+                      {followLoading[user._id] ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : user.followers?.includes(auth.userId) ? (
+                        <UserCheck className="h-4 w-4" />
+                      ) : (
+                        <UserPlus className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CardHeader>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </AnimatePresence>
+
+        {users.length === 0 && !loading && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center mt-16"
+          >
+            <UserCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <p className="text-xl text-muted-foreground">No users found</p>
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   );
 }

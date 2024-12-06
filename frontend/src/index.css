@@ -66,6 +66,7 @@
 html, body, #root {
     height: 100%;
     width: 100%;
+    scrollbar-gutter: stable;
 }
 
 body {
@@ -89,17 +90,18 @@ a {
         --card-foreground: 240 10% 3.9%;
         --popover: 0 0% 100%;
         --popover-foreground: 240 10% 3.9%;
-        --primary: 240 5.9% 10%;
+        --primary: 224 82% 56%;
         --primary-foreground: 0 0% 98%;
         --secondary: 240 4.8% 95.9%;
         --secondary-foreground: 240 5.9% 10%;
-        --muted: 240 4.8% 95.9%;
-        --muted-foreground: 240 3.8% 46.1%;
+        --muted: 220 14% 96%;
+        --muted-foreground: 220 8% 46%;
+        --sheet-animation-duration: 0.2s;
         --accent: 240 4.8% 95.9%;
         --accent-foreground: 240 5.9% 10%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
-        --border: 240 5.9% 90%;
+        --border: 220 13% 91%;
         --input: 240 5.9% 90%;
         --ring: 240 10% 3.9%;
         --chart-1: 12 76% 61%;
@@ -110,23 +112,23 @@ a {
         --radius: 0.5rem;
     }
   .dark {
-        --background: 240 10% 3.9%;
+        --background: 224 71% 4%;
         --foreground: 0 0% 98%;
-        --card: 240 10% 3.9%;
+        --card: 224 71% 4%;
         --card-foreground: 0 0% 98%;
-        --popover: 240 10% 3.9%;
+        --popover: 224 71% 4%;
         --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
-        --primary-foreground: 240 5.9% 10%;
+        --primary: 224 76% 48%;
+        --primary-foreground: 0 0% 98%;
         --secondary: 240 3.7% 15.9%;
         --secondary-foreground: 0 0% 98%;
-        --muted: 240 3.7% 15.9%;
-        --muted-foreground: 240 5% 64.9%;
+        --muted: 223 47% 11%;
+        --muted-foreground: 215 20.2% 65.1%;
         --accent: 240 3.7% 15.9%;
         --accent-foreground: 0 0% 98%;
         --destructive: 0 62.8% 30.6%;
         --destructive-foreground: 0 0% 98%;
-        --border: 240 3.7% 15.9%;
+        --border: 216 34% 17%;
         --input: 240 3.7% 15.9%;
         --ring: 240 4.9% 83.9%;
         --chart-1: 220 70% 50%;
@@ -144,4 +146,28 @@ a {
   body {
     @apply bg-background text-foreground;
     }
+}
+
+@layer utilities {
+  .sheet-content {
+    animation-duration: var(--sheet-animation-duration) !important;
+    transition-duration: var(--sheet-animation-duration) !important;
+  }
+}
+
+@layer utilities {
+  @keyframes slide-left {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-slide-left {
+    animation: slide-left 0.2s ease-out;
+  }
 }
