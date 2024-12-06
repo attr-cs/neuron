@@ -202,7 +202,7 @@ function UsersPage() {
                 <CardContent>
                   <div className="flex items-center gap-2 mb-2">
                     <Mail className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600">{user.email}</span>
+                    <span className="text-sm text-gray-600">Hidden due to privacy</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-500" />
