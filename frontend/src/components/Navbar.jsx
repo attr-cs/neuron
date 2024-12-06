@@ -9,6 +9,17 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Menu, MenuItem, Drawer, List, ListItem, IconButton, ListItemText, ListItemIcon, styled, ListItemButton } from "@mui/material";
+import { Link, useNavigate } from "react-router-dom";
+import { useRecoilState } from "recoil";
+import { authState, userState } from "../store/atoms";
+import { useState } from "react";
+import { HiHome, HiUser, HiUsers, HiLogout, HiUserAdd, HiLogin } from "react-icons/hi";
+import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +61,16 @@ export default function Navbar() {
   useEffect(() => {
     document.body.classList.toggle('dark', theme === 'dark');
   }, [theme]);
+
+  const toggleDrawer = (open) => (event) => {
+    if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+      return;
+    }
+    setIsOpen(open);
+  };
+
+
+
 
   useEffect(() => {
     if (isSearchOpen && searchInputRef.current) {
@@ -221,114 +242,126 @@ export default function Navbar() {
                 </DropdownMenu>
               )}
 
-              <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="md:hidden">
-                    <Menu className="h-6 w-6" />
-                    <span className="sr-only">Open menu</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent 
-                  className="fixed right-0 top-0 h-full w-[300px] sm:w-[400px] rounded-l-2xl border-l shadow-lg animate-slide-right"
-                  style={{ 
-                    backgroundColor: 'hsl(var(--background)/95)',
-                    backdropFilter: 'blur(8px)',
-                    transform: 'translateX(0)',
-                    transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
+<Drawer anchor="left" open={isOpen} onClose={toggleDrawer(false)}
+                    slotProps={{
+                        backdrop:{
+                            sx: {
+                                backdropFilter: "blur(10px)",
+                                backgroundColor: "rgba(0,0,0,0.2)"
+                            },
+                        },
+
+                    }}
+                    
                 >
-                  <div className="flex flex-col h-full">
-                    {/* Header with Profile */}
-                    {auth.isAuthenticated && (
-                      <div className="p-6 border-b bg-gradient-to-br from-primary/10 to-primary/5">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-16 w-16 border-2 border-primary/20">
-                            <AvatarImage 
-                              src={userBasicInfo.profileImageUrl || defaultImage} 
-                              alt="Profile"
-                              className="object-cover"
-                              referrerPolicy="no-referrer"
-                            />
-                            <AvatarFallback className="text-lg">
-                              {userBasicInfo.firstname?.[0]}
-                              {userBasicInfo.lastname?.[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h2 className="text-lg font-semibold truncate">
-                              {userBasicInfo.firstname} {userBasicInfo.lastname}
-                            </h2>
-                            <p className="text-sm text-muted-foreground truncate">
-                              @{auth.username}
-                            </p>
-                          </div>
-                          <DialogClose asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </DialogClose>
-                        </div>
-                      </div>
-                    )}
+                    <div className="px-4 py-6 min-w-24 flex flex-col gap-4"> 
 
-                    {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {auth.isAuthenticated && (
-                        <form onSubmit={handleSearch} className="relative">
-                          <Input
-                            type="text"
-                            placeholder="Search..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-muted/50 border-border/50"
-                          />
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        </form>
-                      )}
-                      
-                      <div className="space-y-1">
-                        <MobileNavLink to="/" icon={Home}>Home</MobileNavLink>
-                        {auth.isAuthenticated ? (
-                          <>
-                            <MobileNavLink to="/dashboard" icon={User}>Dashboard</MobileNavLink>
-                            <MobileNavLink to="/users" icon={Users}>Users</MobileNavLink>
-                            <MobileNavLink to={`/profile/${auth.username}`} icon={User}>Profile</MobileNavLink>
-                            <MobileNavLink to="/settings" icon={Settings}>Settings</MobileNavLink>
-                            <MobileNavLink to="/notifications" icon={Bell}>
-                              Notifications
-                              <Badge variant="secondary" className="ml-auto">5</Badge>
-                            </MobileNavLink>
-                          </>
-                        ) : (
-                          <>
-                            <MobileNavLink to="/signup" icon={UserPlus}>Register</MobileNavLink>
-                            <MobileNavLink to="/signin" icon={LogIn}>Login</MobileNavLink>
-                          </>
-                        )}
-                      </div>
+                    <div>
+                    <IconButton onClick={toggleDrawer(false)}>
+                        {isOpen?<MenuOpenIcon/>:<MenuIcon/>}
+                    </IconButton>
                     </div>
 
-                    {/* Footer */}
-                    <div className="p-4 border-t">
-                      {auth.isAuthenticated ? (
-                        <DialogClose asChild>
-                          <Button variant="destructive" onClick={handleLogOut} className="w-full justify-start">
-                            <LogOut className="mr-2 h-5 w-5" />
-                            Log out
-                          </Button>
-                        </DialogClose>
-                      ) : null}
-                      <div className="flex items-center justify-between mt-4">
-                        <span className="text-sm font-medium">Dark Mode</span>
-                        <Switch
-                          checked={theme === 'dark'}
-                          onCheckedChange={toggleTheme}
+                    {auth.isAuthenticated?(<>
+                        <div className="flex flex-col items-center gap-2">
+                        <img
+                            referrerPolicy="no-referrer"
+                            src={user.user?.profileImageUrl || defaultImage}
+                            alt="profile_image"
+                            className="w-20 h-20 rounded-full shadow-gray-700 shadow-sm"
                         />
-                      </div>
+                        <p className="font-bold text-xl">{user.user?.firstname} {user.user?.lastname}</p>
+                        <p className="italic text-sm">{user.user?.username}</p>
                     </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                    <List sx={{ width: "250px" }} onClick={toggleDrawer(false)} onKeyDown={toggleDrawer(false)}>
+                    
+                        <ListItemCustom disablePadding>
+                            <ListItemButton component={Link} to="/">
+                            <ListItemIcon><HiHome size={22}/></ListItemIcon>
+                            <ListItemText primary="Home" />
+                            </ListItemButton>
+                        </ListItemCustom>
+                        <ListItemCustom disablePadding>
+                            <ListItemButton component={Link} to={`/profile/${auth.username}`}>
+                            <ListItemIcon><HiUser size={22}/></ListItemIcon>
+                            <ListItemText primary="Profile" />
+                            </ListItemButton>
+                        </ListItemCustom>
+                        
+                        <ListItemCustom disablePadding>
+                            <ListItemButton component={Link} to={`/dashboard`}>
+                            <ListItemIcon><DashboardIcon size={22}/></ListItemIcon>
+                            <ListItemText primary="DashBoard" />
+                            </ListItemButton>
+                        </ListItemCustom>
+                        <ListItemCustom disablePadding>
+                            <ListItemButton component={Link} to={`/Users`}>
+                            <ListItemIcon><HiUsers size={22}/></ListItemIcon>
+                            <ListItemText primary="Users" />
+                            </ListItemButton>
+                        </ListItemCustom>
+                        <ListItemCustom  disablePadding>
+                            <ListItemButton sx={{
+                                        color:"red",
+                                        borderRadius:"4px",
+                                        ".MuiListItemIcon-root":{
+
+                                            
+                                            color:'red',
+                                     
+                                        },
+                                        "&:hover":{
+                                            backgroundColor:"red",
+                                            color:'white'
+                                        },
+                                        "&:hover .MuiListItemIcon-root":{
+                                            
+                                            color:'white'
+                                        }
+                                    }} onClick={handleLogOut}>
+                            <ListItemIcon><HiLogout size={22}/></ListItemIcon>
+                            <ListItemText primary="Logout" />
+                            </ListItemButton>
+                        </ListItemCustom>
+                        
+                    </List>
+                    </>):(<>
+                            <div className="flex flex-col items-center gap-2">
+                        
+                                <img
+                                    referrerPolicy="no-referrer"
+                                    src={defaultImage}
+                                    alt="profile_image"
+                                    className="w-20 h-20 rounded-full shadow-gray-700 shadow-sm"
+                                />
+                        
+                                <p className="font-bold text-xl">Anonymous</p>
+                            </div>
+                    <List sx={{ width: "250px" }} onClick={toggleDrawer(false)} onKeyDown={toggleDrawer(false)}>
+                    
+                        <ListItemCustom disablePadding>
+                            <ListItemButton component={Link} to="/signup">
+                            <ListItemIcon><HiUserAdd size={22}/></ListItemIcon>
+                            <ListItemText primary="Register" />
+                            </ListItemButton>
+                        </ListItemCustom>
+                        <ListItemCustom disablePadding>
+                            <ListItemButton component={Link} to={`/signin`}>
+                            <ListItemIcon><HiLogin size={22}/></ListItemIcon>
+                            <ListItemText primary="Login" />
+                            </ListItemButton>
+                            
+                        </ListItemCustom>
+                        
+                       
+                        
+                    </List>
+
+
+                    </>)}
+                    </div>
+
+                </Drawer>
             </div>
           </div>
         </div>
