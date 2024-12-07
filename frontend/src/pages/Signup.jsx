@@ -231,13 +231,39 @@ function Signup() {
     try {
       const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/google-auth`, user)
       const { token, userId, username } = response.data
-      setAuth({ isAuthenticated: true, token: token, userId: userId, username: username })
-      localStorage.setItem("token", token)
-      localStorage.setItem("userId", userId)
-      localStorage.setItem("username", username)
-      const userData = await fetchUserData(username, token)
-      setAuth({ user: userData })
-      navigate('/dashboard')
+        setAuth({ isAuthenticated: true, token: token, userId: userId, username: username })
+        localStorage.setItem("token", token)
+        localStorage.setItem("userId", userId)
+        localStorage.setItem("username", username)
+        
+  
+        const userData = await fetchUserData(username, token)
+        setBasicInfo({
+          username: userData.username,
+          firstname: userData.firstname,
+          lastname: userData.lastname,
+          profileImageUrl: userData.profileImageUrl,
+          isVerified: userData.isVerified,
+          isAdmin: userData.isAdmin,
+          isOAuthUser: userData.isOAuthUser
+        })
+        navigate('/dashboard')
+        setProfile({
+          bio: userData.bio,
+          location: userData.location,
+          websiteUrl: userData.websiteUrl,
+          birthdate: userData.birthdate,
+          gender: userData.gender
+        })
+        setSocial({
+          followers: userData.followers,
+          following: userData.following,
+          isOnline: userData.isOnline
+        })
+        setContent({
+          posts: userData.posts,
+          recentActivity: userData.recentActivity
+        })
     } catch (err) {
       console.log(err)
     }
