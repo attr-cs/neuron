@@ -236,8 +236,8 @@ function Signup() {
       localStorage.setItem("userId", userId)
       localStorage.setItem("username", username)
       const userData = await fetchUserData(username, token)
-      navigate('/dashboard')
       setAuth({ user: userData })
+      navigate('/dashboard')
     } catch (err) {
       console.log(err)
     }
