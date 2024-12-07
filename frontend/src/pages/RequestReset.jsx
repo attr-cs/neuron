@@ -12,17 +12,21 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import axios from "axios";
 
 function RequestReset() {
+  
+
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const userBasicInfo = useRecoilValue(userBasicInfoState);
 
+  
+  
   // Redirect OAuth users to create password
   if (userBasicInfo.isOAuthUser) {
     return <Navigate to="/create-password" replace />;
   }
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -35,7 +39,7 @@ function RequestReset() {
       setIsSubmitting(false);
       return;
     }
-
+    
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/user/request-reset`, 

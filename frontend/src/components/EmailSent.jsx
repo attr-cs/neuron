@@ -2,16 +2,24 @@ import { useState, useEffect } from 'react'
 import { Mail, RefreshCw, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from "@/components/ui/button"
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function CheckEmailPage() {
+  const location = useLocation();
   const [email, setEmail] = useState('user@example.com')
   const [countdown, setCountdown] = useState(60)
   const [canResend, setCanResend] = useState(false)
   const [isResending, setIsResending] = useState(false)
 
   useEffect(() => {
+    
+      if(location.state && location.state.email){
+        setEmail(location.state.email);
+      }
+    
+      
     const timer = setInterval(() => {
       setCountdown((prevCountdown) => {
         if (prevCountdown <= 1) {
