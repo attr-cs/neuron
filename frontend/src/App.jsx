@@ -1,9 +1,11 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useSetRecoilState, useRecoilValue } from 'recoil';
+import { useSetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
+
 import { HashLoader } from 'react-spinners';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 
 // Atoms
 import {
@@ -21,6 +23,8 @@ import PublicRoute from './components/PublicRoute';
 import EmailSent from './components/EmailSent';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import AdminRoute from './components/routes/AdminRoute';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Pages
 import CreatePassword from './pages/CreatePassword';
@@ -42,7 +46,7 @@ function App() {
   const location = useLocation();
   const theme = useRecoilValue(themeState);
   const [loading, setLoading] = useState(true)
-  const setAuth = useSetRecoilState(authState);
+  const [auth, setAuth] = useRecoilState(authState);
   const setBasicInfo = useSetRecoilState(userBasicInfoState);
   const setProfile = useSetRecoilState(userProfileState);
   const setSocial = useSetRecoilState(userSocialState);
@@ -117,6 +121,27 @@ function App() {
     initializeApp();
   }, [setAuth, setBasicInfo, setProfile, setSocial, setContent]);
 
+  useEffect(() => {
+    if (auth.isAuthenticated) {
+      const socket = io(import.meta.env.VITE_BACKEND_URL.replace('/api', ''), {
+        path: '/socket.io',
+        transports: ['websocket', 'polling'],
+        autoConnect: true,
+        reconnection: true,
+        withCredentials: true
+      });
+
+      socket.on('connect', () => {
+        socket.emit('user_connected', auth.userId);
+      });
+
+      return () => {
+        
+        socket.disconnect();
+      };
+    }
+  }, [auth.isAuthenticated, auth.userId]);
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#242424' }}>
@@ -154,6 +179,16 @@ function App() {
                 <Route path="/request-reset" element={<RequestReset />} />
                 <Route path="/email-sent" element={<EmailSent />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+                {/* Admin Routes */}
+                <Route 
+                  path="/admin" 
+                  element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  } 
+                />
 
                 {/* Redirects Unknown paths to home */}
                 <Route path='*' element={<Home />} />

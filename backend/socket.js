@@ -20,22 +20,35 @@ function initializeSocket(server) {
 
     socket.on('user_connected', async (userId) => {
       console.log('User connected with ID:', userId);
-      await User.findByIdAndUpdate(userId, { lastSeen: new Date() });
+      
+      // Update user's online status and last visited time
+      await User.findByIdAndUpdate(userId, { 
+        isOnline: true,
+        lastVisited: new Date() 
+      });
+      
       onlineUsers.set(userId, socket.id);
       
       // Broadcast to all clients that this user is online
-      io.emit('user_status_change', { userId, status: 'online' });
+      io.emit('user_status_change', { 
+        userId, 
+        status: 'online',
+        lastVisited: new Date()
+      });
       
       // Send current online users list to the newly connected user
       const onlineUsersList = Array.from(onlineUsers.keys());
       socket.emit('online_users_list', onlineUsersList);
     });
 
-    socket.on('get_user_status', (userId) => {
+    socket.on('get_user_status', async (userId) => {
       const isOnline = onlineUsers.has(userId);
+      const user = await User.findById(userId).select('lastVisited');
+      
       socket.emit('user_status_change', { 
         userId, 
-        status: isOnline ? 'online' : 'offline' 
+        status: isOnline ? 'online' : 'offline',
+        lastVisited: user?.lastVisited || null
       });
     });
 
@@ -44,7 +57,11 @@ function initializeSocket(server) {
       for (const [userId, socketId] of onlineUsers.entries()) {
         if (socketId === socket.id) {
           disconnectedUserId = userId;
-          await User.findByIdAndUpdate(disconnectedUserId, { lastSeen: new Date() });
+          // Update user's offline status and last visited time
+          await User.findByIdAndUpdate(disconnectedUserId, { 
+            isOnline: false,
+            lastVisited: new Date() 
+          });
           break;
         }
       }
@@ -55,7 +72,7 @@ function initializeSocket(server) {
         io.emit('user_status_change', { 
           userId: disconnectedUserId, 
           status: 'offline',
-          lastSeen: new Date()
+          lastVisited: new Date()
         });
       }
     });

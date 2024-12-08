@@ -27,7 +27,8 @@ export default function UsersList({ users, onUpdateStatus }) {
           <TableHead>User</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Role</TableHead>
-          <TableHead>Last Active</TableHead>
+          <TableHead>Online</TableHead>
+          <TableHead>Last Visited</TableHead>
           <TableHead>Joined</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
@@ -51,12 +52,13 @@ export default function UsersList({ users, onUpdateStatus }) {
               </Badge>
             </TableCell>
             <TableCell>
-              <Badge variant={user.isAdmin ? 'default' : 'outline'}>
-                {user.isAdmin ? 'Admin' : 'User'}
+              <Badge variant={user.isOnline ? "success" : "secondary"}>
+                {user.isOnline ? "Online" : "Offline"}
               </Badge>
             </TableCell>
-            <TableCell>{format(new Date(user.lastSeen), 'MMM d, yyyy')}</TableCell>
-            <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
+            <TableCell>
+              {user.lastVisited ? format(new Date(user.lastVisited), 'MMM d, yyyy') : 'Never'}
+            </TableCell>
             <TableCell>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

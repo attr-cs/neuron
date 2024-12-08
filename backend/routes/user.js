@@ -95,7 +95,7 @@ userRouter.post('/signin', async (req, res) => {
 
 
 
-userRouter.get('/userslist',async (req,res)=>{
+userRouter.get('/userslist', verifyToken, async (req,res)=>{
     // const users = await User.find({},'username bio firstname lastname');
     try{
         const users = await User.find();
@@ -274,5 +274,29 @@ userRouter.get('/profile/:username', verifyToken, async (req, res) => {
   }
 });
 
+userRouter.post('/update-status', verifyToken, async (req, res) => {
+    try {
+      const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { 
+          lastVisited: req.body.lastVisited,
+          isOnline: true
+        },
+        { new: true }
+      );
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update status" });
+    }
+  });
 
+userRouter.get('/status/:userId', verifyToken, async (req, res) => {
+    try {
+      const user = await User.findById(req.params.userId)
+        .select('isOnline lastVisited');
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user status" });
+    }
+  });
 module.exports = userRouter;

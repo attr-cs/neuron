@@ -80,13 +80,31 @@ const userSchema = new mongoose.Schema(
     isOnline: {
       type: Boolean,
       default: false,
-      index: true,
     },
     isOAuthUser: {
       type: Boolean,
       default: false,
     },
+    lastVisited: {
+      type: Date,
+      default: Date.now
+    },
     websiteUrl: {
+      type: String,
+      default: "",
+    },
+    company: {
+      type: String,
+      default: "",
+    },
+    phone: {
+      type: String,
+      default: "",
+    },
+    skills: [{
+      type: String
+    }],
+    occupation: {
       type: String,
       default: "",
     },

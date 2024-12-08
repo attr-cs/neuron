@@ -39,9 +39,15 @@ app.use(helmet({
 app.use(compression());
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  keyGenerator: (req) => req.ip,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests
+  keyGenerator: (req) => {
+    const forwarded = req.headers['x-forwarded-for'] || req.ip;
+    return forwarded.split(',').shift().trim(); // Handle multiple IPs in x-forwarded-for
+  },
+  handler: (req, res) => {
+    res.status(429).json({ error: true, message: 'Too many requests, please try again later.' });
+  },
 });
 app.use(limiter);
 
@@ -64,6 +70,13 @@ app.set('io', io);
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
+
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
+
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

@@ -3,6 +3,7 @@ import { MapPin, Calendar, Globe, Link2, User2, Clock, Building, Briefcase, Mail
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import UserStatus from './UserStatus';
 
 function ProfileInfo({ userData }) {
   const containerVariants = {
@@ -37,6 +38,20 @@ function ProfileInfo({ userData }) {
     </motion.div>
   );
 
+  const {
+    isOnline,
+    lastVisited,
+    location,
+    dateJoined,
+    gender,
+    occupation,
+    website,
+    company,
+    email,
+    phone,
+    skills
+  } = userData || {};
+
   return (
     <motion.div
       initial="hidden"
@@ -60,73 +75,89 @@ function ProfileInfo({ userData }) {
       <Card className="overflow-hidden bg-card/50 backdrop-blur-sm">
         <CardContent className="p-6">
           <motion.div variants={itemVariants} className="space-y-6">
-            <h3 className="text-lg font-semibold text-foreground">Details</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-foreground">Details</h3>
+              <UserStatus isOnline={isOnline} lastVisited={lastVisited} />
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <InfoItem 
-                  icon={MapPin} 
-                  label="Location" 
-                  value={userData.location || "Not specified"} 
-                />
-                <InfoItem 
-                  icon={Calendar} 
-                  label="Joined" 
-                  value={new Date(userData.dateJoined).toLocaleDateString()} 
-                />
-                <InfoItem 
-                  icon={User2} 
-                  label="Gender" 
-                  value={userData.gender || "Not specified"} 
-                />
-                {userData.occupation && (
+                {location && (
+                  <InfoItem 
+                    icon={MapPin} 
+                    label="Location" 
+                    value={location} 
+                  />
+                )}
+                {dateJoined && (
+                  <InfoItem 
+                    icon={Calendar} 
+                    label="Joined" 
+                    value={new Date(dateJoined).toLocaleDateString()} 
+                  />
+                )}
+                {lastVisited && (
+                  <InfoItem 
+                    icon={Clock} 
+                    label="Last Seen" 
+                    value={new Date(lastVisited).toLocaleDateString()} 
+                  />
+                )}
+                {gender && (
+                  <InfoItem 
+                    icon={User2} 
+                    label="Gender" 
+                    value={gender} 
+                  />
+                )}
+                {occupation && (
                   <InfoItem 
                     icon={Briefcase} 
                     label="Occupation" 
-                    value={userData.occupation} 
+                    value={occupation} 
                   />
                 )}
               </div>
 
               <div className="space-y-4">
-                {userData.website && (
+                {website && (
                   <InfoItem 
                     icon={Globe} 
                     label="Website" 
-                    value={userData.website}
-                    href={userData.website}
+                    value={website}
+                    href={website}
                   />
                 )}
-                {userData.company && (
+                {company && (
                   <InfoItem 
                     icon={Building} 
                     label="Company" 
-                    value={userData.company} 
+                    value={company} 
                   />
                 )}
-                {userData.email && (
+                {email && (
                   <InfoItem 
                     icon={Mail} 
                     label="Email" 
-                    value={userData.email}
-                    href={`mailto:${userData.email}`}
+                    value={email}
+                    href={`mailto:${email}`}
                   />
                 )}
-                {userData.phone && (
+                {phone && (
                   <InfoItem 
                     icon={Phone} 
                     label="Phone" 
-                    value={userData.phone} 
+                    value={phone} 
                   />
                 )}
               </div>
             </div>
 
-            {userData.skills && (
+            {skills?.length > 0 && (
               <div className="pt-4 border-t border-border/50">
                 <h4 className="text-sm font-medium text-muted-foreground mb-3">Skills</h4>
                 <div className="flex flex-wrap gap-2">
-                  {userData.skills.map((skill, index) => (
+                  {skills.map((skill, index) => (
                     <Badge 
                       key={index} 
                       variant="secondary"

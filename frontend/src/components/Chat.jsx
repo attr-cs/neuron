@@ -144,16 +144,13 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       setOnlineUsers(new Set(users));
     });
 
-    newSocket.on('user_status_change', ({ userId, status, lastSeen }) => {
+    newSocket.on('user_status_change', ({ userId, status }) => {
       setOnlineUsers(prev => {
         const newSet = new Set(prev);
         if (status === 'online') {
           newSet.add(userId);
         } else {
           newSet.delete(userId);
-        }
-        if (status === 'offline' && lastSeen) {
-          setLastSeen(new Date(lastSeen));
         }
         return newSet;
       });
@@ -449,52 +446,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     }
   };
 
-  useEffect(() => {
-    const fetchLastSeen = async () => {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/user/status/${recipientId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${auth.token}`
-            }
-          }
-        );
-        if (response.data.lastSeen) {
-          setLastSeen(new Date(response.data.lastSeen));
-        }
-      } catch (error) {
-        console.error('Error fetching last seen:', error);
-      }
-    };
-
-    fetchLastSeen();
-
-    socket?.on('online_users_list', (users) => {
-      setOnlineUsers(new Set(users));
-    });
-
-    socket?.on('user_status_change', ({ userId, status, lastSeen }) => {
-      setOnlineUsers(prev => {
-        const newSet = new Set(prev);
-        if (status === 'online') {
-          newSet.add(userId);
-        } else {
-          newSet.delete(userId);
-        }
-        if (status === 'offline' && lastSeen) {
-          setLastSeen(new Date(lastSeen));
-        }
-        return newSet;
-      });
-    });
-
-    return () => {
-      socket?.off('online_users_list');
-      socket?.off('user_status_change');
-    };
-  }, [recipientId, socket, auth.token]);
-
   return (
     <motion.div
       initial="hidden"
@@ -549,7 +500,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                   </h2>
                   <div className="text-xs text-gray-400">
                     {isRecipientOnline ? 'Active now' : 'offline'}
-                    {/* {isRecipientOnline ? 'Active now' : lastSeen && `Last seen ${formatDistanceToNow(lastSeen, { addSuffix: true })}`} */}
                   </div>
                 </div>
               </div>

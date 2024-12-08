@@ -29,7 +29,7 @@ function UsersPage() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        console.log("Fetching users with token:", auth.token);
+        
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/user/userslist`,
           {
@@ -38,7 +38,7 @@ function UsersPage() {
             }
           }
         );
-        console.log("Users response:", response.data);
+        
         if (response.status === 200) {
           const usersList = response.data.users.filter(user => user._id !== auth.userId);
           setUsers(usersList);

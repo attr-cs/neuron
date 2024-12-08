@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { authState, userBasicInfoState, themeState } from '../store/atoms';
-import { Home, User, Users, LogOut, UserPlus, LogIn, Menu, Search, Brain, Settings, Bell, BookOpen, Moon, Sun, X } from 'lucide-react';
+import { Home, User, Users, LogOut, UserPlus, LogIn, Menu, Search, Brain, Settings, Bell, BookOpen, Moon, Sun, X, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -136,6 +136,11 @@ export default function Navbar() {
                 <>
                   <NavLink to="/dashboard" icon={User}>Dashboard</NavLink>
                   <NavLink to="/users" icon={Users}>Users</NavLink>
+                  {userBasicInfo.isAdmin && (
+                    <NavLink to="/admin" icon={Shield}>
+                      Admin
+                    </NavLink>
+                  )}
                 </>
               ) : (
                 <>

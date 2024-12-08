@@ -25,6 +25,12 @@ export const userBasicInfoState = atom({
     }
 })
 
+export const onlineUsersState = atom({
+    key: 'onlineUsersState',
+    default: new Set()
+  });
+  
+
 // Profile-specific data
 export const userProfileState = atom({
     key: 'userProfileState',
@@ -33,7 +39,14 @@ export const userProfileState = atom({
         location: '',
         websiteUrl: '',
         bannerImageUrl: '',
-        dateJoined: null
+        dateJoined: null,
+        gender: '',
+        occupation: '',
+        company: '',
+        email: '',
+        phone: '',
+        skills: [],
+        website: ''
     }
 })
 
@@ -43,7 +56,8 @@ export const userSocialState = atom({
     default: {
         followers: [],
         following: [],
-        isOnline: false
+        isOnline: false,
+        lastVisited: null
     }
 })
 
