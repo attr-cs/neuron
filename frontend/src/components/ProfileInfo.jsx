@@ -3,9 +3,9 @@ import { MapPin, Calendar, Globe, Link2, User2, Clock, Building, Briefcase, Mail
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import UserStatus from './UserStatus';
+import { memo } from 'react';
 
-function ProfileInfo({ userData }) {
+const ProfileInfo = memo(({ userData }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { 
@@ -77,7 +77,6 @@ function ProfileInfo({ userData }) {
           <motion.div variants={itemVariants} className="space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-foreground">Details</h3>
-              <UserStatus isOnline={isOnline} lastVisited={lastVisited} />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -174,6 +173,6 @@ function ProfileInfo({ userData }) {
       </Card>
     </motion.div>
   );
-}
+});
 
 export default ProfileInfo;

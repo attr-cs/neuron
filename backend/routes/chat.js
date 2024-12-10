@@ -18,7 +18,8 @@ chatRouter.get('/messages/:roomId', verifyToken, async (req, res) => {
 
     // Verify that the requesting user is part of this chat
     const [user1, user2] = roomId.split('-');
-    if (user1 !== req.user.id && user2 !== req.user.id) {
+
+    if (user1 !== req.user.id && user2 !== req.user.id ) {
       return res.status(403).json({ message: 'Unauthorized to access these messages' });
     }
 

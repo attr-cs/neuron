@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useRecoilValue } from 'recoil';
 import { authState } from '../store/atoms';
@@ -11,8 +11,16 @@ function DirectMessage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const auth = useRecoilValue(authState);
+const navigate = useNavigate();
 
   useEffect(() => {
+
+      if (username === auth.username) {
+        navigate("/dashboard");
+        return;
+      }
+
+
     const fetchRecipient = async () => {
       try {
         setLoading(true);

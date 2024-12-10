@@ -19,11 +19,15 @@ import AdminBadge from '@/components/ui/AdminBadge';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPin, Users, BookOpen } from "lucide-react";
+import UserStatusBadge from '../components/UserStatusBadge';
+import FollowersCount from '../components/FollowersCount';
 
 function ProfilePage() {
   const navigate = useNavigate();
   const auth = useRecoilValue(authState);
   const basicInfo = useRecoilValue(userBasicInfoState);
+  const followersCount = useRecoilValue(followersCountState);
+  const followingsCount = useRecoilValue(followingsCountState);
   const profile = useRecoilValue(userProfileState);
   const social = useRecoilValue(userSocialState);
   const content = useRecoilValue(userContentState);
@@ -38,6 +42,8 @@ function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [error, setError] = useState(null);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,6 +66,8 @@ function ProfilePage() {
           }
           setUserData(data);
           setIsFollowing(data.followers ? data.followers.includes(auth.userId) : false);
+          setFollowers(data.followers || []);
+          setFollowing(data.following || []);
         }
       } catch (err) {
         setError(err.message || "Failed to load user data");
@@ -79,51 +87,38 @@ function ProfilePage() {
   const handleToggleFollow = async () => {
     try {
       setIsFollowLoading(true);
-
-      // Optimistically update the UI before the server responds
       const newIsFollowing = !isFollowing;
       setIsFollowing(newIsFollowing);
-
-      // Update the userData state to reflect follower count change
-      setUserData(prev => ({
-        ...prev,
-        followers: newIsFollowing
-          ? [...(prev.followers || []), auth.userId]
-          : (prev.followers || []).filter(id => id !== auth.userId)
-      }));
-
-      // Send the request to the server
+  
+      // Only update followers state
+      setFollowers(prev => 
+        newIsFollowing 
+          ? [...prev, auth.userId]
+          : prev.filter(id => id !== auth.userId)
+      );
+  
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/user/follow`,
         { userId: auth.userId, targetId: userData._id },
         { headers: { Authorization: `Bearer ${auth.token}` } }
       );
-
-      // Confirm server response and ensure UI state matches
-      if (response.status === 200) {
-        const message = response.data.msg;
-        if (message === "Followed" && !isFollowing) {
-          setIsFollowing(true);
-        } else if (message === "Unfollowed" && isFollowing) {
-          setIsFollowing(false);
-        }
+  
+      if (response.status !== 200) {
+        throw new Error('Failed to update follow status');
       }
     } catch (err) {
       console.error("Error toggling follow status:", err);
-
-      // Revert the optimistic UI updates in case of an error
       setIsFollowing(!isFollowing);
-      setUserData(prev => ({
-        ...prev,
-        followers: isFollowing
-          ? (prev.followers || []).filter(id => id !== auth.userId)
-          : [...(prev.followers || []), auth.userId]
-      }));
+      setFollowers(prev => 
+        isFollowing 
+          ? prev.filter(id => id !== auth.userId)
+          : [...prev, auth.userId]
+      );
     } finally {
       setIsFollowLoading(false);
     }
   };
-
+  
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.1 } }
@@ -221,6 +216,8 @@ function ProfilePage() {
                     <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-foreground">
                       {userData.firstname} {userData.lastname}
                       {userData.isAdmin && <AdminBadge />}
+                      {isOwnProfile? <UserStatusBadge userId={auth.userId} />: <UserStatusBadge userId={userData._id} />}
+                      
                     </h1>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <span>@{userData.username}</span>
@@ -282,23 +279,15 @@ function ProfilePage() {
                 </div>
 
                 {/* Stats */}
-                <div className="flex gap-6 pt-4 border-t border-border/40">
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span className="font-semibold">{userData.followers?.length || 0}</span>
-                    <span className="text-muted-foreground">Followers</span>
-                  </Button>
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span className="font-semibold">{userData.following?.length || 0}</span>
-                    <span className="text-muted-foreground">Following</span>
-                  </Button>
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    <span className="font-semibold">{userData.posts?.length || 0}</span>
-                    <span className="text-muted-foreground">Posts</span>
-                  </Button>
-                </div>
+                {isOwnProfile? <FollowersCount 
+                  followers={followersCount} 
+                  following={followingsCount} 
+                  posts={content.posts.length} 
+                  />: <FollowersCount 
+                  followers={followers?.length || 0} 
+                  following={following?.length || 0} 
+                  posts={userData?.posts?.length || 0} 
+                  />}
               </div>
             </div>
           </div>

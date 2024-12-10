@@ -108,6 +108,13 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  useEffect(() => {
+    // Prevent chatting with self
+    if (recipientId === auth.userId) {
+      navigate('/messages');
+      return;
+    }
+  }, [recipientId, auth.userId, navigate]);
   
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_BACKEND_URL.replace('/api', ''), {

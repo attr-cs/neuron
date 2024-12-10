@@ -38,6 +38,7 @@ import Signup from './pages/Signup';
 import Signin from './pages/Signin';
 import Home from './pages/Home';
 import DirectMessage from "./pages/DirectMessage";
+import NotFound from '@/pages/NotFound';
 
 // Utils
 import fetchUserData from './utils/fetchUserData';
@@ -54,10 +55,10 @@ function App() {
 
   // Pages where footer should be hidden
   // Pages where header/navbar should be hidden
-  const noHeaderPages = ['/signin', '/signup', '/request-reset', '/messages', '/create-password', '/reset-password', '/email-sent'];
+  const noHeaderPages = ['/signin', '/signup', '/request-reset', '/create-password', '/reset-password', '/email-sent'];
   const shouldHideHeader = noHeaderPages.includes(location.pathname)||
   location.pathname.startsWith('/messages');
-  const noFooterPages = ['/signin', '/signup','/messages' , '/request-reset', '/create-password', '/reset-password', '/email-sent'];
+  const noFooterPages = ['/signin', '/signup', '/request-reset', '/create-password', '/reset-password', '/email-sent'];
   const shouldHideFooter =
   noFooterPages.includes(location.pathname) ||
   location.pathname.startsWith('/messages');
@@ -191,7 +192,7 @@ function App() {
                 />
 
                 {/* Redirects Unknown paths to home */}
-                <Route path='*' element={<Home />} />
+                <Route path='*' element={<NotFound />} />
               </Routes>
 
             </main>
