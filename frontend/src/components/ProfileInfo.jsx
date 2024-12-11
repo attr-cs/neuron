@@ -13,7 +13,6 @@ const ProfileInfo = memo(({ userData }) => {
       transition: { duration: 0.3, staggerChildren: 0.1 } 
     }
   };
-
   const itemVariants = {
     hidden: { y: 10, opacity: 0 },
     visible: { y: 0, opacity: 1 }
