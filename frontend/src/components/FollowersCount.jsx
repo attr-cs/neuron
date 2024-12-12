@@ -27,3 +27,5 @@ const FollowersCount = memo(({ followers, following, posts }) => {
 export default FollowersCount; 
 
 
+
+
