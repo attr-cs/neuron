@@ -15,7 +15,9 @@ const NotFound = () => {
       opacity: 1,
       transition: { staggerChildren: 0.15 }
     }
-  };    
+  };
+
+    
 
   const itemVariants = {
     initial: { y: 20, opacity: 0 },

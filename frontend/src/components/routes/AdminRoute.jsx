@@ -21,5 +21,5 @@ export default function AdminRoute({ children }) {
 } 
 
 AdminRoute.propTypes = {
-    children: PropTypes.node.isRequired,
+   children: PropTypes.node.isRequired,
 };  
