@@ -12,6 +12,8 @@ const HomePage = () => {
   const [theme, setTheme] = useRecoilState(themeState);
   const navigate = useNavigate();
 
+
+
   const features = [
     { icon: <MessageCircle className="w-12 h-12" />, title: 'Direct Messaging', description: 'Connect instantly with friends and family' },
     { icon: <Users className="w-12 h-12" />, title: 'Group Chats', description: 'Create and manage group conversations effortlessly' },
