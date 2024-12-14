@@ -22,6 +22,8 @@ import { MapPin, Users, BookOpen } from "lucide-react";
 import UserStatusBadge from '../components/UserStatusBadge';
 import FollowersCount from '../components/FollowersCount';
 
+
+
 function ProfilePage() {
   const navigate = useNavigate();
   const auth = useRecoilValue(authState);
