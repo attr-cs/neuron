@@ -28,6 +28,7 @@ const NotFound = () => {
     }
   };
 
+
   const glitchAnimation = {
     initial: { x: 0, opacity: 1 },
     animate: {
