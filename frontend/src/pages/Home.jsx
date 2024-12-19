@@ -1,16 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useAnimation } from 'framer-motion';
-import { useRecoilState } from 'recoil';
-import { MessageCircle, Users, BarChart2, Image as ImageIcon, Zap, Globe, Shield, Sparkles, ChevronDown, Play } from 'lucide-react';
+import { useRecoilValue } from 'recoil';
+import { MessageCircle, Users, BarChart2, Image as ImageIcon, Zap, Globe, Shield, Sparkles, ChevronDown, Download } from 'lucide-react';
 import { themeState } from '../store/atoms'; 
+
 
 const HomePage = () => {
   const controls = useAnimation();
   const statsRef = useRef(null);
   const [activeTab, setActiveTab] = useState(0);
-  const [theme, setTheme] = useRecoilState(themeState);
+  const theme = useRecoilValue(themeState);
   const navigate = useNavigate();
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
 
 
@@ -41,6 +43,13 @@ const HomePage = () => {
   ];
 
   useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
+
+  useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -58,7 +67,6 @@ const HomePage = () => {
   }, [controls]);
 
 
-  const [showPlayButton, setShowPlayButton] = useState(true);
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -67,6 +75,17 @@ const HomePage = () => {
         delayChildren: 0.3,
         staggerChildren: 0.2
       }
+    }
+  };
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      }
+      setDeferredPrompt(null);
     }
   };
 
@@ -93,8 +112,7 @@ const HomePage = () => {
     className="absolute w-full h-full object-cover"
   />
 
-       //   <source src="https://apivideo-demo.s3.amazonaws.com/hello.mp4" type="video/mp4" />
-   
+   {/* https://apivideo-demo.s3.amazonaws.com/hello.mp4 */}
         <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-black' : 'bg-white'} bg-opacity-70`} />
         <div className="relative z-10 text-center px-4">
           <motion.h1
@@ -118,6 +136,22 @@ const HomePage = () => {
             </button>
           </motion.div>
         </div>
+
+        <motion.div variants={itemVariants} className="absolute bottom-24 left-1/2 transform -translate-x-1/2">
+          {deferredPrompt && (
+            <button
+              onClick={handleInstall}
+              className={`${
+                theme === 'dark' 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              } font-bold py-2 px-4 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
+            >
+              <Download className="w-5 h-5" />
+              Install App
+            </button>
+          )}
+        </motion.div>
         <motion.div
           className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
           animate={{ y: [0, 10, 0] }}
