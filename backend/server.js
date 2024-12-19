@@ -39,7 +39,7 @@ app.use(helmet({
 app.use(compression());
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000, // 5 minutes
   max: 10000, // Limit each IP to 100 requests
   keyGenerator: (req) => {
     const forwarded = req.headers['x-forwarded-for'] || req.ip;
