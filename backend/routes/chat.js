@@ -30,8 +30,7 @@ chatRouter.get('/messages/:roomId', verifyToken, async (req, res) => {
         model: User,
         select: 'username firstname lastname profileImageUrl'
       })
-      .lean()
-      .limit(50);
+      .lean();
 
     res.json(messages);
   } catch (error) {

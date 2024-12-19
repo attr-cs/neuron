@@ -16,6 +16,8 @@ const HomePage = () => {
 
 
 
+
+
   const features = [
     { icon: <MessageCircle className="w-12 h-12" />, title: 'Direct Messaging', description: 'Connect instantly with friends and family' },
     { icon: <Users className="w-12 h-12" />, title: 'Group Chats', description: 'Create and manage group conversations effortlessly' },
@@ -131,6 +133,7 @@ const HomePage = () => {
           <motion.div className="space-x-4" variants={itemVariants}>
 
             
+              <motion.div className="space-x-4" variants={itemVariants}>
             <button onClick={()=>navigate("/signup")} className={`${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105`}>
               Join Now
             </button>
@@ -142,14 +145,15 @@ const HomePage = () => {
               onClick={handleInstall}
               className={`${
                 theme === 'dark' 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              } font-bold py-2 px-4 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-green-500 hover:bg-green-600 text-white'
+              } font-bold py-2 px-2 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
             >
               <Download className="w-5 h-5" />
             </button>
           )}
           </motion.div>
+
         </div>
         <motion.div
           className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
