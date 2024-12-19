@@ -129,32 +129,27 @@ const HomePage = () => {
           >
             Connect, Share, Evolve
           </motion.p>
-          <motion.div className="flex items-center space-x-4" variants={itemVariants}>
-  <button 
-    onClick={() => navigate("/signup")} 
-    className={`${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105`}
-  >
-    Join Now
-  </button>
-  <button 
-    className={`${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-100'} ${theme === 'dark' ? 'text-white' : 'text-gray-800'} font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 border-2 ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'}`}
-  >
-    Learn More
-  </button>
-  {deferredPrompt && (
-    <button
-      onClick={handleInstall}
-      className={`${
-        theme === 'dark' 
-          ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-          : 'bg-blue-500 hover:bg-blue-600 text-white'
-      } font-bold py-3 px-6 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
-    >
-      <Download className="w-5 h-5" />
-      Install
-    </button>
-  )}
-</motion.div>
+              <motion.div className="space-x-4" variants={itemVariants}>
+            <button onClick={()=>navigate("/signup")} className={`${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105`}>
+              Join Now
+            </button>
+            <button className={`${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-100'} ${theme === 'dark' ? 'text-white' : 'text-gray-800'} font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 border-2 ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'}`}>
+              Learn More
+            </button>
+            {deferredPrompt && (
+            <button
+              onClick={handleInstall}
+              className={`${
+                theme === 'dark' 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              } font-bold py-2 px-4 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
+            >
+              <Download className="w-5 h-5" />
+            </button>
+          )}
+          </motion.div>
+
         </div>
         <motion.div
           className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
