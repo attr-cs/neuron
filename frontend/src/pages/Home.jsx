@@ -106,13 +106,12 @@ const HomePage = () => {
     >
      
       <div className="relative h-screen flex items-center justify-center overflow-hidden">
-<img
-    src="https://picsum.photos/seed/op/1280/720"
-    alt="Neuron Banner"
-    className="absolute w-full h-full object-cover"
-  />
-
-   {/* https://apivideo-demo.s3.amazonaws.com/hello.mp4 */}
+        <img
+          src="https://picsum.photos/seed/op/1280/720"
+          alt="Neuron Banner"
+          className="absolute w-full h-full object-cover"
+        />
+        
         <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-black' : 'bg-white'} bg-opacity-70`} />
         <div className="relative z-10 text-center px-4">
           <motion.h1
@@ -181,6 +180,7 @@ const HomePage = () => {
             <ChevronDown className={`w-8 h-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`} />
           </motion.div>
         </div>
+      </div>
 
       <div className="container mx-auto px-4 py-16">
         {/* Features Section */}
