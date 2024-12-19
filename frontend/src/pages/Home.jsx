@@ -112,7 +112,8 @@ const HomePage = () => {
     className="absolute w-full h-full object-cover"
   />
 
-   {/* https://apivideo-demo.s3.amazonaws.com/hello.mp4 */}
+        {/*   <source src="https://apivideo-demo.s3.amazonaws.com/hello.mp4" type="video/mp4" /> */}
+   
         <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-black' : 'bg-white'} bg-opacity-70`} />
         <div className="relative z-10 text-center px-4">
           <motion.h1
@@ -136,22 +137,6 @@ const HomePage = () => {
             </button>
           </motion.div>
         </div>
-
-        <motion.div variants={itemVariants} className="absolute bottom-24 left-1/2 transform -translate-x-1/2">
-          {deferredPrompt && (
-            <button
-              onClick={handleInstall}
-              className={`${
-                theme === 'dark' 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              } font-bold py-2 px-4 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <Download className="w-5 h-5" />
-              Install App
-            </button>
-          )}
-        </motion.div>
         <motion.div
           className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
           animate={{ y: [0, 10, 0] }}
@@ -160,6 +145,7 @@ const HomePage = () => {
           <ChevronDown className={`w-8 h-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`} />
         </motion.div>
       </div>
+
 
       <div className="container mx-auto px-4 py-16">
         {/* Features Section */}
@@ -290,6 +276,20 @@ const HomePage = () => {
           >
             Sign Up Now
           </motion.button>
+          <motion.div variants={itemVariants} className="absolute bottom-24 left-1/2 transform -translate-x-1/2">
+          {deferredPrompt && (
+            <button
+              onClick={handleInstall}
+              className={`${
+                theme === 'dark' 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+              } font-bold py-2 px-4 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
+            >
+              <Download className="w-5 h-5" />Install App
+            </button>
+          )}
+        </motion.div>
         </motion.div>
       </div>
     </motion.div>
@@ -297,3 +297,10 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
+
+
+
+
+
+
