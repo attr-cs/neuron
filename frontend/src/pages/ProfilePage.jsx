@@ -87,7 +87,7 @@ function ProfilePage() {
   }, [username, auth.token, auth.username]);
 
   const handleToggleFollow = async () => {
-    try {
+    try {   
       setIsFollowLoading(true);
       const newIsFollowing = !isFollowing;
       setIsFollowing(newIsFollowing);
