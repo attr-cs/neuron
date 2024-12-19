@@ -137,19 +137,36 @@ const HomePage = () => {
           </motion.div>
         </div>
 
-        <motion.div variants={itemVariants} className="absolute bottom-24 left-1/2 transform -translate-x-1/2">
+        <motion.div 
+          variants={itemVariants}
+          className="fixed bottom-8 right-8 z-50 md:bottom-12 md:right-12"
+        >
           {deferredPrompt && (
-            <button
+            <motion.button
               onClick={handleInstall}
-              className={`${
-                theme === 'dark' 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              } font-bold py-2 px-4 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`
+                ${theme === 'dark' 
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30' 
+                  : 'bg-blue-500 hover:bg-blue-600 shadow-blue-400/30'
+                } 
+                text-white font-bold 
+                py-3 px-6 
+                rounded-full 
+                flex items-center gap-3 
+                shadow-lg hover:shadow-xl 
+                transition-all duration-300 ease-in-out
+                backdrop-blur-sm
+                border border-opacity-20 
+                ${theme === 'dark' ? 'border-white' : 'border-black'}
+              `}
             >
-              <Download className="w-5 h-5" />
-              Install App
-            </button>
+              <Download className="w-5 h-5 animate-bounce" />
+              <span className="text-sm md:text-base">Install Neuron</span>
+            </motion.button>
           )}
         </motion.div>
         <motion.div
