@@ -1,54 +1,73 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Neuron: The ultimate network for secure social interaction, messaging, and media sharing." />
-    <meta name="author" content="Neuron Team" />
-    <meta name="robots" content="index, follow" />
-    <meta name="keywords" content="social media, messaging, secure chat, media sharing, Neuron, network" />
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Neuron: The ultimate network for secure social interaction, messaging, and media sharing." />
+  <meta name="author" content="Neuron Team" />
+  <meta name="robots" content="index, follow" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="keywords" content="social media, messaging, secure chat, media sharing, Neuron, network" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="canonical" href="https://neuronix.vercel.app" />
   
-    <link rel="canonical" href="https://neuronix.vercel.app" />
-    
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Open Graph (for social media sharing) -->
+  <meta property="og:title" content="Neuron: Secure Social Media & Messaging Network" />
+  <meta property="og:description" content="Join Neuron, the ultimate network for secure messaging and social interaction." />
+  <meta property="og:image" content="/favicon_dark.png" />
+  <meta property="og:url" content="https://neuronix.vercel.app" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Neuron" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:title" content="Neuron: Secure Social Media & Messaging Network" />
+  <meta name="twitter:description" content="Join Neuron, the ultimate network for secure messaging and social interaction." />
+  <meta name="twitter:image" content="/favicon_dark.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@neuronix" />
+  
+  <!-- PWA Meta Tags -->
+  <link rel="icon" href="/favicon_dark.png" type="image/png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/android-launchericon-192-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="/android-launchericon-512-512.png" />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Neuron" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="msapplication-TileColor" content="#ffffff" />
+  <meta name="msapplication-tap-highlight" content="no" />
+  
 
-    <meta property="og:title" content="Neuron: Secure Social Media & Messaging Network" />
-    <meta property="og:description" content="Join Neuron, the ultimate network for secure messaging and social interaction." />
-    <meta property="og:image" content="https://neuronix.vercel.app/favicon_dark.png" />
-    <meta property="og:url" content="https://neuronix.vercel.app" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Neuron" />
 
+  <title>Neuron: Secure Social Media & Messaging Network</title>
 
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon_dark.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/android-launchericon-192-192.png" sizes="192x192" />
+  
+  <meta name="msapplication-TileImage" content="/Square150x150Logo.scale-150.png" />
+  <meta name="msapplication-TileColor" content="#ffffff" />
 
-    
-    <meta name="twitter:title" content="Neuron: Secure Social Media & Messaging Network" />
-    <meta name="twitter:description" content="Join Neuron, the ultimate network for secure messaging and social interaction." />
-    <meta name="twitter:image" content="https://neuronix.vercel.app/favicon_dark.png" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@neuronix" />
+  <!-- Apple Web App -->
+  <meta name="apple-mobile-web-app-title" content="Neuron" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+</head>
 
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Neuron",
-        "url": "https://neuronix.vercel.app",
-        "description": "Neuron is the ultimate network for secure messaging and social interaction.",
-        "publisher": {
-          "@type": "Organization",
-          "name": "Neuron"
-        }
-      }
-    </script>
-    
-    <link rel="icon" href="/favicon_dark.png" type="image/png" />
+<body class="bg-gray-100 font-roboto">
+  <div id="root"></div>
 
-    <title>Neuron: Secure Social Media & Messaging Network</title>
-  </head>
-  <body>
-    <div id="root"></div>
+  <!-- Script for main entry point, only if JS is enabled -->
+  <noscript>
+    <strong>We're sorry but Neuron doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+  </noscript>
 
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+  <!-- Link to JS entry file (this is injected by Vite during build) -->
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

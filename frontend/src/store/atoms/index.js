@@ -78,6 +78,7 @@ export const userNotificationsState = atom({
     }
 })
 
+
 // Theme
 export const themeState = atom({
     key: 'themeState',

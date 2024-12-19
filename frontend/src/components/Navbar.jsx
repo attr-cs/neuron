@@ -129,7 +129,7 @@ export default function Navbar() {
                 </motion.span>
               </Link>
             </div>
-
+            
             <nav className="hidden md:flex items-center space-x-4">
               <NavLink to="/" icon={Home}>Home</NavLink>
               {auth.isAuthenticated ? (
@@ -141,6 +141,7 @@ export default function Navbar() {
                       Admin
                     </NavLink>
                   )}
+                  <NavLink to="/notifications" icon={Bell}>Notifications</NavLink>
                 </>
               ) : (
                 <>
@@ -259,6 +260,14 @@ export default function Navbar() {
                           <span>Settings</span>
                         </Link>
                       </DropdownMenuItem>
+                      {userBasicInfo.isAdmin && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="flex items-center">
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem asChild>
                         <Link to="/notifications" className="flex items-center justify-between w-full">
                           <span className="flex items-center">
@@ -320,6 +329,9 @@ export default function Navbar() {
                           Notifications
                           <Badge variant="secondary" className="ml-auto">5</Badge>
                         </MobileNavLink>
+                        {userBasicInfo.isAdmin && (
+                          <MobileNavLink to="/admin" icon={Shield}>Admin</MobileNavLink>
+                        )}
                         <SheetClose asChild>
                           <Button variant="destructive" onClick={handleLogOut} className="w-full justify-start">
                             <LogOut className="mr-2 h-5 w-5" />

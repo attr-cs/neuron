@@ -17,6 +17,8 @@ import {
   themeState
 } from './store/atoms';
 
+
+
 // Components
 import ProtectedRoutes from './components/ProtectedRoutes';
 import PublicRoute from './components/PublicRoute';
@@ -190,7 +192,7 @@ function App() {
                     </AdminRoute>
                   } 
                 />
-
+                
                 {/* Redirects Unknown paths to home */}
                 <Route path='*' element={<NotFound />} />
               </Routes>
