@@ -141,9 +141,9 @@ const HomePage = () => {
               onClick={handleInstall}
               className={`${
                 theme === 'dark' 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              } font-bold py-2 px-4 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-green-500 hover:bg-green-600 text-white'
+              } font-bold py-2 px-2 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
             >
               <Download className="w-5 h-5" />
             </button>
