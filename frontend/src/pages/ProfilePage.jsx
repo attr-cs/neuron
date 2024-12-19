@@ -167,7 +167,7 @@ function ProfilePage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-background hover:bg-background/90 text-muted-foreground backdrop-blur-sm"
+              className="h-8 w-8 rounded-full bg-background hover:bg-background/90 text-muted-foreground backdrop-blur-sm"
               
             >
               <Edit className="h-5 w-5" />
@@ -175,7 +175,7 @@ function ProfilePage() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full text-muted-foreground dark:bg-background/30 hover:bg-background/90 bg-background backdrop-blur-sm"
+              className="h-8 w-8 rounded-full text-muted-foreground dark:bg-background/30 hover:bg-background/90 bg-background backdrop-blur-sm"
             >
               <MoreVert fontSize="large" sx={{ color: "grey" }}  />
             </Button>

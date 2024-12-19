@@ -4,7 +4,7 @@ import { useSetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
 
 import { HashLoader } from 'react-spinners';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import axios from 'axios';
+
 import { io } from 'socket.io-client';
 
 // Atoms
@@ -31,6 +31,7 @@ import AdminDashboard from './pages/AdminDashboard';
 // Pages
 import CreatePassword from './pages/CreatePassword';
 import RequestReset from './pages/RequestReset';
+import Notification from './pages/Notification';
 import ResetPassword from './pages/ResetPassword';
 import ProfilePage from './pages/ProfilePage';
 import Dashboard from './pages/Dashboard';
@@ -176,7 +177,7 @@ function App() {
                 <Route path="/create-password" element={<ProtectedRoutes><CreatePassword /></ProtectedRoutes>} />
                 <Route path="/settings" element={<ProtectedRoutes><Settings /></ProtectedRoutes>} />
                 <Route path="/messages/:username" element={<ProtectedRoutes><DirectMessage /></ProtectedRoutes>} />
-
+                <Route path="/notifications" element={<ProtectedRoutes><Notification /></ProtectedRoutes>} />
 
 
                 <Route path="/request-reset" element={<RequestReset />} />

@@ -133,14 +133,14 @@ const ProfileInfo = memo(({ userData }) => {
                     value={company} 
                   />
                 )}
-                {email && (
+                {/* {email && (
                   <InfoItem 
                     icon={Mail} 
                     label="Email" 
                     value={email}
                     href={`mailto:${email}`}
                   />
-                )}
+                )} */}
                 {phone && (
                   <InfoItem 
                     icon={Phone} 
@@ -173,5 +173,7 @@ const ProfileInfo = memo(({ userData }) => {
     </motion.div>
   );
 });
+
+ProfileInfo.displayName = 'ProfileInfo';
 
 export default ProfileInfo;
