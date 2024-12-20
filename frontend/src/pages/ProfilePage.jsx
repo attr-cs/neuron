@@ -160,29 +160,37 @@ function ProfilePage() {
       className="min-h-screen bg-background"
     >
       {/* Banner Section */}
-      <div className="relative h-48 md:h-64 bg-gradient-to-r from-primary/80 to-primary overflow-hidden">
-        <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm"></div>
-        {isOwnProfile && (
-          <div className="absolute top-4 right-4 flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full bg-background hover:bg-background/90 text-muted-foreground backdrop-blur-sm"
-              
-            >
-              <Edit className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full text-muted-foreground dark:bg-background/30 hover:bg-background/90 bg-background backdrop-blur-sm"
-            >
-              <MoreVert fontSize="large" sx={{ color: "grey" }}  />
-            </Button>
-          </div>
-        )}
-      </div>
-
+<div
+  className={`relative h-48 md:h-64 bg-gradient-to-r from-primary/80 to-primary overflow-hidden`}
+  style={{
+    backgroundImage: userData.bannerImageUrl
+      ? `url(${userData.bannerImageUrl})`
+      : "none",
+    backgroundColor: userData.bannerImageUrl ? "transparent" : "blue",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+  <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm"></div>
+  {isOwnProfile && (
+    <div className="absolute top-4 right-4 flex items-center gap-3">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 rounded-full bg-background hover:bg-background/90 text-muted-foreground backdrop-blur-sm"
+      >
+        <Edit className="h-5 w-5" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 rounded-full text-muted-foreground dark:bg-background/30 hover:bg-background/90 bg-background backdrop-blur-sm"
+      >
+        <MoreVert fontSize="large" sx={{ color: "grey" }} />
+      </Button>
+    </div>
+  )}
+</div>
       {/* Profile Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Card className="relative -mt-24 border-none bg-background/60 backdrop-blur-md shadow-lg">
