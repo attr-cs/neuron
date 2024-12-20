@@ -456,12 +456,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     }
   };
 
-  useEffect(() => {
-    return () => {
-      emitTypingStatus.cancel && emitTypingStatus.cancel();
-    };
-  }, []);
-
   return (
     <motion.div
       initial="hidden"
@@ -497,12 +491,13 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                         alt={recipientName} 
                         className="object-cover rounded-full" 
                         referrerPolicy="no-referrer"
+                        onClick={() => navigate(`/profile/${recipientUsername}`)}
                         onError={(e) => {
                           e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
                         }}
                       />
                     ) : (
-                      <DefaultAvatar className="w-10 h-10 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
+                      <DefaultAvatar onClick={() => navigate(`/profile/${recipientUsername}`)} className="w-10 h-10 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
                     )}
                     {/* <img 
                       src={recipientImage} 

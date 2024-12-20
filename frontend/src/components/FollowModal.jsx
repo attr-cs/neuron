@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { UserPlus, UserCheck, MessageSquare, LoaderIcon, Users, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import defaultImage from "../assets/default_profile_avatar.png";
+import DefaultAvatar from '@/components/ui/DefaultAvatar';
 import { motion, AnimatePresence } from "framer-motion";
 import AdminBadge from '@/components/ui/AdminBadge';
 import { Input } from "@/components/ui/input";
@@ -81,13 +81,17 @@ const FollowModal = ({
                         onClose();
                       }}
                     >
-                      <motion.img
-                        whileHover={{ scale: 1.05 }}
-                        src={user.profileImageUrl || defaultImage}
-                        alt={user.username}
-                        className="w-10 h-10 rounded-full object-cover border border-border shadow-sm"
-                        referrerPolicy="no-referrer"
-                      />
+                      {user.profileImageUrl ? (
+                        <motion.img
+                          whileHover={{ scale: 1.05 }}
+                          src={user.profileImageUrl}
+                          alt={user.username}
+                          className="w-10 h-10 rounded-full object-cover border border-border shadow-sm"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <DefaultAvatar onClick={() => navigate(`/profile/${user.username}`)} className="w-10 h-10 rounded-full object-cover border border-border shadow-sm" />
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="font-medium truncate group-hover:text-primary transition-colors">
