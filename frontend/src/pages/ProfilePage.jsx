@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
-import defaultImage from "../assets/default_profile_avatar.png";
+import DefaultAvatar from "../components/ui/DefaultAvatar";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import fetchUserData from "../utils/fetchUserData";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { authState, userBasicInfoState, userProfileState, userSocialState, userContentState } from "../store/atoms";
 import { followersCountState, followingsCountState } from "../store/selectors";
+
 import FollowModal from "../components/FollowModal";
 import { useEffect, useState } from "react";
 import { IconButton } from "@mui/material";
@@ -163,8 +164,9 @@ function ProfilePage() {
     setIsLoadingModalData(true);
     
     try {
+      const userId = isOwnProfile ? auth.userId : userData._id;
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/user/followers/${userData._id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/user/followers/${userId}`,
         { headers: { Authorization: `Bearer ${auth.token}` } }
       );
       setFollowModalData(response.data);
@@ -181,8 +183,9 @@ function ProfilePage() {
     setIsLoadingModalData(true);
     
     try {
+      const userId = isOwnProfile ? auth.userId : userData._id;
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/user/following/${userData._id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/user/following/${userId}`,
         { headers: { Authorization: `Bearer ${auth.token}` } }
       );
       setFollowModalData(response.data);
@@ -274,12 +277,16 @@ function ProfilePage() {
                 animate={{ scale: 1, opacity: 1 }}
                 className="relative group"
               >
-                <img
-                  src={userData.profileImageUrl || defaultImage}
-                  alt="profile"
-                  className="w-32 h-32 rounded-full border-4 border-background shadow-xl object-cover"
-                  referrerPolicy="no-referrer"
-                />
+                {userData.profileImageUrl ? (
+                  <img
+                    src={userData.profileImageUrl}
+                    alt="profile"
+                    className="w-32 h-32 rounded-full border-4 border-background shadow-xl object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <DefaultAvatar className="w-32 h-32 rounded-full border-4 border-background shadow-xl object-cover" />
+                )}
                 {isOwnProfile && (
                   <Button
                     variant="ghost"

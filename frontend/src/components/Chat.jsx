@@ -18,7 +18,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import AdminBadge from '@/components/ui/AdminBadge';
-
+import DefaultAvatar from '@/components/ui/DefaultAvatar';
 
 
 const messageVariants = {
@@ -484,7 +484,20 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Avatar className="w-10 h-10 ring-2 ring-[#2A2A2A] ring-offset-2 ring-offset-[#111111]">
-                    <img 
+                    {recipientImage ? (
+                      <img 
+                        src={recipientImage} 
+                        alt={recipientName} 
+                        className="object-cover rounded-full" 
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
+                        }}
+                      />
+                    ) : (
+                      <DefaultAvatar className="w-10 h-10 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
+                    )}
+                    {/* <img 
                       src={recipientImage} 
                       alt={recipientName} 
                       className="object-cover rounded-full" 
@@ -492,7 +505,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                       onError={(e) => {
                         e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
                       }}
-                    />
+                    /> */}
                   </Avatar>
                   {isRecipientOnline && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111111] bg-emerald-500"></span>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from 'axios';
-import defaultImage from '../assets/default_profile_avatar.png';
+import DefaultAvatar from '../components/ui/DefaultAvatar';
 import { authState } from '../store/atoms';
 import { useRecoilValue } from "recoil";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
@@ -102,7 +101,7 @@ function UsersPage() {
         className="max-w-7xl mx-auto space-y-8"
       >
         <div className="flex flex-col items-center space-y-4">
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-indigo-600 dark:from-indigo-400 dark:to-indigo-600">
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary mt-7 to-indigo-600 dark:from-indigo-400 dark:to-indigo-600">
             Connect with Others
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -143,14 +142,18 @@ function UsersPage() {
               >
                 <Card className="backdrop-blur-sm bg-card/50 border-muted hover:border-primary/20 transition-all duration-300">
                   <CardHeader className="flex flex-row items-center gap-4 p-6">
-                    <motion.img
-                      whileHover={{ scale: 1.05 }}
-                      src={user.profileImageUrl || defaultImage}
-                      alt="profile_image"
+                    {user.profileImageUrl ? (
+                      <motion.img
+                        whileHover={{ scale: 1.05 }}
+                        src={user.profileImageUrl}
+                        alt="profile_image"
                       className="w-16 h-16 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all"
                       onClick={() => navigate(`/profile/${user.username}`)}
                       referrerPolicy="no-referrer"
                     />
+                    ) : (
+                      <DefaultAvatar className="w-16 h-16 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
+                    )}
                     <div className="flex-grow">
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">

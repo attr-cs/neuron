@@ -1,11 +1,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { UserPlus, UserCheck, MessageSquare, LoaderIcon, Users } from "lucide-react";
+import { UserPlus, UserCheck, MessageSquare, LoaderIcon, Users, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import defaultImage from "../assets/default_profile_avatar.png";
 import { motion, AnimatePresence } from "framer-motion";
 import AdminBadge from '@/components/ui/AdminBadge';
+import { Input } from "@/components/ui/input";
+import { useState, useMemo } from "react";
 
 const FollowModal = ({ 
   isOpen, 
@@ -18,18 +20,36 @@ const FollowModal = ({
   isLoadingModalData 
 }) => {
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredUsers = useMemo(() => {
+    return data?.filter(user => 
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.firstname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastname.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [data, searchTerm]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md sm:max-w-lg">
+      <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader className="space-y-4">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Users className="w-5 h-5" />
             {type === 'followers' ? 'Followers' : 'Following'}
           </DialogTitle>
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] overflow-y-auto pr-4">
+        <ScrollArea className="flex-1 -mr-4 pr-4">
           {isLoadingModalData ? (
             <div className="flex items-center justify-center py-8">
               <LoaderIcon className="w-8 h-8 animate-spin text-primary" />
@@ -37,24 +57,24 @@ const FollowModal = ({
           ) : (
             <AnimatePresence mode="wait">
               <motion.div 
-                className="space-y-3"
+                className="space-y-2"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                {data?.map((user, index) => (
+                {filteredUsers?.map((user, index) => (
                   <motion.div 
                     key={user._id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ 
                       opacity: 1, 
                       y: 0,
-                      transition: { delay: index * 0.05 }
+                      transition: { delay: index * 0.03 }
                     }}
-                    className="group flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-all duration-300"
+                    className="group flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition-all duration-200"
                   >
                     <div 
-                      className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
+                      className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0"
                       onClick={() => {
                         navigate(`/profile/${user.username}`);
                         onClose();
@@ -64,11 +84,11 @@ const FollowModal = ({
                         whileHover={{ scale: 1.05 }}
                         src={user.profileImageUrl || defaultImage}
                         alt={user.username}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-background shadow-sm"
+                        className="w-10 h-10 rounded-full object-cover border border-border shadow-sm"
                         referrerPolicy="no-referrer"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <p className="font-medium truncate group-hover:text-primary transition-colors">
                             {user.firstname} {user.lastname}
                           </p>
@@ -79,7 +99,7 @@ const FollowModal = ({
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2 ml-4">
+                    <div className="flex gap-1.5 ml-2">
                       <Button
                         variant={user.followers?.includes(currentUserId) ? "secondary" : "default"}
                         size="sm"
@@ -88,7 +108,7 @@ const FollowModal = ({
                           e.stopPropagation();
                           onFollowToggle(user._id);
                         }}
-                        className="transition-all duration-300"
+                        className="transition-all duration-200 h-8 px-2"
                       >
                         {followLoading[user._id] ? (
                           <LoaderIcon className="h-4 w-4 animate-spin" />
@@ -101,17 +121,23 @@ const FollowModal = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           navigate(`/messages/${user.username}`);
                           onClose();
                         }}
-                        className="transition-all duration-300"
+                        className="transition-all duration-200 h-8 px-2"
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                     </div>
                   </motion.div>
                 ))}
+                {filteredUsers?.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No users found
+                  </div>
+                )}
               </motion.div>
             </AnimatePresence>
           )}
