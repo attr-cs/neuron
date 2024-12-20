@@ -152,7 +152,7 @@ function UsersPage() {
                       referrerPolicy="no-referrer"
                     />
                     ) : (
-                      <DefaultAvatar className="w-16 h-16 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
+                      <DefaultAvatar onClick={() => navigate(`/profile/${user.username}`)} className="w-16 h-16 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
                     )}
                     <div className="flex-grow">
                       <div className="flex items-center gap-2">

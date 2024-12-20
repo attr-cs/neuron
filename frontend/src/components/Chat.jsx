@@ -490,7 +490,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
               </motion.button>
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <Avatar className="w-10 h-10 ring-2 ring-gray-200 dark:ring-[#2A2A2A] ring-offset-2 ring-offset-white dark:ring-offset-[#111111]">
+                  <Avatar className="w-10 h-10 ring-2 ring-[#2A2A2A] ring-offset-2 ring-offset-[#111111]">
                     {recipientImage ? (
                       <img 
                         src={recipientImage} 
@@ -519,7 +519,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                   )}
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-gray-100 flex items-center gap-2">
                     <span className="truncate max-w-[200px]">
                       {recipientName}
                     </span>
@@ -527,7 +527,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                       <AdminBadge className="flex-shrink-0" />
                     )}
                   </h2>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-xs text-gray-400">
                     {isRecipientOnline ? 'Active now' : 'offline'}
                   </div>
                 </div>
@@ -544,7 +544,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
         {/* Messages Container */}
         <div 
   ref={chatContainerRef}
-  className="messages-container flex-1 overflow-y-auto bg-gray-50 dark:bg-[#111111] p-4 space-y-4"
+  className="messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4 bg-gradient-to-b from-[#111111] to-[#0A0A0A] scroll-smooth"
 >
           <AnimatePresence mode="popLayout">
             {messages.reduce((acc, msg, index) => {
@@ -617,7 +617,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
               value={message}
               onChange={handleTyping}
               placeholder="Type your message..."
-              className="flex-grow p-3 rounded-full border border-gray-200 dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 dark:text-gray-100 text-sm transition-shadow placeholder-gray-400 dark:placeholder-gray-500"
+              className="flex-grow p-3 rounded-full border border-[#2A2A2A] bg-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-100 text-sm transition-shadow placeholder-gray-500"
             />
             <div ref={emojiPickerRef} className="relative">
               <motion.button
