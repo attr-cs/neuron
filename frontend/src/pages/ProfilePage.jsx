@@ -5,6 +5,7 @@ import fetchUserData from "../utils/fetchUserData";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { authState, userBasicInfoState, userProfileState, userSocialState, userContentState } from "../store/atoms";
 import { followersCountState, followingsCountState } from "../store/selectors";
+import FollowModal from "../components/FollowModal";
 import { useEffect, useState } from "react";
 import { IconButton } from "@mui/material";
 import ProfileInfo from "../components/ProfileInfo";
@@ -46,6 +47,10 @@ function ProfilePage() {
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
+  const [showFollowModal, setShowFollowModal] = useState(false);
+  const [modalType, setModalType] = useState('followers');
+  const [followModalData, setFollowModalData] = useState([]);
+  const [followLoading, setFollowLoading] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,6 +126,64 @@ function ProfilePage() {
     }
   };
   
+  const handleFollowToggle = async (targetId) => {
+    setFollowLoading(prev => ({ ...prev, [targetId]: true }));
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/follow`,
+        { userId: auth.userId, targetId },
+        { headers: { Authorization: `Bearer ${auth.token}` } }
+      );
+
+      if (response.status === 200) {
+        setFollowModalData(prevData =>
+          prevData.map(user =>
+            user._id === targetId
+              ? {
+                  ...user,
+                  followers: response.data.msg === "Followed"
+                    ? [...user.followers, auth.userId]
+                    : user.followers.filter(id => id !== auth.userId)
+                }
+              : user
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error toggling follow status:", err);
+    } finally {
+      setFollowLoading(prev => ({ ...prev, [targetId]: false }));
+    }
+  };
+
+  const handleShowFollowers = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/user/followers/${userData._id}`,
+        { headers: { Authorization: `Bearer ${auth.token}` } }
+      );
+      setFollowModalData(response.data);
+      setModalType('followers');
+      setShowFollowModal(true);
+    } catch (err) {
+      console.error("Error fetching followers:", err);
+    }
+  };
+
+  const handleShowFollowing = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/user/following/${userData._id}`,
+        { headers: { Authorization: `Bearer ${auth.token}` } }
+      );
+      setFollowModalData(response.data);
+      setModalType('following');
+      setShowFollowModal(true);
+    } catch (err) {
+      console.error("Error fetching following:", err);
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.5, staggerChildren: 0.1 } }
@@ -290,15 +353,27 @@ function ProfilePage() {
                 </div>
 
                 {/* Stats */}
-                {isOwnProfile? <FollowersCount 
-                  followers={followersCount} 
-                  following={followingsCount} 
-                  posts={content.posts.length} 
-                  />: <FollowersCount 
-                  followers={followers?.length || 0} 
-                  following={following?.length || 0} 
-                  posts={userData?.posts?.length || 0} 
-                  />}
+                
+
+                <div className="flex gap-6 pt-4 border-t border-border/40">
+      <Button onClick={handleShowFollowers} variant="ghost" className="flex items-center gap-2">
+        <Users className="h-4 w-4" />
+        
+        <span className="font-semibold">{isOwnProfile ? followersCount : followers?.length || 0}</span>
+        <span className="text-muted-foreground">Followers</span>
+      </Button>
+      <Button onClick={handleShowFollowing} variant="ghost" className="flex items-center gap-2">
+        <Users className="h-4 w-4" />
+        <span className="font-semibold">{isOwnProfile ? followingsCount : following?.length || 0}</span>
+        <span className="text-muted-foreground">Following</span>
+      </Button>
+      <Button variant="ghost" className="flex items-center gap-2">
+        <BookOpen className="h-4 w-4" />
+        <span className="font-semibold">{isOwnProfile ? content.posts.length : userData?.posts?.length || 0}</span>
+        <span className="text-muted-foreground">Posts</span>
+      </Button>
+                 </div>   
+             
               </div>
             </div>
           </div>
@@ -346,6 +421,16 @@ function ProfilePage() {
           </Tabs>
         </div>
       </div>
+
+      <FollowModal
+        isOpen={showFollowModal}
+        onClose={() => setShowFollowModal(false)}
+        data={followModalData}
+        type={modalType}
+        currentUserId={auth.userId}
+        onFollowToggle={handleFollowToggle}
+        followLoading={followLoading}
+      />
     </motion.div>
   );
 }

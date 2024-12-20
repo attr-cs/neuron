@@ -299,4 +299,18 @@ userRouter.get('/status/:userId', verifyToken, async (req, res) => {
       res.status(500).json({ message: "Failed to fetch user status" });
     }
   });
+
+userRouter.get('/followers/:username', verifyToken, async (req, res) => {
+    const { username } = req.params;
+    const followers = await User.find({ following: username });
+    res.json(followers);
+  });
+
+userRouter.get('/following/:username', verifyToken, async (req, res) => {
+    const { username } = req.params;
+    const following = await User.find({ followers: username });
+    res.json(following);
+  });
+
+
 module.exports = userRouter;
