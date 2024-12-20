@@ -216,7 +216,8 @@ function ProfilePage() {
                 <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                   <div>
                     <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-foreground">
-                      {userData.firstname} {userData.lastname}
+                      {`${userData.firstname.charAt(0).toUpperCase()}${userData.firstname.slice(1)} ${userData.lastname.charAt(0).toUpperCase()}${userData.lastname.slice(1)}`}
+
                       {userData.isAdmin && <AdminBadge />}
                       {isOwnProfile? <UserStatusBadge userId={auth.userId} />: <UserStatusBadge userId={userData._id} />}
                       
