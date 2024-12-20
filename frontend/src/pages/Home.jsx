@@ -101,70 +101,71 @@ const HomePage = () => {
 
   return (
     <motion.div
-      className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-800'}`}
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-     
-      <div className="relative h-screen flex items-center justify-center overflow-hidden">
-<img
-    src="https://picsum.photos/seed/op/1280/720"
-    alt="Neuron Banner"
-    className="absolute w-full h-full object-cover"
-  />
+  className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-800'}`}
+  initial="hidden"
+  animate="visible"
+  variants={containerVariants}
+>
+  <div className="relative h-screen flex items-center justify-center overflow-hidden">
+    <img
+      src="https://picsum.photos/seed/op/1280/720"
+      alt="Neuron Banner"
+      className="absolute w-full h-full object-cover"
+    />
 
-        {/*   <source src="https://apivideo-demo.s3.amazonaws.com/hello.mp4" type="video/mp4" /> */}
-   
-        <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-black' : 'bg-white'} bg-opacity-70`} />
-        <div className="relative z-10 text-center px-4">
-          <motion.h1
-            className={`text-5xl md:text-7xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
-            variants={itemVariants}
-          >
-            Welcome to <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">NΞURON</span>
-          </motion.h1>
-          <motion.p
-            className={`text-xl md:text-2xl mb-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
-            variants={itemVariants}
-          >
-            Connect, Share, Evolve
-          </motion.p>
-          <motion.div className="space-x-4" variants={itemVariants}>
+    <div className={`absolute inset-0 ${theme === 'dark' ? 'bg-black' : 'bg-white'} bg-opacity-70`} />
+    <div className="relative z-10 text-center px-4">
+      <motion.h1
+        className={`text-5xl md:text-7xl font-bold mb-6 ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+        variants={itemVariants}
+      >
+        Welcome to <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">NΞURON</span>
+      </motion.h1>
+      <motion.p
+        className={`text-xl md:text-2xl mb-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+        variants={itemVariants}
+      >
+        Connect, Share, Evolve
+      </motion.p>
 
-            
-              <motion.div className="space-x-4" variants={itemVariants}>
-            <button onClick={()=>navigate("/signup")} className={`${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105`}>
-              Join Now
-            </button>
-            <button className={`${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-100'} ${theme === 'dark' ? 'text-white' : 'text-gray-800'} font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 border-2 ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'}`}>
-              Learn More
-            </button>
-            {deferredPrompt && (
-            <button
-              onClick={handleInstall}
-              className={`${
-                theme === 'dark' 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-green-500 hover:bg-green-600 text-white'
-              } font-bold py-2 px-2 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
-            >
-              <Download className="w-5 h-5" />
-            </button>
-          )}
-          </motion.div>
-
-        </div>
-        <motion.div
-          className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
+      {/* Button Group */}
+      <motion.div className="space-x-4" variants={itemVariants}>
+        <button
+          onClick={() => navigate("/signup")}
+          className={`${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105`}
         >
-          <ChevronDown className={`w-8 h-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`} />
-        </motion.div>
-      </div>
+          Join Now
+        </button>
+        <button
+          className={`${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-100'} ${theme === 'dark' ? 'text-white' : 'text-gray-800'} font-bold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 border-2 ${theme === 'dark' ? 'border-gray-600' : 'border-gray-300'}`}
+        >
+          Learn More
+        </button>
+        {deferredPrompt && (
+          <button
+            onClick={handleInstall}
+            className={`${
+              theme === 'dark' 
+                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                : 'bg-green-500 hover:bg-green-600 text-white'
+            } font-bold py-2 px-2 rounded-full flex items-center gap-2 transition duration-300 ease-in-out transform hover:scale-105`}
+          >
+            <Download className="w-5 h-5" />
+          </button>
+        )}
+      </motion.div>
+    </div>
 
-
+    {/* Floating Chevron */}
+    <motion.div
+      className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
+      animate={{ y: [0, 10, 0] }}
+      transition={{ repeat: Infinity, duration: 1.5 }}
+    >
+      <ChevronDown className={`w-8 h-8 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`} />
+    </motion.div>
+  </div>
+</motion.div>
       <div className="container mx-auto px-4 py-16">
         {/* Features Section */}
         <motion.div variants={containerVariants} className="mb-24">
