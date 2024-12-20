@@ -229,7 +229,7 @@ function ProfilePage() {
     backgroundImage: userData.bannerImageUrl
       ? `url(${userData.bannerImageUrl})`
       : "none",
-    backgroundColor: userData.bannerImageUrl ? "transparent" : "blue",
+    backgroundColor: userData.bannerImageUrl ? "transparent" : "#0096FF",
     backgroundSize: "cover",
     backgroundPosition: "center",
   }}
