@@ -154,7 +154,10 @@ function UsersPage() {
                     <div className="flex-grow">
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-                          {user.firstname} {user.lastname}
+                          
+  {`${user.firstname.toUpperCase()} ${user.lastname.toUpperCase()}`}
+
+
                         </h2>
                         {user.isAdmin && <AdminBadge />}
                       </div>
