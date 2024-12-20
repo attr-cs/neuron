@@ -51,6 +51,7 @@ function ProfilePage() {
   const [modalType, setModalType] = useState('followers');
   const [followModalData, setFollowModalData] = useState([]);
   const [followLoading, setFollowLoading] = useState({});
+  const [isLoadingModalData, setIsLoadingModalData] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -157,30 +158,38 @@ function ProfilePage() {
   };
 
   const handleShowFollowers = async () => {
+    setShowFollowModal(true);
+    setModalType('followers');
+    setIsLoadingModalData(true);
+    
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/user/followers/${userData._id}`,
         { headers: { Authorization: `Bearer ${auth.token}` } }
       );
       setFollowModalData(response.data);
-      setModalType('followers');
-      setShowFollowModal(true);
     } catch (err) {
       console.error("Error fetching followers:", err);
+    } finally {
+      setIsLoadingModalData(false);
     }
   };
 
   const handleShowFollowing = async () => {
+    setShowFollowModal(true);
+    setModalType('following');
+    setIsLoadingModalData(true);
+    
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/user/following/${userData._id}`,
         { headers: { Authorization: `Bearer ${auth.token}` } }
       );
       setFollowModalData(response.data);
-      setModalType('following');
-      setShowFollowModal(true);
     } catch (err) {
       console.error("Error fetching following:", err);
+    } finally {
+      setIsLoadingModalData(false);
     }
   };
 
@@ -430,6 +439,7 @@ function ProfilePage() {
         currentUserId={auth.userId}
         onFollowToggle={handleFollowToggle}
         followLoading={followLoading}
+        isLoadingModalData={isLoadingModalData}
       />
     </motion.div>
   );
