@@ -72,7 +72,8 @@ const navigate = useNavigate();
       {recipient && (
         <Chat 
           recipientId={recipient._id} 
-          recipientName={`${recipient.firstname} ${recipient.lastname}`} 
+          recipientName={`${recipient.firstname.charAt(0).toUpperCase()}${recipient.firstname.slice(1)} ${recipient.lastname.charAt(0).toUpperCase()}${recipient.lastname.slice(1)}`}
+ 
           recipientImage={recipient.profileImageUrl}
           recipientUsername={recipient.username}
           recipientIsAdmin={recipient.isAdmin}
