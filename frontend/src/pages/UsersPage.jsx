@@ -155,7 +155,10 @@ function UsersPage() {
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                           
-  {`${user.firstname.toUpperCase()} ${user.lastname.toUpperCase()}`}
+  
+  {`${user.firstname.charAt(0).toUpperCase() + user.firstname.slice(1).toLowerCase()} ${user.lastname.charAt(0).toUpperCase() + user.lastname.slice(1).toLowerCase()}`}
+
+
 
 
                         </h2>
