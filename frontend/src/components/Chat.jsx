@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import DefaultAvatar from '@/components/ui/DefaultAvatar';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useRecoilValue } from 'recoil';
 import { authState } from '../store/atoms';
@@ -18,7 +19,8 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import AdminBadge from '@/components/ui/AdminBadge';
-import DefaultAvatar from '@/components/ui/DefaultAvatar';
+import { debounce } from 'lodash';
+
 
 
 const messageVariants = {
@@ -107,24 +109,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   const [selectedMessageId, setSelectedMessageId] = useState(null);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [debouncedMessage, setDebouncedMessage] = useState('');
-
-  const debounce = (func, wait) => {
-    let timeout;
-    return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
-    };
-  };
-
-  const emitTypingStatus = debounce((isTyping) => {
-    if (!socket) return;
-    const roomId = [auth.userId, recipientId].sort().join('-');
-    socket.emit(isTyping ? 'typing_start' : 'typing_end', {
-      roomId,
-      userId: auth.userId
-    });
-  }, 300);
 
   useEffect(() => {
     // Prevent chatting with self
@@ -292,14 +276,30 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     navigate(`/profile/${recipientUsername}`);
   };
 
+  const debounceTyping = useCallback(
+    debounce((socket, roomId, userId, isTyping) => {
+      if (!socket) return;
+      socket.emit('typing_notify', {
+        roomId,
+        userId,
+        isTyping
+      });
+    }, 300),
+    []
+  );
+
   const handleTyping = (e) => {
     const newValue = e.target.value;
     setMessage(newValue);
     
-    if (newValue.length > 0) {
-      emitTypingStatus(true);
-    } else {
-      emitTypingStatus(false);
+    if (!socket) return;
+    
+    const roomId = [auth.userId, recipientId].sort().join('-');
+    const shouldShowTyping = newValue.length > 0;
+    
+    if (shouldShowTyping !== isTyping) {
+      setIsTyping(shouldShowTyping);
+      debounceTyping(socket, roomId, auth.userId, shouldShowTyping);
     }
   };
 
@@ -485,29 +485,21 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Avatar className="w-10 h-10 ring-2 ring-[#2A2A2A] ring-offset-2 ring-offset-[#111111]">
-                    {recipientImage ? (
-                      <img 
-                        src={recipientImage} 
-                        alt={recipientName} 
-                        className="object-cover rounded-full" 
-                        referrerPolicy="no-referrer"
-                        onClick={() => navigate(`/profile/${recipientUsername}`)}
-                        onError={(e) => {
-                          e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
-                        }}
-                      />
-                    ) : (
-                      <DefaultAvatar onClick={() => navigate(`/profile/${recipientUsername}`)} className="w-10 h-10 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
-                    )}
-                    {/* <img 
-                      src={recipientImage} 
-                      alt={recipientName} 
-                      className="object-cover rounded-full" 
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
-                      }}
-                    /> */}
+                  {recipientImage ? (
+  <img 
+    src={recipientImage} 
+    alt={recipientName} 
+    className="object-cover rounded-full" 
+    referrerPolicy="no-referrer"
+    onClick={() => navigate(`/profile/${recipientUsername}`)}
+    onError={(e) => {
+      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
+    }}
+  />
+) : (
+  <DefaultAvatar onClick={() => navigate(`/profile/${recipientUsername}`)} className="w-10 h-10 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
+)}
+
                   </Avatar>
                   {isRecipientOnline && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111111] bg-emerald-500"></span>
@@ -613,6 +605,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
               onChange={handleTyping}
               placeholder="Type your message..."
               className="flex-grow p-3 rounded-full border border-[#2A2A2A] bg-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-100 text-sm transition-shadow placeholder-gray-500"
+              autoComplete="off"
             />
             <div ref={emojiPickerRef} className="relative">
               <motion.button
@@ -701,4 +694,3 @@ const MessageBubble = ({ message, isOwn, handleContextMenu, isMobile, longPressC
 );
 
 export default Chat;
-

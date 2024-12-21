@@ -105,36 +105,40 @@ const FollowModal = ({
                       </div>
                     </div>
                     <div className="flex gap-1.5 ml-2">
-                      <Button
-                        variant={user.followers?.includes(currentUserId) ? "secondary" : "default"}
-                        size="sm"
-                        disabled={followLoading[user._id]}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onFollowToggle(user._id);
-                        }}
-                        className="transition-all duration-200 h-8 px-2"
-                      >
-                        {followLoading[user._id] ? (
-                          <LoaderIcon className="h-4 w-4 animate-spin" />
-                        ) : user.followers?.includes(currentUserId) ? (
-                          <UserCheck className="h-4 w-4" />
-                        ) : (
-                          <UserPlus className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/messages/${user.username}`);
-                          onClose();
-                        }}
-                        className="transition-all duration-200 h-8 px-2"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
+                      {user._id !== currentUserId && (
+                        <>
+                          <Button
+                            variant={user.followers?.includes(currentUserId) ? "secondary" : "default"}
+                            size="sm"
+                            disabled={followLoading[user._id]}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onFollowToggle(user._id);
+                            }}
+                            className="transition-all duration-200 h-8 px-2"
+                          >
+                            {followLoading[user._id] ? (
+                              <LoaderIcon className="h-4 w-4 animate-spin" />
+                            ) : user.followers?.includes(currentUserId) ? (
+                              <UserCheck className="h-4 w-4" />
+                            ) : (
+                              <UserPlus className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/messages/${user.username}`);
+                              onClose();
+                            }}
+                            className="transition-all duration-200 h-8 px-2"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </motion.div>
                 ))}
