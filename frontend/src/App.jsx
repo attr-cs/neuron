@@ -27,11 +27,18 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminRoute from './components/routes/AdminRoute';
 import AdminDashboard from './pages/AdminDashboard';
-
+import WIPBanner from './components/WIPBanner';
+// create sleek, beautifull, pages with animations and creativity, use use-gestures as possible as u can, to create pages for pricing, features, faq, about us, contact, careers, privacy policy, terms and services, cookie policy, and join their links in footer, be responsive to everything
 // Pages
 import CreatePassword from './pages/CreatePassword';
 import RequestReset from './pages/RequestReset';
 import Notification from './pages/Notification';
+import PricingPage from './pages/Pricing';
+import ContactPage from './pages/Contact'
+import FAQPage from './pages/FAQ';
+import AboutPage from './pages/About';
+
+import FeaturesPage from './pages/Features';
 import ResetPassword from './pages/ResetPassword';
 import ProfilePage from './pages/ProfilePage';
 import Dashboard from './pages/Dashboard';
@@ -155,55 +162,63 @@ function App() {
   } 
 
   return (
-    <div className={theme}>
-      <div className="min-h-screen bg-white dark:bg-gray-900">
-        <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-          <div className="flex flex-col min-h-screen">
-            {!shouldHideHeader && <Navbar />}
+    <>
+      <div className={theme}>
+        <div className="min-h-screen bg-white dark:bg-gray-900">
+          <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+            <div className="flex flex-col min-h-screen">
+              <WIPBanner />
+              {!shouldHideHeader && <Navbar />}
 
-            <main className="flex-grow">
-              <Routes>
-                <Route path="/" element={<Home />} />
-
-
-                {/* Public Routes */}
-                <Route path="/signin" element={<PublicRoute><Signin /></PublicRoute>} />
-                <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
-
-                {/* Protected Routes */}
-                <Route path="/dashboard" element={<ProtectedRoutes><Dashboard /></ProtectedRoutes>} />
-                <Route path="/profile/:username" element={<ProtectedRoutes><ProfilePage /></ProtectedRoutes>} />
-                <Route path="/users" element={<ProtectedRoutes><UsersPage /></ProtectedRoutes>} />
-                <Route path="/create-password" element={<ProtectedRoutes><CreatePassword /></ProtectedRoutes>} />
-                <Route path="/settings" element={<ProtectedRoutes><Settings /></ProtectedRoutes>} />
-                <Route path="/messages/:username" element={<ProtectedRoutes><DirectMessage /></ProtectedRoutes>} />
-                <Route path="/notifications" element={<ProtectedRoutes><Notification /></ProtectedRoutes>} />
+              <main className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<Home />} />
 
 
-                <Route path="/request-reset" element={<RequestReset />} />
-                <Route path="/email-sent" element={<EmailSent />} />
-                <Route path="/reset-password/:token" element={<ResetPassword />} />
+                  {/* Public Routes */}
+                  <Route path="/signin" element={<PublicRoute><Signin /></PublicRoute>} />
+                  <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
 
-                {/* Admin Routes */}
-                <Route 
-                  path="/admin" 
-                  element={
-                    <AdminRoute>
-                      <AdminDashboard />
-                    </AdminRoute>
-                  } 
-                />
-                
-                {/* Redirects Unknown paths to home */}
-                <Route path='*' element={<NotFound />} />
-              </Routes>
+                  {/* Protected Routes */}
+                  <Route path="/dashboard" element={<ProtectedRoutes><Dashboard /></ProtectedRoutes>} />
+                  <Route path="/profile/:username" element={<ProtectedRoutes><ProfilePage /></ProtectedRoutes>} />
+                  <Route path="/users" element={<ProtectedRoutes><UsersPage /></ProtectedRoutes>} />
+                  <Route path="/create-password" element={<ProtectedRoutes><CreatePassword /></ProtectedRoutes>} />
+                  <Route path="/settings" element={<ProtectedRoutes><Settings /></ProtectedRoutes>} />
+                  <Route path="/messages/:username" element={<ProtectedRoutes><DirectMessage /></ProtectedRoutes>} />
+                  <Route path="/notifications" element={<ProtectedRoutes><Notification /></ProtectedRoutes>} />
 
-            </main>
-            {!shouldHideFooter && <Footer />}
-          </div>
-        </GoogleOAuthProvider>
+                  {/* Pricing Page */}
+                  <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/features" element={<FeaturesPage />} />
+                  <Route path="/faq" element={<FAQPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/request-reset" element={<RequestReset />} />
+                  <Route path="/email-sent" element={<EmailSent />} />
+                  <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+                  {/* Admin Routes */}
+                  <Route 
+                    path="/admin" 
+                    element={
+                      <AdminRoute>
+                        <AdminDashboard />
+                      </AdminRoute>
+                    } 
+                  />
+                  
+                  {/* Redirects Unknown paths to home */}
+                  <Route path='*' element={<NotFound />} />
+                </Routes>
+
+              </main>
+              {!shouldHideFooter && <Footer />}
+            </div>
+          </GoogleOAuthProvider>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

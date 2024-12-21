@@ -1,5 +1,6 @@
+
 import DefaultAvatar from '@/components/ui/DefaultAvatar';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useRecoilValue } from 'recoil';
 import { authState } from '../store/atoms';
@@ -19,7 +20,6 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import AdminBadge from '@/components/ui/AdminBadge';
-import { debounce } from 'lodash';
 
 
 
@@ -276,31 +276,32 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     navigate(`/profile/${recipientUsername}`);
   };
 
-  const debounceTyping = useCallback(
-    debounce((socket, roomId, userId, isTyping) => {
-      if (!socket) return;
-      socket.emit('typing_notify', {
-        roomId,
-        userId,
-        isTyping
-      });
-    }, 300),
-    []
-  );
-
   const handleTyping = (e) => {
-    const newValue = e.target.value;
-    setMessage(newValue);
+    setMessage(e.target.value);
     
     if (!socket) return;
     
     const roomId = [auth.userId, recipientId].sort().join('-');
-    const shouldShowTyping = newValue.length > 0;
     
-    if (shouldShowTyping !== isTyping) {
-      setIsTyping(shouldShowTyping);
-      debounceTyping(socket, roomId, auth.userId, shouldShowTyping);
+    if (!isTyping) {
+      setIsTyping(true);
+      socket.emit('typing_start', {
+        roomId: roomId,
+        userId: auth.userId
+      });
     }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      socket.emit('typing_end', {
+        roomId: roomId,
+        userId: auth.userId
+      });
+    }, 1000);
   };
 
   const handleCopyMessage = async (content) => {
@@ -485,7 +486,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <Avatar className="w-10 h-10 ring-2 ring-[#2A2A2A] ring-offset-2 ring-offset-[#111111]">
-                  {recipientImage ? (
+                   {recipientImage ? (
   <img 
     src={recipientImage} 
     alt={recipientName} 
@@ -605,7 +606,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
               onChange={handleTyping}
               placeholder="Type your message..."
               className="flex-grow p-3 rounded-full border border-[#2A2A2A] bg-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-100 text-sm transition-shadow placeholder-gray-500"
-              autoComplete="off"
             />
             <div ref={emojiPickerRef} className="relative">
               <motion.button

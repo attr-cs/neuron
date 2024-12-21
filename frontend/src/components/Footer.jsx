@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useRecoilState } from 'recoil';
+import { Link } from 'react-router-dom';
+
 import { Facebook, Twitter, Instagram, Linkedin, ArrowUp } from 'lucide-react';
 import { themeState } from '../store/atoms'; // Assume this hook exists to get the current theme
 
@@ -36,33 +38,33 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4">Product</h4>
             <ul className="space-y-2">
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Features</a></li>
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Pricing</a></li>
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>FAQ</a></li>
+              <li><Link to="/features" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Features</Link></li>
+              <li><Link to="/pricing" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Pricing</Link></li>
+              <li><Link to="/faq" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>FAQ</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-lg font-semibold mb-4">Company</h4>
             <ul className="space-y-2">
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>About Us</a></li>
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Careers</a></li>
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Contact</a></li>
+              <li><Link to="/about" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>About Us</Link></li>
+              <li><Link to="/careers" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Careers</Link></li>
+              <li><Link to="/contact" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Contact</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-lg font-semibold mb-4">Legal</h4>
             <ul className="space-y-2">
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Privacy Policy</a></li>
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Terms of Service</a></li>
-              <li><a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Cookie Policy</a></li>
+              <li><Link to="/privacy" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Privacy Policy</Link></li>
+              <li><Link to="/terms" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Terms of Service</Link></li>
+              <li><Link to="/cookie" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Cookie Policy</Link></li>
             </ul>
           </div>
         </div>
         <div className="flex flex-wrap justify-between items-center pt-8 border-t border-gray-700">
           <p>&copy; 2024 Neuron. All rights reserved.</p>
           <div className="space-x-4">
-            <a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Privacy Policy</a>
-            <a href="#" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Terms of Service</a>
+            <Link to="/privacy" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Privacy Policy</Link>
+            <Link to="/terms" className={`${theme === 'dark' ? 'hover:text-blue-400' : 'hover:text-blue-600'}`}>Terms of Service</Link>
           </div>
           <motion.button
             onClick={scrollToTop}

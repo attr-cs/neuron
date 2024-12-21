@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+
 export default {
     darkMode: ["class"],
     content: [
@@ -10,6 +11,9 @@ export default {
   ],
   theme: {
   	extend: {
+		animation: {
+			'spin-slow': 'spin 3s linear infinite',
+		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
