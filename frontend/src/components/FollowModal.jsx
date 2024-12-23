@@ -31,7 +31,7 @@ const FollowModal = ({
   }, [data, searchTerm]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={onClose} onOpenAutoFocus={(e) => e.preventDefault()}>
       <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader className="space-y-4">
           <DialogTitle className="flex items-center gap-2 text-xl">
