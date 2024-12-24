@@ -5,6 +5,7 @@ import { useRecoilValue } from 'recoil';
 import { themeState } from '../store/atoms';
 import { MessageCircle, Users, BarChart2, Image as ImageIcon, Zap, Globe, Shield, Sparkles, Phone } from 'lucide-react';
 
+
 const FeaturesPage = () => {
   const theme = useRecoilValue(themeState);
   const [activeFeature, setActiveFeature] = useState(null);
