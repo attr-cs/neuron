@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const verifyToken = require('../middlewares/verifyToken');
 const { sendResetEmail } = require('../services/emailService.js');
 const {toggleFollow, checkFollowStatus} = require('../controllers/userController');
+const Contact = require('../models/Contact');
 
 userRouter.use(express.json());
 
@@ -312,5 +313,29 @@ userRouter.get('/following/:username', verifyToken, async (req, res) => {
     res.json(following);
   });
 
+userRouter.post('/submit', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+    
+    const newContact = new Contact({
+      name,
+      email,
+      subject,
+      message
+    });
 
+    await newContact.save();
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Message sent successfully' 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send message', 
+      error: error.message 
+    });
+  }
+});
 module.exports = userRouter;
