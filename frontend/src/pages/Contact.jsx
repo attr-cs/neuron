@@ -5,6 +5,7 @@ import { useState, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { themeState } from '../store/atoms';
 
+
 const ContactPage = () => {
   const theme = useRecoilValue(themeState);
   const [activeSection, setActiveSection] = useState(null);
