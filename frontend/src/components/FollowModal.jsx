@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { UserPlus, UserCheck, MessageSquare, LoaderIcon, Users, Search } from "lucide-react";
+import { UserPlus, UserCheck, MessageSquare, LoaderIcon, Users, Search, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DefaultAvatar from '@/components/ui/DefaultAvatar';
 import AdminBadge from '@/components/ui/AdminBadge';
@@ -34,12 +34,23 @@ const FollowModal = ({
       open={isOpen} 
       onOpenChange={onClose}
     >
-      <DialogContent className="max-w-[95vw] w-full sm:max-w-md md:max-w-lg h-[85vh] flex flex-col bg-background p-0 border shadow-lg">
-        <DialogHeader className="px-6 py-4 border-b sticky top-0 z-10 bg-background">
-          <DialogTitle className="flex items-center gap-2.5 text-lg font-semibold">
-            <Users className="w-5 h-5 text-primary" />
-            {type === 'followers' ? 'Followers' : 'Following'}
-          </DialogTitle>
+      <DialogContent className="max-w-[95vw] w-full sm:max-w-md md:max-w-lg h-[60vh] flex flex-col bg-background p-0 border shadow-lg backdrop-blur-sm">
+        <DialogHeader className="px-6 py-4 border-b sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2.5 text-lg font-semibold">
+              <Users className="w-5 h-5 text-primary" />
+              {type === 'followers' ? 'Followers' : 'Following'}
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full hover:bg-muted/80 transition-colors"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </div>
           <div className="relative mt-3">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -64,7 +75,7 @@ const FollowModal = ({
                 {filteredUsers?.map((user) => (
                   <div 
                     key={user._id}
-                    className="group flex items-center justify-between px-3 py-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    className="group flex items-center justify-between px-3 py-3 rounded-lg hover:bg-muted/60 cursor-pointer transition-all duration-200"
                     onClick={() => {
                       navigate(`/profile/${user.username}`);
                       onClose();
