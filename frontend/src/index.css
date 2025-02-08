@@ -42,6 +42,24 @@
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
+.post-card {
+  @apply bg-gradient-to-br from-background to-muted/50 hover:shadow-lg transition-all duration-200;
+}
+
+.post-interaction {
+  @apply hover:bg-primary/10 transition-colors duration-200;
+}
+
+.avatar-ring {
+  @apply ring-2 ring-primary/10;
+}
+.nav-link {
+  @apply px-3 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors;
+}
+
+.menu-item {
+  @apply flex items-center gap-2 px-3 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors;
+}
 
 .messages-container::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
@@ -197,4 +215,74 @@ a {
   transform: none !important;
   max-height: 100vh !important;
   margin: 0 !important;
+}
+
+/* Footer specific styles */
+.footer-link {
+  @apply text-sm text-muted-foreground hover:text-primary transition-colors duration-200;
+}
+
+.footer-social-icon {
+  @apply w-8 h-8 flex items-center justify-center rounded-full bg-muted/50 hover:bg-primary/20 text-muted-foreground hover:text-primary transition-all duration-200;
+}
+
+.footer-input {
+  @apply bg-muted/50 border-muted-foreground/20 focus:border-primary/50 transition-colors duration-200;
+}
+
+.post-card-hover {
+  @apply hover:shadow-lg hover:shadow-primary/5 transition-all duration-300;
+}
+
+.post-action-button {
+  @apply hover:bg-primary/10 transition-colors duration-200 rounded-full;
+}
+
+.post-image-container {
+  @apply relative overflow-hidden rounded-xl bg-muted/30;
+}
+
+.post-comment-section {
+  @apply divide-y divide-border/40 space-y-4;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary)/0.3) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--primary)/0.3);
+  border-radius: 3px;
+}
+
+/* Focus styles */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Typography */
+.text-balance {
+  text-wrap: balance;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .mobile-hidden {
+    display: none;
+  }
+  
+  .mobile-compact {
+    padding: 0.75rem !important;
+  }
 }

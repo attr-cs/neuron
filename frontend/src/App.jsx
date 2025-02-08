@@ -167,7 +167,7 @@ function App() {
         <div className="min-h-screen bg-white dark:bg-gray-900">
           <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
             <div className="flex flex-col min-h-screen">
-              <WIPBanner />
+              {/* <WIPBanner /> */}
               {!shouldHideHeader && <Navbar />}
 
               <main className="flex-grow">
