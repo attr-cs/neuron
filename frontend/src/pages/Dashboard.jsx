@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactConfetti from 'react-confetti'
 import EmojiPicker from 'emoji-picker-react'
+import imageCompression from 'browser-image-compression';
+import { Link } from 'react-router-dom'
 import axios from 'axios'
-import { Toast } from "@/components/ui/toast"
 import { format } from 'date-fns'
 import { useRecoilValue } from 'recoil'
 import { authState, userBasicInfoState } from '../store/atoms'
@@ -40,6 +41,39 @@ const PostSkeleton = () => (
   </Card>
 )
 
+const ImageUploadPreview = ({ imageUrl, isUploading, onRemove }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      className="relative mb-4 rounded-lg overflow-hidden group"
+    >
+      {isUploading ? (
+        <div className="w-full h-[300px] bg-muted/30 rounded-lg animate-pulse flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <>
+          <img 
+            src={imageUrl} 
+            alt="Upload preview" 
+            className="w-full max-h-[300px] object-cover transition-transform group-hover:scale-[1.02]"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 transition-colors"
+            onClick={onRemove}
+          >
+            <X className="h-4 w-4 text-white" />
+          </Button>
+        </>
+      )}
+    </motion.div>
+  );
+};
+
 const Dashboard = () => {
 
   const { toast } = useToast()
@@ -54,6 +88,7 @@ const Dashboard = () => {
   const auth = useRecoilValue(authState)
   const userBasicInfo = useRecoilValue(userBasicInfoState)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
 
   useEffect(() => {
     fetchPosts()
@@ -84,9 +119,22 @@ const Dashboard = () => {
     try {
       setIsCreating(true);
       
+      let finalImageUrl = '';
+      if (selectedImageFile) {
+        // Compress image before upload
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1920,
+          useWebWorker: true
+        };
+        
+        const compressedFile = await imageCompression(selectedImageFile, options);
+        finalImageUrl = await uploadImage(compressedFile);
+      }
+
       const postData = {
         content: newPost,
-        imageUrl: imageUrl
+        imageUrl: finalImageUrl
       };
 
       const response = await axios.post(
@@ -102,6 +150,12 @@ const Dashboard = () => {
       setPosts([response.data, ...posts]);
       setNewPost('');
       setImageUrl('');
+      setSelectedImageFile(null);
+      
+      // Clean up the preview URL
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
       
       toast({
         title: "Success",
@@ -184,23 +238,38 @@ const Dashboard = () => {
     if (file) {
       try {
         setIsUploadingImage(true);
-        const imageUrl = await uploadImage(file);
-        setImageUrl(imageUrl);
         
-        toast({
-          title: "Success",
-          description: "Image uploaded successfully!",
-        });
+        // Create a preview URL immediately
+        const previewUrl = URL.createObjectURL(file);
+        setImageUrl(previewUrl);
+        setSelectedImageFile(file);
+        
       } catch (error) {
-        console.error('Error uploading image:', error);
+        console.error('Error handling image:', error);
+        setImageUrl('');
+        setSelectedImageFile(null);
         toast({
           title: "Error",
-          description: "Failed to upload image. Please try again.",
+          description: "Failed to handle image. Please try again.",
           variant: "destructive"
         });
       } finally {
         setIsUploadingImage(false);
       }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+    }
+    setImageUrl('');
+    setSelectedImageFile(null);
+    
+    // Reset the file input
+    const fileInput = document.getElementById('imageInput');
+    if (fileInput) {
+      fileInput.value = '';
     }
   };
 
@@ -246,27 +315,12 @@ const Dashboard = () => {
 
           {/* Image Preview */}
           <AnimatePresence>
-            {imageUrl && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="relative mb-4 rounded-lg overflow-hidden group"
-              >
-                <img 
-                  src={imageUrl} 
-                  alt="Upload preview" 
-                  className="w-full max-h-[300px] object-cover transition-transform group-hover:scale-[1.02]"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 transition-colors"
-                  onClick={() => setImageUrl('')}
-                >
-                  <X className="h-4 w-4 text-white" />
-                </Button>
-              </motion.div>
+            {(imageUrl || isUploadingImage) && (
+              <ImageUploadPreview
+                imageUrl={imageUrl}
+                isUploading={isUploadingImage}
+                onRemove={handleRemoveImage}
+              />
             )}
           </AnimatePresence>
 
@@ -364,30 +418,32 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
         <div className="p-6">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 ring-2 ring-primary/10">
-                <AvatarImage 
-                  src={post.author?.profileImageUrl || defaultImage} 
-                  alt={post.author?.firstname || 'User'}
-                  referrerPolicy="no-referrer" 
-                />
-                <AvatarFallback>
-                  {post.author?.firstname?.[0] || '?'}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium">
-                    {post.author?.firstname} {post.author?.lastname}
-                  </h3>
-                  <span className="text-sm text-muted-foreground">•</span>
-                  <p className="text-sm text-muted-foreground">
-                    @{post.author?.username}
+              <Link to={`/profile/${post.author?.username}`} className="flex items-center gap-3">
+                <Avatar className="h-10 w-10 ring-2 ring-primary/10">
+                  <AvatarImage 
+                    src={post.author?.profileImageUrl || defaultImage} 
+                    alt={post.author?.firstname || 'User'}
+                    referrerPolicy="no-referrer" 
+                  />
+                  <AvatarFallback>
+                    {post.author?.firstname?.[0] || '?'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-medium">
+                      {post.author?.firstname} {post.author?.lastname}
+                    </h3>
+                    <span className="text-sm text-muted-foreground">•</span>
+                    <p className="text-sm text-muted-foreground">
+                      @{post.author?.username}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(post.createdAt), 'MMM d, yyyy • h:mm a')}
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {format(new Date(post.createdAt), 'MMM d, yyyy • h:mm a')}
-                </p>
-              </div>
+              </Link>
             </div>
 
             {post.author?._id === userBasicInfo._id && (
