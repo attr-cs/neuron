@@ -19,9 +19,10 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MessageSquare, Heart, Share2, Image as ImageIcon, Bookmark, Send, X, MoreVertical, Loader2 } from 'lucide-react'
-import defaultImage from "../assets/default_profile_avatar.png"
+import { MessageSquare, Heart, Share2, Image as ImageIcon, Bookmark, Send, X, MoreVertical, Loader2, Maximize } from 'lucide-react'
+import defaultAvatar from "../utils/defaultAvatar"
 import uploadImage from "../utils/uploadImage"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 
 const PostSkeleton = () => (
 
@@ -74,6 +75,28 @@ const ImageUploadPreview = ({ imageUrl, isUploading, onRemove }) => {
   );
 };
 
+const ImageDialog = ({ isOpen, onClose, imageUrl }) => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl border-none min-h-[300px] flex items-center justify-center bg-black">
+          {isLoading && (
+          <Loader2 className="animate-spin w-10 h-10 text-gray-300" />
+          )}
+          <img
+            src={imageUrl}
+            alt="Full size"
+          className={`w-full h-auto max-h-[80vh] object-contain ${
+            isLoading ? "hidden" : "block"
+          }`}
+            onLoad={() => setIsLoading(false)}
+          />
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 const Dashboard = () => {
 
   const { toast } = useToast()
@@ -119,9 +142,8 @@ const Dashboard = () => {
     try {
       setIsCreating(true);
       
-      let finalImageUrl = '';
+      let imageData = null;
       if (selectedImageFile) {
-        // Compress image before upload
         const options = {
           maxSizeMB: 1,
           maxWidthOrHeight: 1920,
@@ -129,12 +151,17 @@ const Dashboard = () => {
         };
         
         const compressedFile = await imageCompression(selectedImageFile, options);
-        finalImageUrl = await uploadImage(compressedFile);
+        imageData = await uploadImage(compressedFile);
       }
 
       const postData = {
         content: newPost,
-        imageUrl: finalImageUrl
+        images: imageData ? [{
+          imageId: imageData.imageId,
+          url: imageData.url,
+          thumbUrl: imageData.thumbUrl,
+          displayUrl: imageData.displayUrl
+        }] : []
       };
 
       const response = await axios.post(
@@ -152,7 +179,6 @@ const Dashboard = () => {
       setImageUrl('');
       setSelectedImageFile(null);
       
-      // Clean up the preview URL
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl);
       }
@@ -293,7 +319,7 @@ const Dashboard = () => {
           <div className="flex items-center gap-4 mb-6">
             <Avatar className="h-12 w-12 ring-2 ring-primary/10 transition-transform hover:scale-105">
               <AvatarImage 
-                src={userBasicInfo?.profileImageUrl || defaultImage} 
+                src={userBasicInfo?.profileImage?.displayUrl || defaultAvatar} 
                 alt={userBasicInfo?.firstname} 
               />
               <AvatarFallback>{userBasicInfo?.firstname?.[0]}</AvatarFallback>
@@ -409,6 +435,9 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
   }
+  
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+
   return (
     <motion.div
       variants={itemVariants}
@@ -421,7 +450,7 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
               <Link to={`/profile/${post.author?.username}`} className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 ring-2 ring-primary/10">
                   <AvatarImage 
-                    src={post.author?.profileImageUrl || defaultImage} 
+                    src={post.author?.profileImage?.thumbUrl || defaultAvatar} 
                     alt={post.author?.firstname || 'User'}
                     referrerPolicy="no-referrer" 
                   />
@@ -467,14 +496,30 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
 
           <p className="text-base leading-relaxed mb-4">{post.content}</p>
 
-          {post.imageUrl && (
-            <div className="mb-4 rounded-lg overflow-hidden">
-              <img
-                src={post.imageUrl}
-                alt="Post"
-                className="w-full object-cover hover:scale-[1.02] transition-transform duration-200"
+          {post.images?.length > 0 && (
+            <>
+              <div className="mb-4 rounded-lg overflow-hidden h-[300px] relative">
+                <img
+                  src={post.images[0].displayUrl}
+                  alt="Post"
+                  className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-200"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 bg-black/60 hover:bg-black/75 text-white rounded-full p-0 z-10"
+                  onClick={() => setIsImageDialogOpen(true)}
+                >
+                  <Maximize className="h-4 w-4" color="white" strokeWidth={3} />
+                </Button>
+              </div>
+
+              <ImageDialog
+                isOpen={isImageDialogOpen}
+                onClose={() => setIsImageDialogOpen(false)}
+                imageUrl={post.images[0].url}
               />
-            </div>
+            </>
           )}
 
           <div className="flex items-center justify-between pt-2">
@@ -516,7 +561,7 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
                 {post.comments?.map((comment) => (
                   <div key={comment._id} className="flex items-start space-x-2">
                     <Avatar className="w-8 h-8">
-                      <AvatarImage src={comment.author?.profileImageUrl} />
+                      <AvatarImage src={comment.author?.profileImage?.thumbUrl || defaultAvatar} />
                       <AvatarFallback>{comment.author?.username[0]}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 space-y-1">

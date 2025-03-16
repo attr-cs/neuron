@@ -2,12 +2,13 @@ const express = require('express');
 const postRouter = express.Router();
 const { Post } = require('../models/postModel');
 const verifyToken = require('../middlewares/verifyToken');
+const { User } = require('../models/userModel');
 
 // ✅ GET all posts (sorted by latest)
 postRouter.get('/', verifyToken, async (req, res) => {
   try {
     const posts = await Post.find()
-      .populate('author', 'username firstname lastname profileImageUrl')
+      .populate('author', 'username firstname lastname profileImage')
       .sort({ createdAt: -1 });
     console.log(posts);
     res.json(posts);
@@ -20,7 +21,9 @@ postRouter.get('/', verifyToken, async (req, res) => {
 // ✅ GET logged-in user's posts
 postRouter.get('/user', verifyToken, async (req, res) => {
   try {
-    const posts = await Post.find({ author: req.user.id }).sort({ createdAt: -1 });
+    const posts = await Post.find({ author: req.user.id })
+      .populate('author', 'username firstname lastname profileImage')
+      .sort({ createdAt: -1 });
     res.json(posts);
   } catch (error) {
     console.error('Error fetching user posts:', error);
@@ -29,21 +32,25 @@ postRouter.get('/user', verifyToken, async (req, res) => {
 });
 
 // ✅ CREATE a new post
-// CREATE a new post
 postRouter.post('/user', verifyToken, async (req, res) => {
   try {
-    const { content, imageUrl } = req.body;
+    const { content, images } = req.body;
+    
     const newPost = new Post({
       author: req.user.id,
       content,
-      imageUrl
+      images: images.map(img => ({
+        imageId: img.imageId,
+        url: img.url,
+        thumbUrl: img.thumbUrl,
+        displayUrl: img.displayUrl
+      }))
     });
 
     await newPost.save();
     
-    // Fetch the saved post with populated author details
     const populatedPost = await Post.findById(newPost._id)
-      .populate('author', 'username firstname lastname profileImageUrl');
+      .populate('author', 'username firstname lastname profileImage');
 
     res.status(201).json(populatedPost);
   } catch (error) {
@@ -56,7 +63,8 @@ postRouter.post('/user', verifyToken, async (req, res) => {
 postRouter.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const post = await Post.findById(id).populate('author', 'username firstname lastname profileImageUrl');
+    const post = await Post.findById(id)
+      .populate('author', 'username firstname lastname profileImage');
 
     if (!post) {
       return res.status(404).json({ message: 'Post not found' });
@@ -73,7 +81,7 @@ postRouter.get('/:id', async (req, res) => {
 postRouter.put('/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { content, imageUrl } = req.body;
+    const { content, images } = req.body;
     const post = await Post.findById(id);
 
     if (!post) {
@@ -85,10 +93,19 @@ postRouter.put('/:id', verifyToken, async (req, res) => {
     }
 
     post.content = content;
-    post.imageUrl = imageUrl;
+    post.images = images.map(img => ({
+      imageId: img.imageId,
+      url: img.url,
+      thumbUrl: img.thumbUrl,
+      displayUrl: img.displayUrl
+    }));
+    
     await post.save();
 
-    res.json(post);
+    const updatedPost = await Post.findById(id)
+      .populate('author', 'username firstname lastname profileImage');
+
+    res.json(updatedPost);
   } catch (error) {
     console.error('Error updating post:', error);
     res.status(500).json({ message: 'Server error' });
@@ -113,6 +130,27 @@ postRouter.delete('/:id', verifyToken, async (req, res) => {
     res.status(200).json({ message: 'Post deleted successfully' });
   } catch (error) {
     console.error('Error deleting post:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Add this new route to get user's posts by username
+postRouter.get('/user/:username', verifyToken, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const posts = await Post.find({ author: user._id })
+      .populate('author', 'username firstname lastname profileImage')
+      .sort({ createdAt: -1 });
+      
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching user posts:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -1,24 +1,16 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema({
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'users',
-    required: true
-  },
-  content: {
-    type: String,
-    required: true
-  },
-  imageUrl: {
-    type: String,
-    default: null
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  author: { type: mongoose.Schema.Types.ObjectId, ref: "users", required: true },
+  content: { type: String, required: true },
+  images: [{
+    imageId: { type: String, required: true },
+    url: { type: String, required: true },
+    thumbUrl: { type: String },
+    displayUrl: { type: String },
+  }],
+  createdAt: { type: Date, default: Date.now },
 });
 
-const Post = mongoose.model('Post', postSchema);
+const Post = mongoose.model("Post", postSchema);
 module.exports = { Post };

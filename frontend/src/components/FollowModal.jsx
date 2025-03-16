@@ -21,6 +21,14 @@ const FollowModal = ({
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
 
+  console.log('FollowModal props:', {
+    isOpen,
+    data,
+    type,
+    currentUserId,
+    isLoadingModalData
+  });
+
   const filteredUsers = useMemo(() => {
     return data?.filter(user => 
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,9 +90,9 @@ const FollowModal = ({
                     }}
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      {user.profileImageUrl ? (
+                      {(user.profileImage?.displayUrl || user.profileImageUrl) ? (
                         <img
-                          src={user.profileImageUrl}
+                          src={user.profileImage?.displayUrl || user.profileImageUrl}
                           alt={user.username}
                           className="w-10 h-10 rounded-full object-cover shadow-sm ring-1 ring-muted"
                           referrerPolicy="no-referrer"

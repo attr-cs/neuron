@@ -8,7 +8,7 @@ const messageSchema = new mongoose.Schema({
   },
   sender: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'users',
     required: true
   },
   content: {
@@ -17,9 +17,15 @@ const messageSchema = new mongoose.Schema({
   },
   timestamp: {
     type: Date,
-    default: Date.now
+    default: Date.now,
+    index: true
   }
+}, {
+  timestamps: true
 });
+
+// Add compound index for efficient pagination queries
+messageSchema.index({ roomId: 1, timestamp: -1 });
 
 const Message = mongoose.model('Message', messageSchema);
 module.exports = { Message };

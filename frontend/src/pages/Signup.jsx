@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom"
-import { useRecoilState, useSetRecoilState } from "recoil"
+import { useSetRecoilState } from "recoil"
 import axios from 'axios'
 import debounce from 'lodash.debounce'
 import { jwtDecode } from 'jwt-decode'
 import { GoogleLogin } from '@react-oauth/google'
-import { authState, userBasicInfoState, userProfileState, userSocialState, userContentState } from "../store/atoms/index"
+import { authState, userBasicInfoState } from "../store/atoms/index"
 import fetchUserData from "../utils/fetchUserData"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -15,9 +15,10 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Eye, EyeOff, User, Mail, Lock, Brain, ArrowRight, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react'
-import { Alert, AlertDescription } from "@/components/ui/alert"
 
 import NeuralNetwork from "../assets/neural_network_actual.png"
+import uploadImage from "../utils/uploadImage"
+import defaultAvatar from '../utils/defaultAvatar'
 
 const InputWithIcon = ({ icon: Icon, ...props }) => (
   <div className="relative">
@@ -90,9 +91,7 @@ function Signup() {
   const navigate = useNavigate()
   const setAuth = useSetRecoilState(authState)
   const setBasicInfo = useSetRecoilState(userBasicInfoState)
-  const setProfile = useSetRecoilState(userProfileState)
-  const setSocial = useSetRecoilState(userSocialState)
-  const setContent = useSetRecoilState(userContentState)
+
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -153,30 +152,17 @@ function Signup() {
           username: userData.username,
           firstname: userData.firstname,
           lastname: userData.lastname,
-          profileImageUrl: userData.profileImageUrl,
-          isVerified: userData.isVerified,
+          profileImage: userData.profileImage || {
+            imageId: "",
+            url: defaultAvatar,
+            thumbUrl: defaultAvatar,
+            displayUrl: defaultAvatar
+          },
           isAdmin: userData.isAdmin,
-          isOAuthUser: userData.isOAuthUser
-        })
-
-        setProfile({
-          bio: userData.bio,
-          location: userData.location,
-          websiteUrl: userData.websiteUrl,
-          birthdate: userData.birthdate,
-          gender: userData.gender
-        })
-
-        setSocial({
-          followers: userData.followers,
-          following: userData.following,
           isOnline: userData.isOnline
         })
 
-        setContent({
-          posts: userData.posts,
-          recentActivity: userData.recentActivity
-        })
+      
 
         navigate("/dashboard")
       }
@@ -221,11 +207,27 @@ function Signup() {
     const decoded = jwtDecode(JSON.stringify(tokenResponse))
     const { email, given_name, family_name, picture } = decoded
 
+    // Upload profile image to ImgBB first
+    let profileImage = {}
+    if (picture) {
+      try {
+        profileImage = await uploadImage(picture)
+      } catch (error) {
+        console.error('Failed to upload profile image:', error)
+        // Continue with default profile image if upload fails
+      }
+    }
+    
     const user = {
       email: email,
       firstname: given_name,
       lastname: family_name,
-      profileImageUrl: picture
+      profileImage: {
+        url: profileImage.url,
+        displayUrl: profileImage.displayUrl,
+        thumbUrl: profileImage.thumbUrl,
+        imageId: profileImage.imageId 
+      }
     }
     
     try {
@@ -242,30 +244,21 @@ function Signup() {
           username: userData.username,
           firstname: userData.firstname,
           lastname: userData.lastname,
-          profileImageUrl: userData.profileImageUrl,
-          isVerified: userData.isVerified,
+          profileImage: userData.profileImage || {
+            imageId: "",
+            url: defaultAvatar,
+            thumbUrl: defaultAvatar,
+            displayUrl: defaultAvatar
+          },
+          isOnline:userData.isOnline,
           isAdmin: userData.isAdmin,
-          isOAuthUser: userData.isOAuthUser
+          
         })
         navigate('/dashboard')
-        setProfile({
-          bio: userData.bio,
-          location: userData.location,
-          websiteUrl: userData.websiteUrl,
-          birthdate: userData.birthdate,
-          gender: userData.gender
-        })
-        setSocial({
-          followers: userData.followers,
-          following: userData.following,
-          isOnline: userData.isOnline
-        })
-        setContent({
-          posts: userData.posts,
-          recentActivity: userData.recentActivity
-        })
+        
     } catch (err) {
-      console.log(err)
+      console.error('Google auth error:', err);
+      setError(err.response?.data?.message || "Authentication failed");
     }
   }
 
@@ -287,14 +280,19 @@ function Signup() {
     }
   }
 
-  useEffect(() => {
+  const validateStep = () => {
     const currentFields = formSteps[currentStep].fields
-    const isStepValid = currentFields.every(field => formData[field].trim() !== '')
-    setIsFormValid(isStepValid && !usernameError)
-  }, [formData, currentStep, usernameError])
+    const isValid = currentFields.every(field => formData[field]?.trim())
+    setIsFormValid(isValid)
+    return isValid
+  }
+
+  useEffect(() => {
+    validateStep()
+  }, [formData, currentStep])
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-950">
+    <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-950">
       <div className="hidden lg:flex lg:w-1/2 bg-cover bg-center relative" style={{ backgroundImage: `url(${NeuralNetwork})` }}>
         <div className="absolute inset-0 bg-black bg-opacity-50" />
         <motion.div 
@@ -303,8 +301,8 @@ function Signup() {
           transition={{ duration: 0.8 }}
           className="relative z-10 flex flex-col justify-center p-8 text-white"
         >
-          <h1 className="text-5xl font-bold mb-2">Join the <span className="text-purple-400">N</span>eural Network</h1>
-          <p className="text-xl">Connect, Learn, and Grow with NΞURON</p>
+          <h1 className="text-5xl font-bold mb-2">Join <span className="text-yellow-400">NΞURON</span></h1>
+          <p className="text-xl">Connect with neural networks and expand your knowledge</p>
         </motion.div>
       </div>
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
@@ -336,18 +334,36 @@ function Signup() {
                   />
                 </motion.div>
               </AnimatePresence>
-              <div className="flex justify-between mt-6">
+
+              <AnimatePresence>
+                {error && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="text-sm text-red-600 text-center"
+                  >
+                    {error}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+
+              <div className="flex justify-between space-x-4">
                 {currentStep > 0 && (
-                  <Button type="button" variant="outline" onClick={prevStep} className="flex items-center">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={prevStep}
+                    className="w-full"
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
                   </Button>
                 )}
                 <Button 
                   type="submit" 
                   disabled={!isFormValid || isSubmitting} 
-                  className={`ml-auto flex items-center ${
-                    currentStep === formSteps.length - 1 ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-600 hover:bg-purple-700'
-                  }`}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
                 >
                   {isSubmitting ? (
                     <>
@@ -355,27 +371,20 @@ function Signup() {
                       Creating Account...
                     </>
                   ) : currentStep === formSteps.length - 1 ? (
-                    <>Sign Up <CheckCircle className="ml-2 h-4 w-4" /></>
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Create Account
+                    </>
                   ) : (
-                    <>Next <ArrowRight className="ml-2 h-4 w-4" /></>
+                    <>
+                      Next
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
                   )}
                 </Button>
               </div>
             </form>
-            <AnimatePresence>
-              {error && (
-                <motion.p
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mt-4 text-sm text-red-600 text-center"
-                >
-                  {error}
-                </motion.p>
-              )}
-            </AnimatePresence>
           </CardContent>
-          <Separator className="my-4" />
           <CardFooter className="flex flex-col space-y-4 p-6">
             <div className="text-sm text-gray-500 text-center">Or continue with</div>
             <motion.div 

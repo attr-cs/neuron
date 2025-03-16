@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import defaultAvatar from '../utils/defaultAvatar';
+import OnlineStatus from '@/components/ui/OnlineStatus';
 
 // Custom Online Status Dot component
 const OnlineStatusDot = ({ userId }) => {
@@ -63,6 +70,7 @@ function UsersPage() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [followLoading, setFollowLoading] = useState({});
+  const [followStatus, setFollowStatus] = useState({});
 
   useEffect(() => {
     let isSubscribed = true;
@@ -81,6 +89,13 @@ function UsersPage() {
         if (isSubscribed && response.status === 200) {
           const usersList = response.data.users.filter(user => user._id !== auth.userId);
           setUsers(usersList);
+          
+          // Initialize follow status for each user
+          const initialFollowStatus = {};
+          usersList.forEach(user => {
+            initialFollowStatus[user._id] = user.followers.includes(auth.userId);
+          });
+          setFollowStatus(initialFollowStatus);
         }
       } catch (err) {
         if (isSubscribed) {
@@ -132,6 +147,7 @@ function UsersPage() {
               : user
           )
         );
+        setFollowStatus(prev => ({ ...prev, [userId]: !prev[userId] }));
       }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to update follow status");
@@ -228,8 +244,13 @@ function UsersPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {filteredUsers.map(user => (
-            <div
+            <motion.div
               key={user._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div
               className={cn(
                 "group bg-card rounded-lg border",
                 "transition-all duration-300 hover:shadow-lg",
@@ -241,9 +262,9 @@ function UsersPage() {
             >
               <div className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
                 <div className="relative shrink-0">
-                  {user.profileImageUrl ? (
+                  {user.profileImage?.thumbUrl ? (
                     <img
-                      src={user.profileImageUrl}
+                      src={user.profileImage.thumbUrl}
                       alt={user.username}
                       className={cn(
                         "w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover",
@@ -271,7 +292,7 @@ function UsersPage() {
                       )}
                     />
                   )}
-                  <OnlineStatusDot userId={user._id} />
+                  <OnlineStatus userId={user._id} />
                 </div>
                 
                 <div className="flex-grow min-w-0">
@@ -302,28 +323,29 @@ function UsersPage() {
                 </div>
 
                 <Button
-                  variant={user.followers?.includes(auth.userId) ? "outline" : "default"}
+                    variant={followStatus[user._id] ? "outline" : "default"}
                   size="icon"
                   disabled={followLoading[user._id]}
                   onClick={() => handleFollowToggle(user._id)}
                   className={cn(
                     "shrink-0 transition-all duration-300",
                     "h-8 w-8",
-                    user.followers?.includes(auth.userId)
+                      followStatus[user._id]
                       ? "hover:bg-primary/10 hover:text-primary"
                       : "hover:bg-primary/90"
                   )}
                 >
                   {followLoading[user._id] ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : user.followers?.includes(auth.userId) ? (
+                    ) : followStatus[user._id] ? (
                     <UserCheck className="h-4 w-4" />
                   ) : (
                     <UserPlus className="h-4 w-4" />
                   )}
                 </Button>
               </div>
-            </div>
+              </motion.div>
+            </motion.div>
           ))}
         </div>
 

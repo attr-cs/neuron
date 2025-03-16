@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { authState, userBasicInfoState, userProfileState, themeState } from '../store/atoms';
+import { authState, userBasicInfoState, themeState } from '../store/atoms';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Moon, Sun, User, Shield, Bell, Palette } from 'lucide-react';
-import EditProfile from '../components/EditProfile';
+
 
 function Settings() {
   const [activeTab, setActiveTab] = useState("profile");
@@ -36,7 +36,7 @@ function Settings() {
               </TabsTrigger>
               <TabsTrigger value="appearance" className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
-                Appearance
+                Appearance  
               </TabsTrigger>
               <TabsTrigger value="notifications" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
@@ -49,7 +49,7 @@ function Settings() {
             </TabsList>
 
             <TabsContent value="profile">
-              <EditProfile isEdited={isEdited} setIsEdited={setIsEdited} />
+              {/* <EditProfile isEdited={isEdited} setIsEdited={setIsEdited} /> */}
             </TabsContent>
 
             <TabsContent value="appearance">

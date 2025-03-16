@@ -8,7 +8,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const compression = require('compression');
 const { createServer } = require('http');
-const initializeSocket = require('./socket');
+const initializeSocket = require('./socket/index');
 
 const app = express();
 const httpServer = createServer(app);

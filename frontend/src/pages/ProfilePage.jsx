@@ -1,554 +1,498 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { Suspense, useState, useEffect, lazy, memo, useCallback, useMemo } from "react";
-import DefaultAvatar from "../components/ui/DefaultAvatar";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import fetchUserData from "../utils/fetchUserData";
-import { useRecoilValue, useSetRecoilState } from "recoil";
-import { authState, userBasicInfoState, userProfileState, userSocialState, userContentState } from "../store/atoms";
-import { followersCountState, followingsCountState } from "../store/selectors";
-import { IconButton } from "@mui/material";
-import { MoreVert, Edit, Person } from "@mui/icons-material";
-import axios from "axios";
-import { Button } from "@/components/ui/button";
-import { MessageSquare, UserCheck, UserPlus, LoaderIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
+import { authState } from '../store/atoms';
+import axios from 'axios';
+import { motion } from 'framer-motion';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { UserPlus, UserCheck, MessageSquare, Mail, MapPin, Calendar, Link as LinkIcon, Loader, Info } from 'lucide-react';
+import DefaultAvatar from '@/components/ui/DefaultAvatar';
 import AdminBadge from '@/components/ui/AdminBadge';
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Users, BookOpen } from "lucide-react";
-import UserStatusBadge from '../components/UserStatusBadge';
-import FollowersCount from '../components/FollowersCount';
+import FollowModal from '@/components/FollowModal';
+import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSocket } from '@/contexts/SocketContext';
+import OnlineStatus from '@/components/ui/OnlineStatus';
+import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import  PostCard  from '@/components/PostCard'
+import { ProfileImageUpload } from '@/components/ProfileImageUpload';
+import defaultAvatar from "@/utils/defaultAvatar";
+import { BannerImageUpload } from '@/components/BannerImageUpload';
 
-// Lazy load components
-const ProfileInfo = lazy(() => import("../components/ProfileInfo"));
-const ProfilePosts = lazy(() => import("../components/ProfilePosts"));
-const EditProfile = lazy(() => import("../components/EditProfile"));
-const FollowModal = lazy(() => import("../components/FollowModal"));
+// Add this PostSkeleton component before the ProfilePage component
+const PostSkeleton = () => (
+  <Card className="p-6 space-y-4 mb-4 bg-card/50 backdrop-blur-sm border-none animate-pulse">
+    <div className="flex items-center space-x-4">
+      <div className="h-10 w-10 rounded-full bg-muted" />
+      <div className="space-y-2 flex-1">
+        <div className="h-4 w-[140px] bg-muted rounded" />
+        <div className="h-3 w-[100px] bg-muted rounded" />
+      </div>
+    </div>
+    <div className="h-20 w-full bg-muted rounded" />
+    <div className="flex justify-between">
+      <div className="h-8 w-20 bg-muted rounded" />
+      <div className="h-8 w-20 bg-muted rounded" />
+    </div>
+  </Card>
+);
 
-// Memoized components
-const ProfileImage = memo(({ url, isOwnProfile }) => (
-  <motion.div
-    initial={{ scale: 0.8, opacity: 0 }}
-    animate={{ scale: 1, opacity: 1 }}
-    className="relative group"
-  >
-    {url ? (
-      <img
-        src={url}
-        alt="profile"
-        className="w-32 h-32 rounded-full border-4 border-background shadow-xl object-cover"
-        referrerPolicy="no-referrer"
-        loading="eager"
-        decoding="async"
-      />
-    ) : (
-      <DefaultAvatar className="w-32 h-32 rounded-full border-4 border-background shadow-xl object-cover" />
-    )}
-    {isOwnProfile && (
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-background shadow-md hover:bg-background/90 text-muted-foreground"
-      >
-        <Edit className="h-4 w-4" />
-      </Button>
-    )}
-  </motion.div>
-));
-
-const StatsButton = memo(({ onClick, icon: Icon, count, label }) => (
-  <Button onClick={onClick} variant="ghost" className="flex items-center gap-2">
-    <Icon className="h-4 w-4" />
-    <span className="font-semibold">{count}</span>
-    <span className="text-muted-foreground">{label}</span>
-  </Button>
-));
-
-function ProfilePage() {
-  const navigate = useNavigate();
-  const auth = useRecoilValue(authState);
-  const basicInfo = useRecoilValue(userBasicInfoState);
-  const followersCount = useRecoilValue(followersCountState);
-  const followingsCount = useRecoilValue(followingsCountState);
-  const profile = useRecoilValue(userProfileState);
-  const social = useRecoilValue(userSocialState);
-  const content = useRecoilValue(userContentState);
-  const { username } = useParams();
-  const setBasicInfo = useSetRecoilState(userBasicInfoState);
-  const setProfile = useSetRecoilState(userProfileState);
-  const setSocial = useSetRecoilState(userSocialState);
-  const setContent = useSetRecoilState(userContentState);
-  const [userData, setUserData] = useState(null);
-  const [isOwnProfile, setIsOwnProfile] = useState(false);
-  const [isEdited, setIsEdited] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [error, setError] = useState(null);
-  const [isFollowLoading, setIsFollowLoading] = useState(false);
-  const [followers, setFollowers] = useState([]);
-  const [following, setFollowing] = useState([]);
-  const [showFollowModal, setShowFollowModal] = useState(false);
-  const [modalType, setModalType] = useState('followers');
-  const [followModalData, setFollowModalData] = useState([]);
-  const [followLoading, setFollowLoading] = useState({});
-  const [isLoadingModalData, setIsLoadingModalData] = useState(false);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsOwnProfile(false);
-
-        if (auth.username === username) {
-          setIsOwnProfile(true);
-          setUserData({
-            ...auth,
-            ...basicInfo,
-            ...profile,
-            ...social,
-            ...content
-          });
-        } else {
-          const data = await fetchUserData(username, auth.token);
-          if (!data) {
-            throw new Error("Failed to load user data");
-          }
-          setUserData(data);
-          setIsFollowing(data.followers ? data.followers.includes(auth.userId) : false);
-          setFollowers(data.followers || []);
-          setFollowing(data.following || []);
-        }
-      } catch (err) {
-        setError(err.message || "Failed to load user data");
-        console.error("Error Fetching user data:", err);
-      }
-    };
-
-    if (auth.token && username) {
-      const debounceTimer = setTimeout(() => {
-        fetchData();
-      }, 300);
-
-      return () => clearTimeout(debounceTimer);
-    }
-  }, [username, auth.token, auth.username]);
-
-  const handleToggleFollow = useCallback(async () => {
-    try {   
-      setIsFollowLoading(true);
-      const newIsFollowing = !isFollowing;
-      setIsFollowing(newIsFollowing);
-  
-      setFollowers(prev => 
-        newIsFollowing 
-          ? [...prev, auth.userId]
-          : prev.filter(id => id !== auth.userId)
-      );
-  
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/user/follow`,
-        { userId: auth.userId, targetId: userData._id },
-        { headers: { Authorization: `Bearer ${auth.token}` } }
-      );
-  
-      if (response.status !== 200) {
-        throw new Error('Failed to update follow status');
-      }
-    } catch (err) {
-      console.error("Error toggling follow status:", err);
-      setIsFollowing(!isFollowing);
-      setFollowers(prev => 
-        isFollowing 
-          ? prev.filter(id => id !== auth.userId)
-          : [...prev, auth.userId]
-      );
-    } finally {
-      setIsFollowLoading(false);
-    }
-  }, [isFollowing, auth.userId, auth.token, userData?._id]);
-
-  const handleFollowToggle = useCallback(async (targetId) => {
-    setFollowLoading(prev => ({ ...prev, [targetId]: true }));
-    try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/user/follow`,
-        { userId: auth.userId, targetId },
-        { headers: { Authorization: `Bearer ${auth.token}` } }
-      );
-
-      if (response.status === 200) {
-        setFollowModalData(prevData =>
-          prevData.map(user =>
-            user._id === targetId
-              ? {
-                  ...user,
-                  followers: response.data.msg === "Followed"
-                    ? [...user.followers, auth.userId]
-                    : user.followers.filter(id => id !== auth.userId)
-                }
-              : user
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Error toggling follow status:", err);
-    } finally {
-      setFollowLoading(prev => ({ ...prev, [targetId]: false }));
-    }
-  }, [auth.userId, auth.token]);
-
-  const handleShowFollowers = async () => {
-    setShowFollowModal(true);
-    setModalType('followers');
-    setIsLoadingModalData(true);
-    
-    try {
-      const userId = isOwnProfile ? auth.userId : userData._id;
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/user/followers/${userId}`,
-        { headers: { Authorization: `Bearer ${auth.token}` } }
-      );
-      setFollowModalData(response.data);
-    } catch (err) {
-      console.error("Error fetching followers:", err);
-    } finally {
-      setIsLoadingModalData(false);
-    }
-  };
-
-  const handleShowFollowing = async () => {
-    setShowFollowModal(true);
-    setModalType('following');
-    setIsLoadingModalData(true);
-    
-    try {
-      const userId = isOwnProfile ? auth.userId : userData._id;
-      const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/user/following/${userId}`,
-        { headers: { Authorization: `Bearer ${auth.token}` } }
-      );
-      setFollowModalData(response.data);
-    } catch (err) {
-      console.error("Error fetching following:", err);
-    } finally {
-      setIsLoadingModalData(false);
-    }
-  };
-
-  const containerVariants = useMemo(() => ({
-    hidden: { opacity: 0 },
-    visible: { 
-      opacity: 1,
-      transition: { 
-        duration: 0.5,
-        staggerChildren: 0.1,
-        ease: [0.6, -0.05, 0.01, 0.99]
-      }
-    },
-    exit: { 
-      opacity: 0,
-      transition: { duration: 0.3 } 
-    }
-  }), []);
-
-  const itemVariants = useMemo(() => ({
-    hidden: { y: 20, opacity: 0 },
-    visible: { 
-      y: 0, 
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 300,
-        damping: 30
-      }
-    },
-    exit: {
-      y: -20,
-      opacity: 0
-    }
-  }), []);
-
-  if (!userData && !error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background/50 backdrop-blur-sm">
-        <motion.div
-          className="flex flex-col items-center gap-6 p-8 rounded-xl bg-background/95 shadow-lg border border-border/50"
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          <motion.div
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, 360],
-            }}
-            transition={{ 
-              duration: 2,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-          >
-            <LoaderIcon className="h-10 w-10 text-primary" />
-          </motion.div>
-          <div className="space-y-2 text-center">
-            <p className="text-lg font-medium text-foreground">Loading profile...</p>
-            <p className="text-sm text-muted-foreground">Please wait while we fetch the data</p>
+const UserInfoDialog = ({ isOpen, onClose, user }) => {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>About {user?.firstname}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {user?.bio && (
+            <div>
+              <h4 className="text-sm font-semibold mb-1">Bio</h4>
+              <p className="text-sm text-muted-foreground">{user.bio}</p>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-2 gap-4">
+            {user?.email && (
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Email</h4>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+              </div>
+            )}
+            {user?.location && (
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Location</h4>
+                <p className="text-sm text-muted-foreground">{user.location}</p>
+              </div>
+            )}
+            {user?.website && (
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Website</h4>
+                <a 
+                  href={user.website} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
+                  {user.website}
+                </a>
+              </div>
+            )}
+            <div>
+              <h4 className="text-sm font-semibold mb-1">Joined</h4>
+              <p className="text-sm text-muted-foreground">
+                {format(parseISO(user.createdAt), 'MMMM yyyy')}
+              </p>
+            </div>
           </div>
-        </motion.div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const ProfilePage = () => {
+  const { username } = useParams();
+  const auth = useRecoilValue(authState);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const { onlineUsers } = useSocket();
+  const [showUserInfo, setShowUserInfo] = useState(false);
+  const [activeTab, setActiveTab] = useState("posts");
+
+  // Fetch profile data with follower status and counts
+  const { data: user, isLoading, error } = useQuery({
+    queryKey: ['profile', username],
+    queryFn: async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/user/profile/${username}`,
+          {
+            headers: { Authorization: `Bearer ${auth.token}` }
+          }
+        );
+        // Add error logging to see the response structure
+        console.log('Profile response:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        throw error;
+      }
+    }
+  });
+
+  // Lazy load followers list
+  const { data: followersData, isLoading: isLoadingFollowers } = useQuery({
+    queryKey: ['followers', user?._id],
+    queryFn: async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/user/followers/${user._id}`,
+          {
+            headers: { Authorization: `Bearer ${auth.token}` }
+          }
+        );
+        // The backend returns the array directly, so no need to access .followers
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching followers:', error);
+        throw error;
+      }
+    },
+    enabled: !!user && showFollowersModal,
+  });
+
+  // Lazy load following list
+  const { data: followingData, isLoading: isLoadingFollowing } = useQuery({
+    queryKey: ['following', user?._id],
+    queryFn: async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/user/following/${user._id}`,
+          {
+            headers: { Authorization: `Bearer ${auth.token}` }
+          }
+        );
+        // The backend returns the array directly, so no need to access .following
+        return response.data || [];
+      } catch (error) {
+        console.error('Error fetching following:', error);
+        throw error;
+      }
+    },
+    enabled: !!user && showFollowingModal,
+  });
+
+  // Follow/Unfollow mutation with optimistic updates
+  const followMutation = useMutation({
+    mutationFn: async (userId) => {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/follow/${userId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
+      );
+      return response.data;
+    },
+    onMutate: async (userId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['profile', username] });
+
+      // Snapshot the previous value
+      const previousProfile = queryClient.getQueryData(['profile', username]);
+
+      // Optimistically update profile
+      queryClient.setQueryData(['profile', username], old => ({
+        ...old,
+        isFollowedByMe: !old.isFollowedByMe,
+        followersCount: old.isFollowedByMe ? old.followersCount - 1 : old.followersCount + 1
+      }));
+
+      return { previousProfile };
+    },
+    onError: (err, variables, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['profile', username], context.previousProfile);
+    },
+    onSettled: () => {
+      // Refetch to ensure sync
+      queryClient.invalidateQueries(['profile', username]);
+      if (showFollowersModal) {
+        queryClient.invalidateQueries(['followers', user?._id]);
+      }
+      if (showFollowingModal) {
+        queryClient.invalidateQueries(['following', user?._id]);
+      }
+    },
+  });
+
+  // Add this new query for user posts
+  const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
+    queryKey: ['userPosts', username],
+    queryFn: async () => {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/post/user/${username}`,
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
+      );
+      return response.data;
+    },
+    enabled: !!username
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <motion.div 
-        className="flex items-center justify-center min-h-screen bg-background/50 backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        <Alert variant="destructive" className="max-w-md">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </motion.div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4" role="alert">
+          <p className="font-bold">Error</p>
+          <p>{error.message}</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div 
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        variants={containerVariants}
-        className="min-h-screen bg-background"
-      >
-        {/* Banner Section */}
-        <motion.div
-          variants={itemVariants}
-          className="relative h-48 md:h-64 overflow-hidden"
-        >
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary"
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.6 }}
-            style={{
-              backgroundImage: userData.bannerImageUrl
-                ? `url(${userData.bannerImageUrl})`
-                : "none",
-              backgroundColor: userData.bannerImageUrl ? "transparent" : "#0096FF",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/20 backdrop-blur-[2px]" />
-          </motion.div>
-          {isOwnProfile && (
-            <motion.div 
-              variants={itemVariants}
-              className="absolute top-4 right-4 flex items-center gap-3"
-            >
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-background/80 hover:bg-background/90 text-muted-foreground backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <Edit className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-background/80 hover:bg-background/90 text-muted-foreground backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <MoreVert className="h-5 w-5" />
-              </Button>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* Profile Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={itemVariants}
-            className="relative -mt-24 rounded-xl border-none bg-background/95 backdrop-blur-md shadow-lg"
-          >
-            <div className="p-6">
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Avatar */}
-                <ProfileImage url={userData.profileImageUrl} isOwnProfile={isOwnProfile} />
-
-                {/* User Info */}
-                <div className="flex-1 space-y-4">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div>
-                      <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 text-foreground">
-                        {`${userData.firstname.charAt(0).toUpperCase()}${userData.firstname.slice(1)} ${userData.lastname.charAt(0).toUpperCase()}${userData.lastname.slice(1)}`}
-
-                        {userData.isAdmin && <AdminBadge />}
-                        {isOwnProfile? <UserStatusBadge userId={auth.userId} />: <UserStatusBadge userId={userData._id} />}
-                      </h1>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <span>@{userData.username}</span>
-                        {userData.location && (
-                          <>
-                            <span>•</span>
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              <span>{userData.location}</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      {isOwnProfile ? (
-                        <>
-                          <Button onClick={() => setIsEdited(!isEdited)}>
-                            {isEdited ? "Cancel" : "Edit Profile"}
-                          </Button>
-                          {userData?.isOAuthUser ? (
-                            <Link to="/create-password">
-                              <Button variant="outline">Create Password</Button>
-                            </Link>
-                          ) : (
-                            <Link to="/request-reset">
-                              <Button variant="outline">Reset Password</Button>
-                            </Link>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant={isFollowing ? "secondary" : "default"}
-                            onClick={handleToggleFollow}
-                            disabled={isFollowLoading}
-                          >
-                            {isFollowLoading ? (
-                              <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
-                            ) : isFollowing ? (
-                              <UserCheck className="mr-2 h-4 w-4" />
-                            ) : (
-                              <UserPlus className="mr-2 h-4 w-4" />
-                            )}
-                            {isFollowLoading ? "Processing..." : isFollowing ? "Following" : "Follow"}
-                          </Button>
-                          <Button
-                            onClick={() => navigate(`/messages/${username}`)}
-                            variant="outline"
-                          >
-                            <MessageSquare className="mr-2 h-4 w-4" />
-                            Message
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex gap-6 pt-4 border-t border-border/40">
-                    <StatsButton onClick={handleShowFollowers} icon={Users} count={isOwnProfile ? followersCount : followers?.length || 0} label="Followers" />
-                    <StatsButton onClick={handleShowFollowing} icon={Users} count={isOwnProfile ? followingsCount : following?.length || 0} label="Following" />
-                    <StatsButton icon={BookOpen} count={isOwnProfile ? content.posts.length : userData?.posts?.length || 0} label="Posts" />
-                  </div>
-                </div>
-              </div>
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-4xl mx-auto sm:px-4">
+        <Card className="overflow-hidden bg-card sm:rounded-lg rounded-none">
+          {/* Cover Image - increased height */}
+          {auth.userId === user?._id ? (
+            <BannerImageUpload
+              currentImage={user.bannerImage?.displayUrl}
+              onImageUpdate={(newImage) => {
+                queryClient.setQueryData(['profile', username], old => ({
+                  ...old,
+                  bannerImage: newImage
+                }));
+              }}
+            />
+          ) : (
+            <div className="h-48 sm:h-64 bg-gradient-to-r from-primary/20 to-primary/40">
+              {user.bannerImage?.displayUrl && (
+                <img
+                  src={user.bannerImage.displayUrl}
+                  alt="Banner"
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
-          </motion.div>
-
-          {/* Tabs Section */}
-          <motion.div 
-            variants={itemVariants}
-            className="mt-6"
-          >
-            <Tabs defaultValue="about" className="w-full">
-              <TabsList className="w-full justify-start border-b rounded-none p-0 h-auto bg-transparent space-x-8">
-                <TabsTrigger 
-                  value="about" 
-                  className="relative px-4 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent hover:bg-transparent transition-all duration-300"
-                >
-                  <motion.span 
-                    className="flex items-center gap-2"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  >
-                    <Person className="h-4 w-4" />
-                    <span className="font-medium">About</span>
-                  </motion.span>
-                  {isEdited && (
-                    <motion.span 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" 
+          )}
+          
+          {/* Profile Content - removed top padding */}
+          <div className="relative px-4 sm:px-6 pb-6">
+            {/* Profile Image and Basic Info - adjusted margin top */}
+            <div className="flex flex-col items-center -mt-20 sm:-mt-24">
+              <div className="relative z-10 mb-4">
+                {auth.userId === user?._id ? (
+                  <ProfileImageUpload
+                    currentImage={user.profileImage?.displayUrl}
+                    onImageUpdate={(newImage) => {
+                      queryClient.setQueryData(['profile', username], old => ({
+                        ...old,
+                        profileImage: newImage
+                      }));
+                    }}
+                    size="lg"
+                  />
+                ) : (
+                  <div className="relative">
+                    <img
+                      src={user.profileImage?.displayUrl || defaultAvatar}
+                      alt={user.username}
+                      className="w-32 h-32 rounded-full border-4 border-background object-cover shadow-lg"
+                      referrerPolicy="no-referrer"
                     />
-                  )}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="posts" 
-                  className="relative px-4 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-primary bg-transparent hover:bg-transparent transition-all duration-300"
-                >
-                  <motion.span 
-                    className="flex items-center gap-2"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    {/* Online Status Indicator */}
+                    {onlineUsers.has(user._id) && (
+                      <div className="absolute bottom-2 right-2 w-4 h-4 bg-green-500 rounded-full border-2 border-background" />
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center gap-0">
+                  <h1 className="text-2xl font-bold">
+                    {user?.firstname} {user?.lastname}
+                  </h1>
+                  {user?.isAdmin && <AdminBadge />}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 rounded-full w-6"
+                    onClick={() => setShowUserInfo(true)}
                   >
-                    <BookOpen className="h-4 w-4" />
-                    <span className="font-medium">Posts</span>
-                  </motion.span>
-                  {userData.posts?.length > 0 && (
-                    <motion.span 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="ml-2 inline-flex items-center justify-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
-                    >
-                      {userData.posts.length}
-                    </motion.span>
+                    <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                  </Button>
+                  </div>
+                <p className="text-sm text-muted-foreground mt-1">@{user?.username}</p>
+            </div>
+
+              {/* Action Buttons */}
+              {auth.userId !== user?._id && (
+                <div className="flex gap-3 mb-6">
+                  <Button
+                    variant={user?.isFollowedByMe ? "secondary" : "default"}
+                    disabled={followMutation.isPending}
+                    onClick={() => followMutation.mutate(user._id)}
+                    className="w-32 h-10"
+                  >
+                    {followMutation.isPending ? (
+                      <Loader className="w-4 h-4 animate-spin" />
+                    ) : user?.isFollowedByMe ? (
+                      <>
+                        <UserCheck className="w-4 h-4 mr-2" />
+                        Following
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Follow
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate(`/messages/${user.username}`)}
+                    className="h-10"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Message
+                  </Button>
+                </div>
+              )}
+
+              {/* Stats */}
+              <div className="flex justify-center gap-4 sm:gap-6 w-full border-t border-b border-border/40 py-3 mb-6">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowFollowingModal(true)}
+                  className={cn(
+                    "flex flex-col items-center",
+                    "px-4 py-2",
+                    "h-auto",
+                    "hover:bg-accent/80",
+                    "transition-all duration-200",
+                    "group"
                   )}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="about" className="mt-6">
-                <Suspense fallback={<LoadingPlaceholder />}>
-                  {isEdited ? (
-                    <EditProfile isEdited={isEdited} setIsEdited={setIsEdited} />
+                >
+                  <span className="text-base sm:text-lg font-semibold group-hover:text-primary">
+                    {user?.followingCount || 0}
+                  </span>
+                  <span className="text-xs sm:text-sm text-muted-foreground group-hover:text-primary/80">
+                    Following
+                  </span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowFollowersModal(true)}
+                  className={cn(
+                    "flex flex-col items-center",
+                    "px-4 py-2",
+                    "h-auto",
+                    "hover:bg-accent/80",
+                    "transition-all duration-200",
+                    "group"
+                  )}
+                >
+                  <span className="text-base sm:text-lg font-semibold group-hover:text-primary">
+                    {user?.followersCount || 0}
+                  </span>
+                  <span className="text-xs sm:text-sm text-muted-foreground group-hover:text-primary/80">
+                    Followers
+                  </span>
+                    </Button>
+                  </div>
+
+              {/* Add Tabs for Posts and Media */}
+              <Tabs
+                defaultValue="posts"
+                className="w-full"
+                value={activeTab}
+                onValueChange={setActiveTab}
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="posts">Posts</TabsTrigger>
+                  <TabsTrigger value="media">Media</TabsTrigger>
+                </TabsList>
+                <TabsContent value="posts" className="mt-6 space-y-4">
+                  {isLoadingPosts ? (
+                    Array(3).fill(0).map((_, i) => (
+                      <PostSkeleton key={i} />
+                    ))
+                  ) : userPosts?.length > 0 ? (
+                    userPosts.map(post => (
+                      <PostCard
+                        key={post._id}
+                        post={post}
+                        userBasicInfo={user}
+                        onLike={() => {}} // Implement these handlers
+                        onDelete={() => {}}
+                        onComment={() => {}}
+                        showComments={false}
+                        setShowComments={() => {}}
+                        commentText=""
+                        setCommentText={() => {}}
+                        isSubmittingComment={false}
+                      />
+                    ))
                   ) : (
-                    <ProfileInfo userData={userData} />
+                    <div className="text-center py-8 text-muted-foreground">
+                      No posts yet
+                    </div>
                   )}
-                </Suspense>
-              </TabsContent>
-              <TabsContent value="posts" className="mt-6">
-                <Suspense fallback={<LoadingPlaceholder />}>
-                  <ProfilePosts userData={userData} />
-                </Suspense>
-              </TabsContent>
-            </Tabs>
-          </motion.div>
-        </div>
+                </TabsContent>
+                <TabsContent value="media" className="mt-6">
+                  <div className="grid grid-cols-3 gap-1">
+                    {userPosts?.filter(post => post.images?.length > 0)
+                      .map(post => (
+                        <div
+                          key={post._id}
+                          className="aspect-square overflow-hidden rounded-md"
+                        >
+                          <img
+                            src={post.images[0].displayUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                    </div>
+                      ))}
+                    </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+          </Card>
 
-        <Suspense fallback={null}>
-          <FollowModal
-            isOpen={showFollowModal}
-            onClose={() => setShowFollowModal(false)}
-            data={followModalData}
-            type={modalType}
-            currentUserId={auth.userId}
-            onFollowToggle={handleFollowToggle}
-            followLoading={followLoading}
-            isLoadingModalData={isLoadingModalData}
-          />
-        </Suspense>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
+        {/* User Info Dialog */}
+        <UserInfoDialog
+          isOpen={showUserInfo}
+          onClose={() => setShowUserInfo(false)}
+          user={user}
+        />
 
-const LoadingPlaceholder = () => (
-  <div className="space-y-4 animate-pulse">
-    <div className="h-8 bg-muted rounded w-1/4"></div>
-    <div className="space-y-2">
-      <div className="h-4 bg-muted rounded w-3/4"></div>
-      <div className="h-4 bg-muted rounded w-1/2"></div>
+        {/* Modals */}
+        <FollowModal
+          isOpen={showFollowersModal}
+          onClose={() => setShowFollowersModal(false)}
+          data={followersData || []}
+          type="followers"
+          title={`${user?.firstname}'s Followers`}
+          currentUserId={auth.userId}
+          onFollowToggle={(userId) => followMutation.mutate(userId)}
+          followLoading={{ [user?._id]: followMutation.isPending }}
+          isLoadingModalData={isLoadingFollowers}
+        />
+
+      <FollowModal
+          isOpen={showFollowingModal}
+          onClose={() => setShowFollowingModal(false)}
+          data={followingData || []}
+          type="following"
+          title={`${user?.firstname} is Following`}
+          currentUserId={auth.userId}
+          onFollowToggle={(userId) => followMutation.mutate(userId)}
+          followLoading={{ [user?._id]: followMutation.isPending }}
+          isLoadingModalData={isLoadingFollowing}
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
-export default memo(ProfilePage);
+export default ProfilePage;

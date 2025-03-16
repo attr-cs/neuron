@@ -29,7 +29,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
-import defaultImage from "../assets/default_profile_avatar.png" 
+import defaultAvatar from '../utils/defaultAvatar'
 import neuronLightLogo from "../assets/logo_circle_light.png"
 import neuronDarkLogo from "../assets/logo_circle_dark.png"
 
@@ -225,7 +225,7 @@ export default function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={userBasicInfo.profileImageUrl || defaultImage} alt="Profile" referrerPolicy="no-referrer" />
+                        <AvatarImage src={userBasicInfo.profileImage?.thumbUrl || defaultAvatar} alt="Profile" referrerPolicy="no-referrer" />
                         <AvatarFallback>
                           {userBasicInfo.firstname?.[0]}
                           {userBasicInfo.lastname?.[0]}

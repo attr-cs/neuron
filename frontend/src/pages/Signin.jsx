@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react"
+import  { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { useRecoilState, useSetRecoilState } from "recoil"
+import {  useSetRecoilState } from "recoil"
 import axios from 'axios'
-import debounce from 'lodash.debounce'
+// import debounce from 'lodash.debounce'
 import { jwtDecode } from 'jwt-decode'
 import { GoogleLogin } from '@react-oauth/google'
-import { authState, userBasicInfoState, userProfileState, userSocialState, userContentState } from "../store/atoms/index"
+import { authState, userBasicInfoState } from "../store/atoms/index"
 import fetchUserData from "../utils/fetchUserData"
+import uploadImage from "../utils/uploadImage"
 import { motion, AnimatePresence } from "framer-motion"
 
 
@@ -15,12 +16,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Eye, EyeOff, User, Mail, Lock, Brain, ArrowRight, UserPlus, LogIn, CheckCircle, XCircle, Loader2 } from 'lucide-react'
-import { Alert, AlertDescription } from "@/components/ui/alert"
 
-import NeuralNetwork from "../assets/neural_network_actual.png"
+import { Eye, EyeOff, User,  Lock, Brain,   LogIn,  Loader2 } from 'lucide-react'
+
+
 import BrainWaves from "../assets/neural_network_actual.png"
+import { Checkbox } from "@/components/ui/checkbox"
+import { toast } from "sonner"
+import defaultAvatar from '../utils/defaultAvatar'
 
 
 const InputWithIcon = ({ icon: Icon, ...props }) => (
@@ -34,20 +37,30 @@ const InputWithIcon = ({ icon: Icon, ...props }) => (
     <div className="relative">
       <Input {...props} type={showPassword ? "text" : "password"} className="pl-10 pr-10 py-2" />
       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-      <Button
+      <motion.button
         type="button"
-        variant="ghost"
-        size="icon"
-        className="absolute right-2 top-1/2 transform -translate-y-1/2"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-gray-100"
         onClick={togglePasswordVisibility}
+        aria-label={showPassword ? "Hide password" : "Show password"}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={showPassword ? "hide" : "show"}
+            initial={{ opacity: 0, rotate: -90 }}
+            animate={{ opacity: 1, rotate: 0 }}
+            exit={{ opacity: 0, rotate: 90 }}
+            transition={{ duration: 0.15 }}
       >
         {showPassword ? (
           <EyeOff className="h-5 w-5 text-gray-400" />
         ) : (
           <Eye className="h-5 w-5 text-gray-400" />
         )}
-        <span className="sr-only">Toggle password visibility</span>
-      </Button>
+          </motion.div>
+        </AnimatePresence>
+      </motion.button>
     </div>
   )
   
@@ -56,12 +69,11 @@ function Signin() {
     const navigate = useNavigate()
     const setAuth = useSetRecoilState(authState)
     const setBasicInfo = useSetRecoilState(userBasicInfoState)
-    const setProfile = useSetRecoilState(userProfileState)
-    const setSocial = useSetRecoilState(userSocialState)
-    const setContent = useSetRecoilState(userContentState)
     
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [rememberMe, setRememberMe] = useState(false)
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false)
     
     const [formData, setFormData] = useState({
       username: "",
@@ -80,6 +92,8 @@ function Signin() {
   
     const handleSubmit = async (e) => {
       e.preventDefault()
+      if (!validateForm()) return
+
       setIsSubmitting(true)
       setError("")
 
@@ -105,105 +119,136 @@ function Signin() {
             username 
           })
 
-          // Store in localStorage
-          localStorage.setItem("token", token)
-          localStorage.setItem("userId", userId)
-          localStorage.setItem("username", username)
+          // Store in localStorage/sessionStorage based on remember me
+          const storage = rememberMe ? localStorage : sessionStorage
+          storage.setItem("token", token)
+          storage.setItem("userId", userId)
+          storage.setItem("username", username)
 
           // Fetch and set user data
           const userData = await fetchUserData(username, token)
           
-          // Update all atoms with user data
+          // Ensure we're setting all required fields from userBasicInfoState
           setBasicInfo({
-            username: userData.username,
             firstname: userData.firstname,
             lastname: userData.lastname,
-            profileImageUrl: userData.profileImageUrl,
-            isVerified: userData.isVerified,
-            isAdmin: userData.isAdmin,
-            isOAuthUser: userData.isOAuthUser
+            username: userData.username,
+            profileImage: userData.profileImage || {
+              imageId: "",
+              url: defaultAvatar,
+              thumbUrl: defaultAvatar,
+              displayUrl: defaultAvatar
+            },
+            isAdmin: userData.isAdmin || false,
+            isOnline: userData.isOnline || false
           })
 
-          setProfile({
-            bio: userData.bio,
-            location: userData.location,
-            websiteUrl: userData.websiteUrl,
-            birthdate: userData.birthdate,
-            gender: userData.gender
-          })
-
-          setSocial({
-            followers: userData.followers,
-            following: userData.following,
-            isOnline: userData.isOnline
-          })
-
-          setContent({
-            posts: userData.posts,
-            recentActivity: userData.recentActivity
-          })
-
+          toast.success("Successfully signed in!")
           navigate("/dashboard")
         }
       } catch (err) {
-        setError(err.response?.data?.message || "Invalid credentials")
+        const errorMessage = err.response?.data?.message || "Invalid credentials"
+        setError(errorMessage)
+        toast.error(errorMessage)
       } finally {
         setIsSubmitting(false)
       }
     }
   
     const onSignInSuccess = async (tokenResponse) => {
-      const { email, given_name, family_name, picture } = jwtDecode(JSON.stringify(tokenResponse))
-  
-      const user = {
-        email: email,
-        firstname: given_name,
-        lastname: family_name,
-        profileImageUrl: picture
-      }
+      setIsGoogleLoading(true)
+      setError("")
       
       try {
-        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/google-auth`, user)
-      
-        const { token, userId, username } = response.data
-        setAuth({ isAuthenticated: true, token: token, userId: userId, username: username })
-        localStorage.setItem("token", token)
-        localStorage.setItem("userId", userId)
-        localStorage.setItem("username", username)
+        const decoded = jwtDecode(tokenResponse.credential)
+        const { email, given_name, family_name, picture } = decoded
+    
+        // Upload profile image to ImgBB first
+        let profileImage = null
+        if (picture) {
+          try {
+            const uploadedImage = await uploadImage(picture)
+            profileImage = {
+              imageId: uploadedImage.imageId || "",
+              url: uploadedImage.url || picture,
+              thumbUrl: uploadedImage.thumbUrl || picture,
+              displayUrl: uploadedImage.displayUrl || picture
+            }
+          } catch (error) {
+            console.error('Failed to upload profile image:', error)
+            // Use Google's picture URLs as fallback
+            profileImage = {
+              imageId: "",
+              url: picture,
+              thumbUrl: picture,
+              displayUrl: picture
+            }
+          }
+        }
         
-  
+        const user = {
+          email,
+          firstname: given_name,
+          lastname: family_name,
+          profileImage
+        }
+        
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/user/google-auth`, 
+          user
+        )
+
+          const { token, userId, username } = response.data
+        
+        setAuth({ 
+          isAuthenticated: true, 
+          token, 
+          userId, 
+          username 
+        })
+
+            localStorage.setItem("token", token)
+            localStorage.setItem("userId", userId)
+            localStorage.setItem("username", username)
+            
         const userData = await fetchUserData(username, token)
-        setBasicInfo({
+      
+            setBasicInfo({
+              firstname: userData.firstname,
+              lastname: userData.lastname,
           username: userData.username,
-          firstname: userData.firstname,
-          lastname: userData.lastname,
-          profileImageUrl: userData.profileImageUrl,
-          isVerified: userData.isVerified,
-          isAdmin: userData.isAdmin,
-          isOAuthUser: userData.isOAuthUser
+          profileImage: userData.profileImage || {
+            imageId: "",
+            url: defaultAvatar,
+            thumbUrl: defaultAvatar,
+            displayUrl: defaultAvatar
+          },
+          isAdmin: userData.isAdmin || false,
+          isOnline: userData.isOnline || false
         })
+            
+        toast.success("Successfully signed in with Google!")
         navigate('/dashboard')
-        setProfile({
-          bio: userData.bio,
-          location: userData.location,
-          websiteUrl: userData.websiteUrl,
-          birthdate: userData.birthdate,
-          gender: userData.gender
-        })
-        setSocial({
-          followers: userData.followers,
-          following: userData.following,
-          isOnline: userData.isOnline
-        })
-        setContent({
-          posts: userData.posts,
-          recentActivity: userData.recentActivity
-        })
-        
-      } catch (err) {
-        console.log(err)
+        } catch (err) {
+        const errorMessage = err.response?.data?.message || "Authentication failed"
+        setError(errorMessage)
+        toast.error(errorMessage)
+      } finally {
+        setIsGoogleLoading(false)
       }
     }
+  
+    const validateForm = () => {
+      if (!formData.username.trim()) {
+        setError("Username/Email is required")
+        return false
+      }
+      if (!formData.password) {
+        setError("Password is required")
+        return false
+      }
+      return true
+      }
   
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-950">
@@ -257,10 +302,23 @@ function Signin() {
                     togglePasswordVisibility={togglePasswordVisibility}
                   />
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={setRememberMe}
+                  />
+                  <label
+                    htmlFor="remember"
+                    className="text-sm text-gray-600 cursor-pointer"
+                  >
+                    Remember me
+                  </label>
+                </div>
                 <Button 
                   type="submit" 
                   disabled={isSubmitting} 
-                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  className="w-full bg-purple-600 hover:bg-purple-700 transition-colors"
                 >
                   {isSubmitting ? (
                     <>
@@ -288,7 +346,10 @@ function Signin() {
                 )}
               </AnimatePresence>
               <div className="mt-4 text-center">
-                <Link to="/request-reset" className="text-sm text-indigo-600 hover:underline">
+                <Link 
+                  to="/request-reset" 
+                  className="text-sm text-indigo-600 hover:underline transition-colors"
+                >
                   Forgot Password?
                 </Link>
               </div>
@@ -301,15 +362,24 @@ function Signin() {
                 whileTap={{ scale: 0.95 }}
                 className="flex justify-center w-full"
               >
+                {isGoogleLoading ? (
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+                  </div>
+                ) : (
                 <GoogleLogin
                   onSuccess={onSignInSuccess}
-                  onError={(err) => console.log("Failed Signin: ", err)}
+                    onError={(err) => {
+                      console.error("Failed Signin:", err)
+                      toast.error("Google sign in failed")
+                    }}
                   size="large"
                 />
+                )}
               </motion.div>
               <p className="text-sm text-center">
                 Not registered yet?{" "}
-                <Link to="/signup" className="text-indigo-600 hover:underline">
+                <Link to="/signup" className="text-indigo-600 hover:underline transition-colors">
                   Create an account
                 </Link>
               </p>

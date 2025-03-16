@@ -101,4 +101,37 @@ chatRouter.post('/pin-message', verifyToken, async (req, res) => {
   }
 });
 
+// Send a new message
+chatRouter.post('/messages', verifyToken, async (req, res) => {
+  try {
+    const { roomId, content } = req.body;
+
+    if (!content || !roomId) {
+      return res.status(400).json({ message: 'Message content and roomId are required' });
+    }
+
+    const newMessage = new Message({
+      sender: req.user.id,
+      content,
+      roomId,
+      timestamp: new Date()
+    });
+
+    await newMessage.save();
+
+    // Populate sender details before sending response
+    const populatedMessage = await Message.findById(newMessage._id)
+      .populate('sender', 'username firstname lastname profileImage isAdmin')
+      .lean();
+
+    // Emit the message through socket.io (you'll need to set up socket.io in your main server file)
+    req.app.get('io').to(roomId).emit('receive_message', populatedMessage);
+
+    res.status(201).json(populatedMessage);
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ message: 'Failed to send message' });
+  }
+});
+
 module.exports = chatRouter; 

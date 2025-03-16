@@ -1,17 +1,16 @@
-
 import DefaultAvatar from '@/components/ui/DefaultAvatar';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
 import { io } from 'socket.io-client';
 import { useRecoilValue } from 'recoil';
 import { authState } from '../store/atoms';
 import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Phone, Video, MoreVertical, ArrowLeft, Copy } from 'lucide-react';
+import { Send, Smile, Phone, Video, MoreVertical, ArrowLeft, Copy, Check, CheckCheck, X } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { useLongPress } from '@uidotdev/usehooks';
 import {
   ContextMenu,
@@ -20,20 +19,15 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import AdminBadge from '@/components/ui/AdminBadge';
-
-
-
-const messageVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: {
-      duration: 0.3,
-      ease: "easeOut"
-    }
-  }
-};
+import defaultAvatar from '../utils/defaultAvatar';
+import { useInView } from 'react-intersection-observer';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { ErrorBoundary } from 'react-error-boundary';
+import { Button } from '@/components/ui/button';
+import { useSocket } from '@/contexts/SocketContext';
+import { cn } from '@/lib/utils';
+import debounce from 'lodash.debounce';
+import  OnlineStatus  from '@/components/ui/OnlineStatus';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -84,18 +78,54 @@ export const MobileContextMenu = ({ isOpen, position, onClose, children }) => {
   );
 };
 
+const ErrorFallback = ({ error, resetErrorBoundary }) => (
+  <div className="flex flex-col items-center justify-center h-screen bg-background p-4">
+    <h2 className="text-xl font-semibold mb-4">Something went wrong</h2>
+    <p className="text-sm text-muted-foreground mb-4">{error.message}</p>
+    <Button onClick={resetErrorBoundary}>Try again</Button>
+  </div>
+);
+
+const MessageBubble = ({ message, isOwn }) => (
+  <div className={cn(
+    "flex",
+    isOwn ? "justify-end" : "justify-start",
+    "px-2 sm:px-4"
+  )}>
+    <div className={cn(
+      "message-container relative",
+      "max-w-[85%] sm:max-w-[75%] md:max-w-[60%]",
+      "p-3 rounded-2xl",
+      "shadow-sm hover:shadow-md transition-shadow",
+      isOwn 
+        ? "bg-blue-600 text-white rounded-tr-sm ml-8 sm:ml-12" 
+        : "bg-gray-100 text-gray-900 rounded-tl-sm mr-8 sm:mr-12"
+    )}>
+      <p className="text-sm md:text-base break-words leading-relaxed">
+        {message.content}
+      </p>
+      <span className={cn(
+        "text-[11px] block text-right mt-1",
+        isOwn ? "text-white/70" : "text-gray-500"
+      )}>
+        {format(new Date(message.timestamp), 'HH:mm')}
+      </span>
+    </div>
+  </div>
+);
+
 const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, recipientIsAdmin }) => {
-  const [socket, setSocket] = useState(null);
+  const { socket, onlineUsers } = useSocket();
+  const queryClient = useQueryClient();
+  const auth = useRecoilValue(authState);
   const [message, setMessage] = useState('');
+  const messagesEndRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const auth = useRecoilValue(authState);
-  const messagesEndRef = useRef(null);
   const [socketError, setSocketError] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const emojiPickerRef = useRef(null);
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const chatContainerRef = useRef(null);
   const navigate = useNavigate();
   const [isRecipientOnline, setIsRecipientOnline] = useState(false);
@@ -109,6 +139,29 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   const [selectedMessageId, setSelectedMessageId] = useState(null);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const { ref: loadMoreRef, inView } = useInView();
+  const MESSAGES_PER_PAGE = 25;
+  
+  const [reconnecting, setReconnecting] = useState(false);
+  const [messageQueue, setMessageQueue] = useState([]);
+
+  // Fetch messages with React Query
+  const { data: messagesData, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ['messages', recipientId],
+    queryFn: async ({ pageParam = 0 }) => {
+      const roomId = [auth.userId, recipientId].sort().join('-');
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/chat/messages/${roomId}`,
+        {
+          params: { page: pageParam, limit: 25 },
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
+      );
+      return response.data;
+    },
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
 
   useEffect(() => {
     // Prevent chatting with self
@@ -119,67 +172,52 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   }, [recipientId, auth.userId, navigate]);
   
   useEffect(() => {
-    const newSocket = io(import.meta.env.VITE_BACKEND_URL.replace('/api', ''), {
-      path: '/socket.io',
-      transports: ['websocket', 'polling'],
-      autoConnect: true,
-      reconnection: true,
-      withCredentials: true
-    });
+    if (!socket) return;
+
+    const roomId = [auth.userId, recipientId].sort().join('-');
     
-    newSocket.on('connect_error', (error) => {
-      setSocketError("Failed to connect to chat server");
-      console.error('Socket connection error:', error);
-    });
+    // Join room when component mounts
+    socket.emit('join_room', roomId);
 
-    newSocket.on('connect', () => {
-      setSocket(newSocket);
-      newSocket.emit('user_connected', auth.userId);
-      const roomId = [auth.userId, recipientId].sort().join('-');
-      newSocket.emit('join_room', roomId);
-    });
-
-    newSocket.on('typing_notify', (data) => {
-      if (data.userId === recipientId) {
-        setRecipientIsTyping(data.isTyping);
-      }
-    });
-
-    newSocket.on('receive_message', (message) => {
-      if (message.sender._id !== auth.userId) {
-        setMessages(prev => [...prev, message]);
-      }
-    });
-
-    newSocket.on('online_users_list', (users) => {
-      setOnlineUsers(new Set(users));
-    });
-
-    newSocket.on('user_status_change', ({ userId, status }) => {
-      setOnlineUsers(prev => {
-        const newSet = new Set(prev);
-        if (status === 'online') {
-          newSet.add(userId);
-        } else {
-          newSet.delete(userId);
+    // Listen for typing notifications
+    const handleTypingNotify = ({ userId, isTyping }) => {
+      if (userId === recipientId) {
+        setRecipientIsTyping(isTyping);
+        
+        // Reset any existing timeout for this user
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
         }
-        return newSet;
-      });
-    });
-
-    if (newSocket.connected) {
-      newSocket.emit('get_user_status', recipientId);
-    }
-
-    setLoading(false);
-   
-    return () => {
-      if (newSocket) {
-        newSocket.off('typing_notify');
-        newSocket.disconnect();
       }
     };
-  }, [auth.userId, recipientId]);
+
+    // Listen for new messages
+    const handleReceiveMessage = (newMessage) => {
+      // Only add the message if it's from someone else
+      if (newMessage.sender._id !== auth.userId) {
+      queryClient.setQueryData(['messages', recipientId], (old) => {
+        if (!old) return { pages: [[newMessage]], pageParams: [0] };
+        return {
+          ...old,
+          pages: [
+            [...(old.pages[0] || []), newMessage],
+            ...old.pages.slice(1),
+          ],
+        };
+      });
+      scrollToBottom();
+      }
+    };
+
+    socket.on('typing_notify', handleTypingNotify);
+    socket.on('receive_message', handleReceiveMessage);
+
+    return () => {
+      socket.off('typing_notify', handleTypingNotify);
+      socket.off('receive_message', handleReceiveMessage);
+      socket.emit('leave_room', roomId);
+    };
+  }, [socket, recipientId, auth.userId, queryClient]);
 
   useEffect(() => {
     let isMounted = true;
@@ -234,35 +272,58 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messagesData]);
 
-  const sendMessage = async (e) => {
+  // Send message function
+  const sendMessage = useCallback(async (e) => {
     e.preventDefault();
     if (!message.trim() || !socket) return;
 
     const roomId = [auth.userId, recipientId].sort().join('-');
+    const messageContent = message.trim();
     
+    // Clear input immediately for better UX
+    setMessage('');
+    
+    // Clear typing state
+    if (isTyping) {
+      setIsTyping(false);
+      socket.emit('typing_end', { roomId, userId: auth.userId });
+    }
+
     try {
-      const newMessage = {
+      // Create optimistic message with temporary ID
+      const optimisticMessage = {
+        _id: `temp-${Date.now()}`,
+        content: messageContent,
         sender: { _id: auth.userId },
-        content: message,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         roomId
       };
       
-      setMessages(prev => [...prev, newMessage]);
-      setMessage("");
+      // Update UI optimistically
+      queryClient.setQueryData(['messages', recipientId], (old) => {
+        if (!old) return { pages: [[optimisticMessage]], pageParams: [0] };
+        return {
+          ...old,
+          pages: [
+            [...(old.pages[0] || []), optimisticMessage],
+            ...old.pages.slice(1),
+          ],
+        };
+      });
 
+      // Emit message
       socket.emit('send_message', {
         roomId,
-        sender: auth.userId,
-        content: message
+        content: messageContent,
+        sender: auth.userId
       });
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setError('Failed to send message');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      queryClient.invalidateQueries(['messages', recipientId]);
     }
-  };
+  }, [message, socket, auth.userId, recipientId, isTyping, queryClient]);
 
   const onEmojiClick = (emojiObject) => {
     setMessage(prev => prev + emojiObject.emoji);
@@ -277,32 +338,73 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   };
 
   const handleTyping = (e) => {
-    setMessage(e.target.value);
+    const newMessage = e.target.value;
+    setMessage(newMessage);
     
     if (!socket) return;
     
     const roomId = [auth.userId, recipientId].sort().join('-');
     
-    if (!isTyping) {
-      setIsTyping(true);
-      socket.emit('typing_start', {
-        roomId: roomId,
-        userId: auth.userId
-      });
-    }
+    // Always emit typing_start when there's content
+    if (newMessage.length > 0) {
+        setIsTyping(true);
+        socket.emit('typing_start', {
+          roomId,
+          userId: auth.userId
+        });
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      socket.emit('typing_end', {
-        roomId: roomId,
-        userId: auth.userId
-      });
-    }, 1000);
+      // Set new timeout
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        socket.emit('typing_end', {
+          roomId,
+          userId: auth.userId
+        });
+      }, 1000);
+    } else {
+      // If message is empty, stop typing immediately
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+        setIsTyping(false);
+        socket.emit('typing_end', {
+          roomId,
+          userId: auth.userId
+        });
+    }
   };
+
+  // Typing notification listener
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTypingNotify = ({ userId, isTyping }) => {
+      if (userId === recipientId) {
+        setRecipientIsTyping(isTyping);
+      }
+    };
+
+    socket.on('typing_notify', handleTypingNotify);
+
+    // Cleanup
+    return () => {
+      socket.off('typing_notify', handleTypingNotify);
+    };
+  }, [socket, recipientId, auth.userId]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCopyMessage = async (content) => {
     try {
@@ -345,29 +447,24 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     setShowContextMenu(true);
   };
 
+  // Load more messages when scrolling up
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  // Flatten messages from all pages
+  const allMessages = useMemo(() => {
+    return messagesData?.pages.flatMap(page => page) ?? [];
+  }, [messagesData]);
+
   const renderMessage = (msg, index) => (
-    <motion.div
+    <MessageBubble
       key={msg._id || index}
-      initial="hidden"
-      animate="visible"
-      variants={messageVariants}
-      layout
-      className={`flex ${msg.sender._id === auth.userId ? 'justify-end' : 'justify-start'}`}
-    >
-      <div
-        className={`message-container relative max-w-[80%] md:max-w-[60%] p-3 rounded-2xl ${
-          msg.sender._id === auth.userId
-            ? 'bg-blue-600 text-white ml-12'
-            : 'bg-gray-800 text-white mr-12'
-        }`}
-        {...(isMobile ? longPressConfig : { onContextMenu: (e) => handleContextMenu(e, msg) })}
-      >
-        <p className="text-sm md:text-base break-words">{msg.content}</p>
-        <span className="text-xs opacity-75 mt-1 block">
-          {new Date(msg.timestamp).toLocaleTimeString()}
-        </span>
-      </div>
-    </motion.div>
+      message={msg}
+      isOwn={msg.sender._id === auth.userId}
+    />
   );
 
   const ContextMenu = () => (
@@ -457,21 +554,157 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     }
   };
 
+  // Add connection status monitoring
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleReconnect = () => {
+      setReconnecting(true);
+      // Refetch messages and user status
+      queryClient.invalidateQueries(['messages', recipientId]);
+    };
+
+    const handleReconnected = () => {
+      setReconnecting(false);
+      setError(null);
+    };
+
+    const handleError = (err) => {
+      setError('Connection lost. Trying to reconnect...');
+      setReconnecting(true);
+    };
+
+    socket.on('reconnect', handleReconnect);
+    socket.on('reconnect_error', handleError);
+    socket.on('connect', handleReconnected);
+
+    return () => {
+      socket.off('reconnect', handleReconnect);
+      socket.off('reconnect_error', handleError);
+      socket.off('connect', handleReconnected);
+    };
+  }, [socket, recipientId, queryClient]);
+
+  // Add message debouncing for better performance
+  const debouncedSendMessage = useMemo(
+    () => (async (message) => {
+      try {
+        const roomId = [auth.userId, recipientId].sort().join('-');
+        await socketService.emitMessage(socket, {
+          roomId,
+          message,
+          sender: auth.userId
+        });
+      } catch (error) {
+        setError('Failed to send message');
+      }
+    }, 300),
+    [socket, auth.userId, recipientId]
+  );
+
+  // Add message batching for better performance
+  useEffect(() => {
+    if (messageQueue.length === 0) return;
+
+    const batchSize = 10;
+    const processBatch = async () => {
+      const batch = messageQueue.slice(0, batchSize);
+      try {
+        await Promise.all(
+          batch.map(msg => 
+            socketService.emitMessage(socket, {
+              roomId: msg.roomId,
+              message: msg.content,
+              sender: auth.userId
+            })
+          )
+        );
+        setMessageQueue(prev => prev.slice(batchSize));
+      } catch (error) {
+        setError('Failed to send messages');
+      }
+    };
+
+    const timeoutId = setTimeout(processBatch, 100);
+    return () => clearTimeout(timeoutId);
+  }, [messageQueue, socket, auth.userId]);
+
+  // Optimize typing indicator with debounce
+  const debouncedTypingHandler = useMemo(
+    () => debounce((e) => {
+      const newMessage = e.target.value;
+    if (!socket) return;
+
+    const roomId = [auth.userId, recipientId].sort().join('-');
+
+      if (newMessage.trim()) {
+        if (!isTyping) {
+          setIsTyping(true);
+          socket.emit('typing_start', { roomId, userId: auth.userId });
+        }
+      } else {
+        setIsTyping(false);
+        socket.emit('typing_end', { roomId, userId: auth.userId });
+      }
+    }, 300),
+    [socket, auth.userId, recipientId, isTyping]
+  );
+
+  // Optimize message container with virtualization for better performance
+  const MessageContainer = useMemo(() => {
+    return (
+      <div 
+        ref={chatContainerRef}
+        className={cn(
+          "messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4",
+          "bg-background/50 scroll-smooth",
+          "pb-24"
+        )}
+      >
+        {isFetchingNextPage && (
+          <div className="flex justify-center py-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        )}
+        
+        <div ref={loadMoreRef} className="h-px" />
+        
+        {allMessages.map((msg, index) => {
+          const messageDate = new Date(msg.timestamp).toDateString();
+          const prevMessageDate = index > 0 ? new Date(allMessages[index - 1].timestamp).toDateString() : null;
+
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      variants={containerVariants}
-      className="fixed inset-0 bg-[#0A0A0A] z-10 flex flex-col"
-    >
-      <style>{customScrollbarStyles}</style>
-      <Card className="w-full h-screen max-w-none mx-auto bg-[#111111] overflow-hidden rounded-none flex flex-col pt-16 pb-20">
+            <React.Fragment key={msg._id || `temp-${index}`}>
+              {messageDate !== prevMessageDate && (
+                <DateSeparator date={msg.timestamp} />
+              )}
+              <MessageBubble
+                message={msg}
+                isOwn={msg.sender._id === auth.userId}
+              />
+            </React.Fragment>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+    );
+  }, [allMessages, isFetchingNextPage, auth.userId]);
+
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className={cn(
+        "fixed inset-0 z-10 flex flex-col",
+        "bg-background/50" // Light mode background
+      )}>
         {/* Header */}
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="p-4 border-b border-[#2A2A2A] bg-[#111111]/90 backdrop-blur-md fixed top-0 left-0 right-0 z-20"
+          className={cn(
+            "p-4 border-b fixed top-0 left-0 right-0 z-20",
+            "bg-white shadow-sm backdrop-blur-md",
+            "border-gray-100"
+          )}
         >
           <div className="flex items-center justify-between max-w-screen-xl mx-auto">
             <div className="flex items-center gap-4">
@@ -479,18 +712,26 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleBack}
-                className="p-2 rounded-full hover:bg-[#2A2A2A] transition-colors"
+                className={cn(
+                  "p-2 rounded-full",
+                  "hover:bg-accent",
+                  "text-foreground",
+                  "transition-colors"
+                )}
               >
-                <ArrowLeft className="w-5 h-5 text-gray-300" />
+                <ArrowLeft className="w-5 h-5" />
               </motion.button>
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <Avatar className="w-10 h-10 ring-2 ring-[#2A2A2A] ring-offset-2 ring-offset-[#111111]">
+                  <Avatar className={cn(
+                    "w-10 h-10",
+                    "ring-2 ring-border ring-offset-2 ring-offset-background"
+                  )}>
                    {recipientImage ? (
   <img 
     src={recipientImage} 
     alt={recipientName} 
-    className="object-cover rounded-full" 
+                        className="object-cover rounded-full hover:opacity-90 transition-opacity cursor-pointer" 
     referrerPolicy="no-referrer"
     onClick={() => navigate(`/profile/${recipientUsername}`)}
     onError={(e) => {
@@ -498,33 +739,51 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     }}
   />
 ) : (
-  <DefaultAvatar onClick={() => navigate(`/profile/${recipientUsername}`)} className="w-10 h-10 rounded-full object-cover cursor-pointer shadow-md ring-1 ring-primary/10 hover:ring-primary/30 transition-all" />
+                      <DefaultAvatar 
+                        onClick={() => navigate(`/profile/${recipientUsername}`)} 
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer" 
+                      />
 )}
-
                   </Avatar>
-                  {isRecipientOnline && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#111111] bg-emerald-500"></span>
+                  {onlineUsers.has(recipientId) && (
+                    <OnlineStatus userId={recipientId} className="bottom-0 right-0" />
                   )}
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-gray-100 flex items-center gap-2">
+                  <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <span className="truncate max-w-[200px]">
                       {recipientName}
                     </span>
-                    {recipientIsAdmin && (
-                      <AdminBadge className="flex-shrink-0" />
-                    )}
+                    {recipientIsAdmin && <AdminBadge />}
                   </h2>
-                  <div className="text-xs text-gray-400">
-                    {isRecipientOnline ? 'Active now' : 'offline'}
+                  <div className="text-xs text-muted-foreground">
+                    {onlineUsers.has(recipientId) ? 'Active now' : 'Offline'}
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <HeaderIconButton icon={<Phone />} />
-              <HeaderIconButton icon={<Video />} />
-              <HeaderIconButton icon={<MoreVertical />} />
+              <HeaderIconButton 
+                icon={<Phone className="w-5 h-5" />}
+                className={cn(
+                  "hover:bg-accent",
+                  "text-muted-foreground hover:text-foreground"
+                )}
+              />
+              <HeaderIconButton 
+                icon={<Video className="w-5 h-5" />}
+                className={cn(
+                  "hover:bg-accent",
+                  "text-muted-foreground hover:text-foreground"
+                )}
+              />
+              <HeaderIconButton 
+                icon={<MoreVertical className="w-5 h-5" />}
+                className={cn(
+                  "hover:bg-accent",
+                  "text-muted-foreground hover:text-foreground"
+                )}
+              />
             </div>
           </div>
         </motion.div>
@@ -532,64 +791,67 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
         {/* Messages Container */}
         <div 
   ref={chatContainerRef}
-  className="messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4 bg-gradient-to-b from-[#111111] to-[#0A0A0A] scroll-smooth"
->
-          <AnimatePresence mode="popLayout">
-            {messages.reduce((acc, msg, index) => {
+          className={cn(
+            "messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4",
+            "bg-background/50 scroll-smooth",
+            "pb-24"
+          )}
+        >
+            {isFetchingNextPage && (
+            <div className="flex justify-center py-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            )}
+            
+            <div ref={loadMoreRef} className="h-px" />
+            
+          {allMessages.map((msg, index) => {
               const messageDate = new Date(msg.timestamp).toDateString();
-              const prevMessageDate = index > 0 ? new Date(messages[index - 1].timestamp).toDateString() : null;
+                const prevMessageDate = index > 0 ? new Date(allMessages[index - 1].timestamp).toDateString() : null;
 
-              if (messageDate !== prevMessageDate) {
-                acc.push(
-                  <DateSeparator key={`date-${msg.timestamp}`} date={msg.timestamp} />
-                );
-              }
-
-              acc.push(
+            return (
+              <React.Fragment key={msg._id || `temp-${index}`}>
+                {messageDate !== prevMessageDate && (
+                  <DateSeparator date={msg.timestamp} />
+                )}
                 <MessageBubble
-                  key={msg._id || index}
                   message={msg}
                   isOwn={msg.sender._id === auth.userId}
-                  handleContextMenu={handleContextMenu}
-                  isMobile={isMobile}
-                  longPressConfig={longPressConfig}
                 />
+              </React.Fragment>
               );
-
-              return acc;
-            }, [])}
-          </AnimatePresence>
+          })}
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Typing Indicator */}
         {recipientIsTyping && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute bottom-24 left-0 right-0 flex justify-center"
-          >
-            <div className="bg-blue-500 text-white  mt-3 px-4 py-2 rounded-full text-sm shadow-lg flex items-center gap-2">
+          <div className="absolute bottom-24 left-0 right-0 flex justify-center">
+            <div className={cn(
+              "rounded-full px-4 py-2 text-sm",
+              "bg-gray-100 text-gray-700",
+              "shadow-sm",
+              "flex items-center gap-2"
+            )}>
               <div className="flex gap-1">
                 <motion.span
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="w-1 h-1 bg-white rounded-full"
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity}}
+                  className="w-1 h-1 bg-gray-500 rounded-full"
                 />
                 <motion.span
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                  className="w-1 h-1 bg-white rounded-full"
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity}}
+                  className="w-1 h-1 bg-gray-500 rounded-full"
                 />
                 <motion.span
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
-                  className="w-1 h-1 bg-white rounded-full"
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity}}
+                  className="w-1 h-1 bg-gray-500 rounded-full"
                 />
               </div>
-              {/* <span>{recipientName} is typing</span> */}
             </div>
-          </motion.div>
+          </div>
         )}    
 
         {/* Input Form */}
@@ -597,25 +859,67 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           onSubmit={sendMessage}
-          className="p-4 bg-[#111111]/90 backdrop-blur-md border-t border-[#2A2A2A] fixed bottom-0 left-0 right-0"
+          className={cn(
+            "p-3 fixed bottom-0 left-0 right-0",
+            "bg-background/90 backdrop-blur-md",
+            "border-t border-border"
+          )}
         >
           <div className="flex items-end space-x-2 max-w-screen-xl mx-auto">
+            <div className="relative flex-grow flex items-center">
             <input
               type="text"
               value={message}
-              onChange={handleTyping}
+                onChange={handleTyping}
               placeholder="Type your message..."
-              className="flex-grow p-3 rounded-full border border-[#2A2A2A] bg-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-100 text-sm transition-shadow placeholder-gray-500"
-            />
+                className={cn(
+                  "w-full p-2.5 pr-12 rounded-full",
+                  "border border-gray-200",
+                  "bg-white",
+                  "text-gray-900",
+                  "placeholder:text-gray-400",
+                  "focus:outline-none focus:border-blue-500",
+                  "transition-none"
+                )}
+                autoComplete="off"
+                spellCheck="false"
+                autoCorrect="off"
+                autoCapitalize="off"
+                maxLength={5000}
+              />
+              {message && (
+                <button
+                  type="button"
+                  onClick={() => setMessage('')}
+                  className={cn(
+                    "absolute right-3 top-1/2 -translate-y-1/2",
+                    "p-1.5 rounded-full",
+                    "hover:bg-accent",
+                    "text-muted-foreground",
+                    "transition-colors"
+                  )}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
             <div ref={emojiPickerRef} className="relative">
               <motion.button
                 type="button"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="p-3 rounded-full bg-[#1A1A1A] hover:bg-[#2A2A2A] transition-colors"
+                className={cn(
+                  "p-2.5 rounded-full",
+                  "bg-white",
+                  "border border-gray-200",
+                  "hover:bg-gray-50",
+                  "text-gray-700",
+                  "transition-colors"
+                )}
               >
-                <Smile className="w-5 h-5 text-gray-300" />
+                <Smile className="w-5 h-5" />
               </motion.button>
               <AnimatePresence>
                 {showEmojiPicker && (
@@ -625,31 +929,39 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                     exit={{ opacity: 0, y: 10 }}
                     className="absolute bottom-14 right-0 z-50"
                   >
-                    <div className="shadow-lg rounded-lg overflow-hidden">
+                    <div className={cn(
+                      "shadow-xl rounded-lg overflow-hidden",
+                      "border border-border"
+                    )}>
                       <EmojiPicker 
-                        onEmojiClick={onEmojiClick}
-                        theme="dark"
+                        theme="light"
                         lazyLoadEmojis={true}
+                        onEmojiClick={onEmojiClick}
                       />
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
+
             <motion.button
               type="submit"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-[#111111] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={cn(
+                "p-2.5 rounded-full",
+                "bg-blue-600 hover:bg-blue-700",
+                "text-white",
+                "transition-colors",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "focus:ring-2 focus:ring-blue-500/20"
+              )}
               disabled={!message.trim()}
             >
               <Send className="w-5 h-5" />
             </motion.button>
           </div>
         </motion.form>
-      </Card>
-      <ContextMenu />
-    </motion.div>
+          </div>
+    </ErrorBoundary>
   );
 };
 
@@ -664,33 +976,4 @@ const HeaderIconButton = ({ icon }) => (
   </motion.button>
 );
 
-// New component for message bubbles
-const MessageBubble = ({ message, isOwn, handleContextMenu, isMobile, longPressConfig }) => (
-  <motion.div
-    initial="hidden"
-    animate="visible"
-    variants={messageVariants}
-    layout
-    className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-  >
-    <div
-      className={`message-container relative max-w-[80%] md:max-w-[60%] p-3 rounded-2xl ${
-        isOwn
-          ? 'bg-blue-600 text-white ml-12 rounded-tr-sm'
-          : 'bg-[#2A2A2A] text-gray-100 mr-12 rounded-tl-sm'
-      } shadow-lg hover:shadow-xl transition-shadow`}
-      {...(isMobile ? longPressConfig : { onContextMenu: (e) => handleContextMenu(e, message) })}
-    >
-      <p className="text-sm md:text-base break-words">{message.content}</p>
-      <span className="text-xs opacity-75 mt-1 block">
-        {new Date(message.timestamp).toLocaleTimeString([], { 
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        })}
-      </span>
-    </div>
-  </motion.div>
-);
-
-export default Chat;
+export default memo(Chat);

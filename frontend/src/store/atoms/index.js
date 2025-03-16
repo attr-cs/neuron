@@ -5,8 +5,8 @@ export const authState = atom({
     key: 'authState',
     default: {
         isAuthenticated: false,
-        userId: null,
         token: null,
+        userId: null,
         username: null
     }
 })
@@ -18,10 +18,9 @@ export const userBasicInfoState = atom({
         firstname: null,
         lastname: null,
         username: null,
-        profileImageUrl: null,
-        isVerified: false,
+        profileImage: null,
         isAdmin: false,
-        isOAuthUser: false
+        isOnline: false
     }
 })
 
@@ -29,54 +28,6 @@ export const onlineUsersState = atom({
     key: 'onlineUsersState',
     default: new Set()
   });
-  
-
-// Profile-specific data
-export const userProfileState = atom({
-    key: 'userProfileState',
-    default: {
-        bio: '',
-        location: '',
-        websiteUrl: '',
-        bannerImageUrl: '',
-        dateJoined: null,
-        gender: '',
-        occupation: '',
-        company: '',
-        email: '',
-        phone: '',
-        skills: [],
-        website: ''
-    }
-})
-
-// Social connections
-export const userSocialState = atom({
-    key: 'userSocialState',
-    default: {
-        followers: [],
-        following: [],
-        isOnline: false,
-        lastVisited: null
-    }
-})
-
-// Content-related data
-export const userContentState = atom({
-    key: 'userContentState',
-    default: {
-        posts: [],
-        recentActivity: []
-    }
-})
-
-// Notifications
-export const userNotificationsState = atom({
-    key: 'userNotificationsState',
-    default: {
-        notifications: []
-    }
-})
 
 
 // Theme
@@ -85,7 +36,18 @@ export const themeState = atom({
     default: 'light'
 })
 
+// Socket state
+export const socketState = atom({
+    key: 'socketState',
+    default: null
+})
 
-
-
+// Notification state
+export const notificationState = atom({
+    key: 'notificationState',
+    default: {
+        unreadCount: 0,
+        notifications: []
+    }
+})
 
