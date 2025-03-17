@@ -13,6 +13,13 @@ export default {
   	extend: {
 		animation: {
 			'spin-slow': 'spin 3s linear infinite',
+			blink: 'blink 1s step-end infinite',
+		},
+		keyframes: {
+			blink: {
+				'0%,70%,100%': { opacity: '1' },
+				'20%,50%': { opacity: '0' },
+			},
 		},
   		borderRadius: {
   			lg: 'var(--radius)',

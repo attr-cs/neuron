@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import uploadImage from '@/utils/uploadImage';
 import axios from 'axios';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { authState } from '@/store/atoms';
 import defaultAvatar from "@/utils/defaultAvatar";
+import { userBasicInfoState } from '@/store/atoms';
 
 export const ProfileImageUpload = ({ 
   currentImage, 
@@ -15,6 +16,7 @@ export const ProfileImageUpload = ({
   size = "lg"
 }) => {
   const [isHovering, setIsHovering] = useState(false);
+  const setUserBasicInfo = useSetRecoilState(userBasicInfoState);
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -63,11 +65,17 @@ export const ProfileImageUpload = ({
       onImageUpdate(response.data.profileImage);
       setSelectedImage(null);
       setPreviewUrl(null);
-      
+      setUserBasicInfo(prev => ({
+        ...prev,
+        profileImage: response.data.profileImage
+      }));
       toast({
         title: "Success",
         description: "Profile image updated successfully",
       });
+      setIsUploading(false);
+      setIsHovering(false);
+      setSelectedImage(null);
     } catch (error) {
       console.error('Error updating profile image:', error);
       toast({

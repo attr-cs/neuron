@@ -6,7 +6,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserPlus, UserCheck, MessageSquare, Mail, MapPin, Calendar, Link as LinkIcon, Loader, Info } from 'lucide-react';
+import { UserPlus, UserCheck, MessageSquare, Mail, MapPin, Calendar, Link as LinkIcon, Loader, Info, MoreVertical } from 'lucide-react';
 import DefaultAvatar from '@/components/ui/DefaultAvatar';
 import AdminBadge from '@/components/ui/AdminBadge';
 import FollowModal from '@/components/FollowModal';
@@ -21,6 +21,9 @@ import  PostCard  from '@/components/PostCard'
 import { ProfileImageUpload } from '@/components/ProfileImageUpload';
 import defaultAvatar from "@/utils/defaultAvatar";
 import { BannerImageUpload } from '@/components/BannerImageUpload';
+import { Mentions } from '@/components/ui/Mentions';
+import { ReportDialog } from '@/components/ui/ReportDialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Add this PostSkeleton component before the ProfilePage component
 const PostSkeleton = () => (
@@ -51,7 +54,9 @@ const UserInfoDialog = ({ isOpen, onClose, user }) => {
           {user?.bio && (
             <div>
               <h4 className="text-sm font-semibold mb-1">Bio</h4>
-              <p className="text-sm text-muted-foreground">{user.bio}</p>
+              <div className="bio">
+                <Mentions text={user.bio} />
+              </div>
             </div>
           )}
           
@@ -62,12 +67,30 @@ const UserInfoDialog = ({ isOpen, onClose, user }) => {
                 <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
             )}
+            
             {user?.location && (
               <div>
                 <h4 className="text-sm font-semibold mb-1">Location</h4>
                 <p className="text-sm text-muted-foreground">{user.location}</p>
               </div>
             )}
+            
+            {user?.gender && (
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Gender</h4>
+                <p className="text-sm text-muted-foreground">{user.gender}</p>
+              </div>
+            )}
+            
+            {user?.birthdate && (
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Birth Date</h4>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(user.birthdate), 'MMMM d, yyyy')}
+                </p>
+              </div>
+            )}
+            
             {user?.website && (
               <div>
                 <h4 className="text-sm font-semibold mb-1">Website</h4>
@@ -81,6 +104,7 @@ const UserInfoDialog = ({ isOpen, onClose, user }) => {
                 </a>
               </div>
             )}
+            
             <div>
               <h4 className="text-sm font-semibold mb-1">Joined</h4>
               <p className="text-sm text-muted-foreground">
@@ -104,6 +128,8 @@ const ProfilePage = () => {
   const { onlineUsers } = useSocket();
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [activeTab, setActiveTab] = useState("posts");
+  const [followLoadingStates, setFollowLoadingStates] = useState({});
+  const [showReportDialog, setShowReportDialog] = useState(false);
 
   // Fetch profile data with follower status and counts
   const { data: user, isLoading, error } = useQuery({
@@ -168,9 +194,11 @@ const ProfilePage = () => {
     enabled: !!user && showFollowingModal,
   });
 
-  // Follow/Unfollow mutation with optimistic updates
+  // Modify the follow mutation
   const followMutation = useMutation({
     mutationFn: async (userId) => {
+      setFollowLoadingStates(prev => ({ ...prev, [userId]: true }));
+      try {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/user/follow/${userId}`,
         {},
@@ -179,6 +207,9 @@ const ProfilePage = () => {
         }
       );
       return response.data;
+      } finally {
+        setFollowLoadingStates(prev => ({ ...prev, [userId]: false }));
+      }
     },
     onMutate: async (userId) => {
       // Cancel outgoing refetches
@@ -211,6 +242,15 @@ const ProfilePage = () => {
       }
     },
   });
+
+  // Update the follow toggle handler
+  const handleFollowToggle = async (userId) => {
+    try {
+      await followMutation.mutateAsync(userId);
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
+  };
 
   // Add this new query for user posts
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
@@ -251,27 +291,20 @@ const ProfilePage = () => {
       <div className="container max-w-4xl mx-auto sm:px-4">
         <Card className="overflow-hidden bg-card sm:rounded-lg rounded-none">
           {/* Cover Image - increased height */}
-          {auth.userId === user?._id ? (
-            <BannerImageUpload
-              currentImage={user.bannerImage?.displayUrl}
-              onImageUpdate={(newImage) => {
-                queryClient.setQueryData(['profile', username], old => ({
-                  ...old,
-                  bannerImage: newImage
-                }));
-              }}
-            />
-          ) : (
-            <div className="h-48 sm:h-64 bg-gradient-to-r from-primary/20 to-primary/40">
-              {user.bannerImage?.displayUrl && (
-                <img
-                  src={user.bannerImage.displayUrl}
-                  alt="Banner"
-                  className="w-full h-full object-cover"
-                />
-              )}
-            </div>
-          )}
+          <div 
+            className="relative w-full h-[200px] bg-muted overflow-hidden"
+          >
+            {user?.bannerImage?.displayUrl ? (
+              <img
+                src={user.bannerImage.displayUrl}
+                alt="Profile banner"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              // Default banner or gradient background when no banner image exists
+              <div className="w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900" />
+            )}
+          </div>
           
           {/* Profile Content - removed top padding */}
           <div className="relative px-4 sm:px-6 pb-6">
@@ -328,11 +361,11 @@ const ProfilePage = () => {
                 <div className="flex gap-3 mb-6">
                   <Button
                     variant={user?.isFollowedByMe ? "secondary" : "default"}
-                    disabled={followMutation.isPending}
-                    onClick={() => followMutation.mutate(user._id)}
+                    disabled={followLoadingStates[user._id]}
+                    onClick={() => handleFollowToggle(user._id)}
                     className="w-32 h-10"
                   >
-                    {followMutation.isPending ? (
+                    {followLoadingStates[user._id] ? (
                       <Loader className="w-4 h-4 animate-spin" />
                     ) : user?.isFollowedByMe ? (
                       <>
@@ -472,10 +505,9 @@ const ProfilePage = () => {
           onClose={() => setShowFollowersModal(false)}
           data={followersData || []}
           type="followers"
-          title={`${user?.firstname}'s Followers`}
           currentUserId={auth.userId}
-          onFollowToggle={(userId) => followMutation.mutate(userId)}
-          followLoading={{ [user?._id]: followMutation.isPending }}
+          onFollowToggle={handleFollowToggle}
+          followLoading={followLoadingStates}
           isLoadingModalData={isLoadingFollowers}
         />
 
@@ -484,11 +516,39 @@ const ProfilePage = () => {
           onClose={() => setShowFollowingModal(false)}
           data={followingData || []}
           type="following"
-          title={`${user?.firstname} is Following`}
           currentUserId={auth.userId}
-          onFollowToggle={(userId) => followMutation.mutate(userId)}
-          followLoading={{ [user?._id]: followMutation.isPending }}
+          onFollowToggle={handleFollowToggle}
+          followLoading={followLoadingStates}
           isLoadingModalData={isLoadingFollowing}
+        />
+
+        {/* Add report button in the banner area if not own profile */}
+        {auth.userId !== user?._id && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="absolute top-4 right-4 bg-black/20 hover:bg-black/40"
+              >
+                <MoreVertical className="h-4 w-4 text-white" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                Report user
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* Add Report Dialog */}
+        <ReportDialog
+          isOpen={showReportDialog}
+          onClose={() => setShowReportDialog(false)}
+          targetType="user"
+          targetId={user?._id}
+          targetUser={user?._id}
         />
       </div>
     </div>

@@ -1,7 +1,17 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true, trim: true, lowercase: true, minLength: 3, maxLength: 30, index: true },
+  username: { 
+    type: String, 
+    required: true, 
+    unique: true, 
+    trim: true, 
+    lowercase: true, 
+    minLength: 3, 
+    maxLength: 30,
+    match: [/^[a-z0-9_-]+$/, 'Username can only contain lowercase letters, numbers, underscore and hyphen'],
+    index: true 
+  },
   email: { type: String, required: true, unique: true, trim: true, lowercase: true, index: true },
   firstname: { type: String, required: true, trim: true, maxLength: 50 },
   lastname: { type: String, required: true, trim: true, maxLength: 50 },

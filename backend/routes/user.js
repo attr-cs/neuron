@@ -116,12 +116,36 @@ userRouter.get('/userslist', verifyToken, async (req,res)=>{
 }) 
 
 
-// check username availability
-userRouter.post('/check-username', async(req,res)=>{
-    const username = req.body.username;
-    const user = await User.findOne({username});
-    return res.status(200).json({ exists: !!user})
-})
+// Add this validation function
+const isValidUsername = (username) => {
+  const regex = /^[a-z0-9_-]+$/;
+  return regex.test(username);
+};
+
+// Update the check-username route
+userRouter.post('/check-username', verifyToken, async (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    // Validate username format
+    if (!isValidUsername(username)) {
+      return res.status(400).json({ 
+        message: 'Username can only contain lowercase letters, numbers, underscore and hyphen'
+      });
+    }
+
+    // Check if username exists
+    const user = await User.findOne({ 
+      username: username.toLowerCase(),
+      _id: { $ne: req.user.id }
+    });
+
+    return res.status(200).json({ exists: !!user });
+  } catch (error) {
+    console.error('Error checking username:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
 
 
 
@@ -154,12 +178,7 @@ userRouter.post('/google-auth', async (req, res) => {
     let user = await User.findOne({ email });
     
     if (user) {
-      // Update profile image if provided
-      if (profileImage) {
-        user.profileImage = profileImage;
-        await user.save();
-      }
-      
+      // Don't update existing user's data
       const token = jwt.sign(
         { userId: user._id, username: user.username },
         process.env.JWT_SECRET,
@@ -174,15 +193,20 @@ userRouter.post('/google-auth', async (req, res) => {
       });
     }
 
+    // Only create new user if doesn't exist
     const username = await generateUniqueUsername(email.split('@')[0]);
-
     const newUser = await User.create({
       username,
       email,
       firstname,
       lastname,
       isOAuthUser: true,
-      profileImage,
+      profileImage: profileImage || {
+        imageId: "",
+        url: "",
+        thumbUrl: "",
+        displayUrl: ""
+      },
       lastSeen: new Date(),
       isOnline: true
     });
@@ -204,40 +228,7 @@ userRouter.post('/google-auth', async (req, res) => {
     console.error('Google auth error:', error);
     return res.status(500).json({ msg: "Server error", error: error.message });
   }
-});userRouter.post('/google-auth', async (req,res)=>{
-    const data = req.body;
-    const {success,error} = userOAuthZod.safeParse(data);
-    if(!success){
-        return res.status(400).json({msg:"Invalid Data Format!",error:error});
-    }
-
-    const {email, firstname, lastname,  profileImageUrl} = req.body;
-
-    const isExist = await User.findOne({email: email});
-
-    if(isExist){
-        const existId = isExist._id;
-        const username = isExist.username;
-        const token = jwt.sign({userId: existId, username: username}, process.env.JWT_SECRET, {expiresIn:'30d'});
-        return res.status(200).json({msg:"User already exists", token: token, userId: existId, username: username});
-    }
-
-    const emailPrefix = email.split('@')[0];
-    const username = await generateUniqueUsername(emailPrefix);
-
-    const newUser = await User.create({
-        username: username,
-        email: email,
-        firstname: firstname,
-        lastname: lastname,
-        isOAuthUser: true,
-        profileImageUrl: profileImageUrl
-    })
-    const userId = newUser._id;
-    const jwtSign = jwt.sign({userId:userId,  username: username},process.env.JWT_SECRET)
-
-    return res.status(200).json({msg:"User created successfully!",token:jwtSign,userId:userId, username: username})
-})
+});
 
 userRouter.post("/create-password", async (req,res)=>{
     const {userId, newPassword} = req.body;
@@ -349,47 +340,64 @@ userRouter.get('/:username', verifyToken, async (req, res) => {
   }
 });
 
-userRouter.patch('/update', verifyToken, async (req, res) => {
+userRouter.post('/update', verifyToken, async (req, res) => {
   try {
-    const { success, error } = userUpdateZod.safeParse(req.body);
-    if (!success) {
-      return res.status(400).json({ msg: "Invalid Data Format!", error });
-    }
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ msg: "User not found" });
-    }
-
     const updateFields = [
       'firstname', 'lastname', 'bio', 'gender',
-      'location', 'birthdate', 'profileImage', 'bannerImage'
+      'location', 'birthdate', 'website', 'username'
     ];
 
+    const updateData = {};
     updateFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        user[field] = req.body[field];
+        if (field === 'username') {
+          // Validate username format
+          if (!isValidUsername(req.body[field])) {
+            throw new Error('Invalid username format');
+          }
+          updateData[field] = req.body[field].toLowerCase();
+        } else if (field === 'birthdate' && req.body[field]) {
+          updateData[field] = new Date(req.body[field]);
+        } else {
+          updateData[field] = req.body[field] || null;
+        }
       }
     });
 
-    await user.save();
+    // If username is being updated, check availability
+    if (updateData.username) {
+      const existingUser = await User.findOne({ 
+        username: updateData.username,
+        _id: { $ne: req.user.id }
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username is already taken' });
+      }
+    }
 
-    return res.status(200).json({
-      firstname: user.firstname,
-      lastname: user.lastname,
-      username: user.username,
-      bio: user.bio,
-      gender: user.gender,
-      location: user.location,
-      birthdate: user.birthdate,
-      profileImage: user.profileImage,
-      bannerImage: user.bannerImage,
-      isAdmin: user.isAdmin,
-      isOnline: user.isOnline
-    });
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updateData },
+      { 
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
   } catch (error) {
     console.error('Error updating user:', error);
-    return res.status(500).json({ msg: "Server error" });
+    if (error.message === 'Invalid username format') {
+      return res.status(400).json({ 
+        message: 'Username can only contain lowercase letters, numbers, underscore and hyphen'
+      });
+    }
+    res.status(500).json({ message: 'Failed to update user information' });
   }
 });
 
@@ -461,21 +469,20 @@ userRouter.post('/submit', async (req, res) => {
 userRouter.get('/profile/:username', verifyToken, async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username })
-      .select('username firstname lastname bio email location website profileImage bannerImage isAdmin createdAt followers following')
+      .select('username firstname lastname bio email location website profileImage bannerImage isAdmin createdAt followers following gender birthdate')
       .lean();
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Add follower status and counts
     const profileData = {
       ...user,
       isFollowedByMe: user.followers.some(id => id.toString() === req.user.id),
       followersCount: user.followers.length,
       followingCount: user.following.length,
-      followers: undefined, // Don't send full arrays
-      following: undefined // Don't send full arrays
+      followers: undefined,
+      following: undefined
     };
 
     res.json(profileData);
@@ -584,18 +591,32 @@ userRouter.post('/update-banner-image', verifyToken, async (req, res) => {
   try {
     const { imageData } = req.body;
     
+    if (!imageData || !imageData.url) {
+      return res.status(400).json({ message: 'Invalid image data' });
+    }
+
+    const updateData = {
+      bannerImage: {
+        imageId: imageData.imageId,
+        url: imageData.url,
+        thumbUrl: imageData.thumbUrl,
+        displayUrl: imageData.displayUrl
+      }
+    };
+
     const user = await User.findByIdAndUpdate(
       req.user.id,
+      { $set: updateData },
       { 
-        bannerImage: {
-          imageId: imageData.imageId,
-          url: imageData.url,
-          thumbUrl: imageData.thumbUrl,
-          displayUrl: imageData.displayUrl
-        }
-      },
-      { new: true }
-    ).select('bannerImage');
+        new: true,
+        select: 'bannerImage',
+        runValidators: true
+      }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
     res.json({ bannerImage: user.bannerImage });
   } catch (error) {

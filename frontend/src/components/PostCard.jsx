@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MessageSquare, Heart, Share2, Bookmark, Send, MoreVertical, Loader2, Maximize } from 'lucide-react';
 import defaultAvatar from "../utils/defaultAvatar";
+import { Mentions } from '@/components/ui/Mentions';
+import { ReportDialog } from '@/components/ui/ReportDialog';
 
 // ImageDialog Component
 const ImageDialog = ({ isOpen, onClose, imageUrl }) => {
@@ -47,6 +49,7 @@ const PostCard = ({
   isSubmittingComment 
 }) => {
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
   
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -92,7 +95,6 @@ const PostCard = ({
             </div>
 
             {/* Delete Option */}
-            {post.author?._id === userBasicInfo._id && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
@@ -100,19 +102,26 @@ const PostCard = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                {post.author?._id === userBasicInfo._id ? (
                   <DropdownMenuItem 
                     onClick={() => onDelete(post._id)}
                     className="text-destructive"
                   >
                     Delete post
                   </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                    Report post
+                  </DropdownMenuItem>
+                )}
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
           </div>
 
           {/* Post Content */}
-          <p className="text-base leading-relaxed mb-4">{post.content}</p>
+          <div className="mt-3">
+            <Mentions text={post.content} />
+          </div>
 
           {/* Post Image */}
           {post.images?.length > 0 && (
@@ -176,38 +185,54 @@ const PostCard = ({
 
           {/* Comments Section */}
           {showComments === post._id && (
-            <div className="mt-4 pt-4 border-t">
-              <div className="space-y-4">
-                {post.comments?.map((comment) => (
-                  <div key={comment._id} className="flex items-start space-x-2">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={comment.author?.profileImage?.thumbUrl || defaultAvatar} />
-                      <AvatarFallback>{comment.author?.username[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{comment.author?.username}</p>
-                      <p className="text-sm text-muted-foreground">{comment.content}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex items-center space-x-2 mt-4">
+            <div className="mt-4">
+              <div className="flex gap-2 mb-4">
                 <Input
-                  placeholder="Add a comment..."
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  className="flex-1"
                 />
-                <Button 
-                  size="sm" 
-                  onClick={() => onComment(post._id)}
-                  disabled={isSubmittingComment || !commentText.trim()}
+                <Button
+                  size="sm"
+                  disabled={!commentText.trim() || isSubmittingComment}
+                  onClick={() => onComment(post._id, commentText)}
                 >
-                  <Send className="h-4 w-4" />
+                  {isSubmittingComment ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
+
+              {post.comments?.map((comment) => (
+                <div key={comment._id} className="flex items-start gap-2 mb-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={comment.author?.profileImage?.thumbUrl || defaultAvatar} />
+                    <AvatarFallback>{comment.author?.username[0]}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="text-sm">
+                      <Mentions text={comment.content} />
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(comment.createdAt), 'MMM d, yyyy')}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
+
+          {/* Add Report Dialog */}
+          <ReportDialog
+            isOpen={showReportDialog}
+            onClose={() => setShowReportDialog(false)}
+            targetType="post"
+            targetId={post._id}
+            targetUser={post.author._id}
+          />
         </div>
       </Card>
     </motion.div>

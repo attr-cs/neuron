@@ -28,6 +28,7 @@ import { useSocket } from '@/contexts/SocketContext';
 import { cn } from '@/lib/utils';
 import debounce from 'lodash.debounce';
 import  OnlineStatus  from '@/components/ui/OnlineStatus';
+import { Mentions } from '@/components/ui/Mentions';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -101,9 +102,7 @@ const MessageBubble = ({ message, isOwn }) => (
         ? "bg-blue-600 text-white rounded-tr-sm ml-8 sm:ml-12" 
         : "bg-gray-100 text-gray-900 rounded-tl-sm mr-8 sm:mr-12"
     )}>
-      <p className="text-sm md:text-base break-words leading-relaxed">
-        {message.content}
-      </p>
+      <Mentions text={message.content} />
       <span className={cn(
         "text-[11px] block text-right mt-1",
         isOwn ? "text-white/70" : "text-gray-500"

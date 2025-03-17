@@ -8,6 +8,8 @@ import { GoogleLogin } from '@react-oauth/google'
 import { authState, userBasicInfoState } from "../store/atoms/index"
 import fetchUserData from "../utils/fetchUserData"
 import { motion, AnimatePresence } from "framer-motion"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -91,6 +93,7 @@ function Signup() {
   const navigate = useNavigate()
   const setAuth = useSetRecoilState(authState)
   const setBasicInfo = useSetRecoilState(userBasicInfoState)
+  const { toast } = useToast()
 
   
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -106,6 +109,7 @@ function Signup() {
   const [usernameError, setUsernameError] = useState("")
   const [currentStep, setCurrentStep] = useState(0)
   const [isFormValid, setIsFormValid] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -204,63 +208,83 @@ function Signup() {
   }
 
   const onSignUpSuccess = async (tokenResponse) => {
-    const decoded = jwtDecode(JSON.stringify(tokenResponse))
-    const { email, given_name, family_name, picture } = decoded
-
-    // Upload profile image to ImgBB first
-    let profileImage = {}
-    if (picture) {
-      try {
-        profileImage = await uploadImage(picture)
-      } catch (error) {
-        console.error('Failed to upload profile image:', error)
-        // Continue with default profile image if upload fails
-      }
-    }
-    
-    const user = {
-      email: email,
-      firstname: given_name,
-      lastname: family_name,
-      profileImage: {
-        url: profileImage.url,
-        displayUrl: profileImage.displayUrl,
-        thumbUrl: profileImage.thumbUrl,
-        imageId: profileImage.imageId 
-      }
-    }
-    
+    setIsGoogleLoading(true);
     try {
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/google-auth`, user)
-      const { token, userId, username } = response.data
-        setAuth({ isAuthenticated: true, token: token, userId: userId, username: username })
-        localStorage.setItem("token", token)
-        localStorage.setItem("userId", userId)
-        localStorage.setItem("username", username)
-        
+      const decoded = jwtDecode(tokenResponse.credential);
+      const { email, given_name, family_name, picture } = decoded;
   
-        const userData = await fetchUserData(username, token)
-        setBasicInfo({
-          username: userData.username,
-          firstname: userData.firstname,
-          lastname: userData.lastname,
-          profileImage: userData.profileImage || {
-            imageId: "",
-            url: defaultAvatar,
-            thumbUrl: defaultAvatar,
-            displayUrl: defaultAvatar
-          },
-          isOnline:userData.isOnline,
-          isAdmin: userData.isAdmin,
-          
-        })
-        navigate('/dashboard')
-        
+      let profileImage = null;
+      if (picture) {
+        try {
+          const uploadedImage = await uploadImage(picture);
+          profileImage = {
+            imageId: uploadedImage.imageId || "",
+            url: uploadedImage.url || picture,
+            thumbUrl: uploadedImage.thumbUrl || picture,
+            displayUrl: uploadedImage.displayUrl || picture
+          };
+        } catch (error) {
+          console.error('Failed to upload profile image:', error);
+        }
+      }
+      
+      const user = {
+        email,
+        firstname: given_name,
+        lastname: family_name,
+        profileImage
+      };
+      
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/google-auth`,
+        user
+      );
+  
+      const { token, userId, username } = response.data;
+      setAuth({ 
+        isAuthenticated: true, 
+        token, 
+        userId, 
+        username 
+      });
+  
+      localStorage.setItem("token", token);
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("username", username);
+      
+      const userData = await fetchUserData(username, token);
+      setBasicInfo({
+        username: userData.username,
+        firstname: userData.firstname,
+        lastname: userData.lastname,
+        profileImage: userData.profileImage || {
+          imageId: "",
+          url: defaultAvatar,
+          thumbUrl: defaultAvatar,
+          displayUrl: defaultAvatar
+        },
+        isOnline: userData.isOnline,
+        isAdmin: userData.isAdmin,
+      });
+  
+      toast({
+        title: "Success",
+        description: "Successfully signed up with Google",
+      });
+      
+      navigate('/dashboard');
     } catch (err) {
       console.error('Google auth error:', err);
       setError(err.response?.data?.message || "Authentication failed");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.response?.data?.message || "Failed to sign up with Google",
+      });
+    } finally {
+      setIsGoogleLoading(false);
     }
-  }
+  };
 
   const formSteps = [
     { fields: ['firstname', 'lastname'], title: 'Personal Info' },
@@ -293,6 +317,7 @@ function Signup() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-950">
+      <Toaster />
       <div className="hidden lg:flex lg:w-1/2 bg-cover bg-center relative" style={{ backgroundImage: `url(${NeuralNetwork})` }}>
         <div className="absolute inset-0 bg-black bg-opacity-50" />
         <motion.div 

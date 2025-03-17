@@ -20,6 +20,13 @@
   border-radius: 4px;
 }
 
+/* Add these styles to your global CSS */
+@layer utilities {
+  .aspect-square {
+    aspect-ratio: 1 / 1;
+  }
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
 }

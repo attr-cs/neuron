@@ -4,6 +4,7 @@ import { useSetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
 
 import { HashLoader } from 'react-spinners';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { ScrollToTop } from './components/ScrollToTop';
 
 import { io } from 'socket.io-client';
 
@@ -119,6 +120,7 @@ function App() {
              { !shouldHideNavbar && <Navbar />}
               {/* <WIPBanner /> */}
               <main className="flex-grow">
+                <ScrollToTop />
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/home" element={<Home />} />
@@ -129,7 +131,7 @@ function App() {
                   <Route path="/users" element={<ProtectedRoutes><UsersPage /></ProtectedRoutes>} />
                   <Route path="/messages/:username" element={<ProtectedRoutes><DirectMessage /></ProtectedRoutes>} />
                   <Route path="/create-password" element={<ProtectedRoutes><CreatePassword /></ProtectedRoutes>} />
-                  <Route path="/settings" element={<ProtectedRoutes><Settings /></ProtectedRoutes>} />
+                  <Route path="/settings" element={<Settings />} />
                   <Route path="/request-reset" element={<RequestReset />} />
                   <Route path="/email-sent" element={<EmailSent />} />
                   <Route path="/reset-password/:token" element={<ResetPassword />} />

@@ -19,10 +19,12 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { MessageSquare, Heart, Share2, Image as ImageIcon, Bookmark, Send, X, MoreVertical, Loader2, Maximize } from 'lucide-react'
+import { MessageSquare, Heart, Share2, Image as ImageIcon, Bookmark, Send, X, MoreVertical, Loader2, Maximize, Flag } from 'lucide-react'
 import defaultAvatar from "../utils/defaultAvatar"
 import uploadImage from "../utils/uploadImage"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Mentions } from '@/components/ui/Mentions'
+import { ReportDialog } from '@/components/ui/ReportDialog'
 
 const PostSkeleton = () => (
 
@@ -437,6 +439,9 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
   }
   
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showCommentReportDialog, setShowCommentReportDialog] = useState(false);
+  const [selectedCommentForReport, setSelectedCommentForReport] = useState(null);
 
   return (
     <motion.div
@@ -475,26 +480,33 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
               </Link>
             </div>
 
-            {post.author?._id === userBasicInfo._id && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {post.author?._id === userBasicInfo._id ? (
                   <DropdownMenuItem 
                     onClick={() => onDelete(post._id)}
                     className="text-destructive"
                   >
                     Delete post
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                ) : (
+                  <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                    <Flag className="w-4 h-4 mr-2" />
+                    Report post
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          <p className="text-base leading-relaxed mb-4">{post.content}</p>
+          <div className="text-base leading-relaxed mb-4">
+            <Mentions text={post.content} />
+          </div>
 
           {post.images?.length > 0 && (
             <>
@@ -559,7 +571,7 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
             <div className="mt-4 pt-4 border-t">
               <div className="space-y-4">
                 {post.comments?.map((comment) => (
-                  <div key={comment._id} className="flex items-start space-x-2">
+                  <div key={comment._id} className="flex items-start space-x-2 group">
                     <Avatar className="w-8 h-8">
                       <AvatarImage src={comment.author?.profileImage?.thumbUrl || defaultAvatar} />
                       <AvatarFallback>{comment.author?.username[0]}</AvatarFallback>
@@ -568,6 +580,31 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
                       <p className="text-sm font-medium">{comment.author?.username}</p>
                       <p className="text-sm text-muted-foreground">{comment.content}</p>
                     </div>
+                    
+                    {/* Add Comment Menu */}
+                    {comment.author?._id !== userBasicInfo._id && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                          >
+                            <MoreVertical className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setSelectedCommentForReport(comment);
+                              setShowCommentReportDialog(true);
+                            }}
+                          >
+                            Report comment
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 ))}
               </div>
@@ -588,6 +625,26 @@ const PostCard = ({ post, userBasicInfo, onLike, onDelete, onComment, showCommen
               </div>
             </div>
           )}
+
+          {/* Report Dialogs */}
+          <ReportDialog
+            isOpen={showReportDialog}
+            onClose={() => setShowReportDialog(false)}
+            targetType="post"
+            targetId={post._id}
+            targetUser={post.author}
+          />
+
+          <ReportDialog
+            isOpen={showCommentReportDialog}
+            onClose={() => {
+              setShowCommentReportDialog(false);
+              setSelectedCommentForReport(null);
+            }}
+            targetType="comment"
+            targetId={selectedCommentForReport?._id}
+            targetUser={selectedCommentForReport?.author}
+          />
         </div>
       </Card>
     </motion.div>

@@ -22,9 +22,9 @@ import { Eye, EyeOff, User,  Lock, Brain,   LogIn,  Loader2 } from 'lucide-react
 
 import BrainWaves from "../assets/neural_network_actual.png"
 import { Checkbox } from "@/components/ui/checkbox"
-import { toast } from "sonner"
+import { useToast } from "@/hooks/use-toast"
 import defaultAvatar from '../utils/defaultAvatar'
-
+import { Toaster } from "@/components/ui/toaster"
 
 const InputWithIcon = ({ icon: Icon, ...props }) => (
     <div className="relative">
@@ -80,6 +80,8 @@ function Signin() {
       password: ""
     })
     const [error, setError] = useState("")
+  
+    const { toast } = useToast()
   
     function handleChange(e) {
       const { name, value } = e.target
@@ -143,13 +145,20 @@ function Signin() {
             isOnline: userData.isOnline || false
           })
 
-          toast.success("Successfully signed in!")
+          toast({
+            title: "Success",
+            description: "Successfully signed in!",
+          })
           navigate("/dashboard")
         }
       } catch (err) {
         const errorMessage = err.response?.data?.message || "Invalid credentials"
         setError(errorMessage)
-        toast.error(errorMessage)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorMessage,
+        })
       } finally {
         setIsSubmitting(false)
       }
@@ -176,13 +185,6 @@ function Signin() {
             }
           } catch (error) {
             console.error('Failed to upload profile image:', error)
-            // Use Google's picture URLs as fallback
-            profileImage = {
-              imageId: "",
-              url: picture,
-              thumbUrl: picture,
-              displayUrl: picture
-            }
           }
         }
         
@@ -227,12 +229,19 @@ function Signin() {
           isOnline: userData.isOnline || false
         })
             
-        toast.success("Successfully signed in with Google!")
+        toast({
+          title: "Success",
+          description: "Successfully signed in with Google",
+        })
         navigate('/dashboard')
         } catch (err) {
         const errorMessage = err.response?.data?.message || "Authentication failed"
         setError(errorMessage)
-        toast.error(errorMessage)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: errorMessage,
+        })
       } finally {
         setIsGoogleLoading(false)
       }
@@ -252,6 +261,7 @@ function Signin() {
   
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-950">
+        <Toaster />
         <div className="hidden lg:flex lg:w-1/2 bg-cover bg-center relative" style={{ backgroundImage: `url(${BrainWaves})` }}>
           <div className="absolute inset-0 bg-black bg-opacity-50" />
           <motion.div 
@@ -371,7 +381,11 @@ function Signin() {
                   onSuccess={onSignInSuccess}
                     onError={(err) => {
                       console.error("Failed Signin:", err)
-                      toast.error("Google sign in failed")
+                      toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: "Google sign in failed",
+                      })
                     }}
                   size="large"
                 />
