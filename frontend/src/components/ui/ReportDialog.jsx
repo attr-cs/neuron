@@ -33,56 +33,52 @@ export function ReportDialog({
   const { toast } = useToast();
   const auth = useRecoilValue(authState);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // Validate that at least one reason is selected
     if (selectedReasons.length === 0) {
       toast({
+        variant: "destructive",
         title: "Error",
         description: "Please select at least one reason for reporting",
-        variant: "destructive"
       });
+      setIsSubmitting(false);
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      console.log('Submitting report:', {
-        targetType,
-        targetId,
-        targetUser: typeof targetUser === 'object' ? targetUser._id : targetUser,
-        reasons: selectedReasons,
-        message: customMessage
-      });
-
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/create`,
+        `${import.meta.env.VITE_BACKEND_URL}/report/create`,
         {
           targetType,
           targetId,
-          targetUser: typeof targetUser === 'object' ? targetUser._id : targetUser,
+          targetUser,
           reasons: selectedReasons,
           message: customMessage
         },
         {
-          headers: { Authorization: `Bearer ${auth.token}` }
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
         }
       );
 
-      console.log('Report response:', response.data);
-
-      toast({
-        title: "Report Submitted",
-        description: "Thank you for helping keep our community safe.",
-      });
-      
-      onClose();
-      setSelectedReasons([]);
-      setCustomMessage('');
+      if (response.status === 200 || response.status === 201) {
+        toast({
+          title: "Success",
+          description: "Report submitted successfully",
+        });
+        onClose();
+      }
     } catch (error) {
-      console.error('Error submitting report:', error.response || error);
+      console.error('Error submitting report:', error);
       toast({
+        variant: "destructive",
         title: "Error",
         description: error.response?.data?.message || "Failed to submit report",
-        variant: "destructive"
       });
     } finally {
       setIsSubmitting(false);

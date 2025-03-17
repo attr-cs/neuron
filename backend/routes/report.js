@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const Report = require('../models/reportModel');
-const  verifyToken  = require('../middlewares/verifyToken');
+const { Report } = require('../models/reportModel');
+const verifyToken = require('../middlewares/verifyToken');
+
 
 // Create a new report
 router.post('/create', verifyToken, async (req, res) => {

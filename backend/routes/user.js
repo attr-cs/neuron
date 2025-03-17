@@ -534,30 +534,46 @@ userRouter.get('/following/:userId', verifyToken, async (req, res) => {
 // Follow/Unfollow user
 userRouter.post('/follow/:userId', verifyToken, async (req, res) => {
   try {
-    const userToFollow = await User.findById(req.params.userId);
-    const currentUser = await User.findById(req.user.id);
+    const [userToFollow, currentUser] = await Promise.all([
+      User.findById(req.params.userId),
+      User.findById(req.user.id || req.user._id)
+    ]);
 
     if (!userToFollow || !currentUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isFollowing = userToFollow.followers.includes(req.user.id);
+    const isFollowing = userToFollow.followers.includes(req.user.id || req.user._id);
 
-    if (isFollowing) {
-      // Unfollow
-      userToFollow.followers = userToFollow.followers.filter(id => id.toString() !== req.user.id);
-      currentUser.following = currentUser.following.filter(id => id.toString() !== req.params.userId);
-    } else {
-      // Follow
-      userToFollow.followers.push(req.user.id);
-      currentUser.following.push(req.params.userId);
-    }
+    // Use $pull or $push based on current state
+    const [updatedUserToFollow, updatedCurrentUser] = await Promise.all([
+      User.findByIdAndUpdate(
+        req.params.userId,
+        {
+          [isFollowing ? '$pull' : '$push']: {
+            followers: req.user.id || req.user._id
+          }
+        },
+        { new: true }
+      ),
+      User.findByIdAndUpdate(
+        req.user.id || req.user._id,
+        {
+          [isFollowing ? '$pull' : '$push']: {
+            following: req.params.userId
+          }
+        },
+        { new: true }
+      )
+    ]);
 
-    await userToFollow.save();
-    await currentUser.save();
-
-    res.json({ followers: userToFollow.followers });
+    res.json({ 
+      success: true,
+      isFollowing: !isFollowing,
+      followers: updatedUserToFollow.followers 
+    });
   } catch (error) {
+    console.error('Error updating follow status:', error);
     res.status(500).json({ message: 'Error updating follow status' });
   }
 });
@@ -595,21 +611,24 @@ userRouter.post('/update-banner-image', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Invalid image data' });
     }
 
+    // Log for debugging
+    console.log('User ID:', req.user.id || req.user._id);
+    console.log('Image Data:', imageData);
+
     const updateData = {
       bannerImage: {
-        imageId: imageData.imageId,
+        imageId: imageData.imageId || "",
         url: imageData.url,
-        thumbUrl: imageData.thumbUrl,
-        displayUrl: imageData.displayUrl
+        thumbUrl: imageData.thumbUrl || imageData.url,
+        displayUrl: imageData.displayUrl || imageData.url
       }
     };
 
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.user.id || req.user._id, // Handle both possible properties
       { $set: updateData },
       { 
         new: true,
-        select: 'bannerImage',
         runValidators: true
       }
     );

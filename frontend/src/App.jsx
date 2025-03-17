@@ -1,12 +1,28 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useSetRecoilState, useRecoilValue, useRecoilState } from 'recoil';
-
 import { HashLoader } from 'react-spinners';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ScrollToTop } from './components/ScrollToTop';
-
-import { io } from 'socket.io-client';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import ProtectedRoutes from './components/ProtectedRoutes';
+import PublicRoute from './components/PublicRoute';
+import Dashboard from './pages/Dashboard';
+import ProfilePage from './pages/ProfilePage';
+import UsersPage from './pages/UsersPage';
+import Settings from './pages/Settings';
+import Signup from './pages/Signup';
+import Signin from './pages/Signin';
+import Home from './pages/Home';
+import DirectMessage from "./components/DirectMessage";
+import NotFound from '@/pages/NotFound';
+import AdminDashboard from './pages/AdminDashboard';
+import CreatePassword from './pages/CreatePassword';
+import RequestReset from './pages/RequestReset';
+import EmailSent from './components/EmailSent';
+import ResetPassword from './pages/ResetPassword';
+import AdminRoute from './components/routes/AdminRoute';
 
 // Atoms
 import {
@@ -15,38 +31,10 @@ import {
   themeState
 } from './store/atoms';
 
-
-
-// Components
-import ProtectedRoutes from './components/ProtectedRoutes';
-import PublicRoute from './components/PublicRoute';
-import EmailSent from './components/EmailSent';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import AdminRoute from './components/routes/AdminRoute';
-import AdminDashboard from './pages/AdminDashboard';
+// Pages
 // import WIPBanner from './components/WIPBanner';
 
-// Pages
-import CreatePassword from './pages/CreatePassword';
-import RequestReset from './pages/RequestReset';
-import Notification from './pages/Notifications';
-// import PricingPage from './pages/Pricing';
-// import ContactPage from './pages/Contact'
-// import FAQPage from './pages/FAQ';
-// import AboutPage from './pages/About';
-
 // import FeaturesPage from './pages/Features';
-import ResetPassword from './pages/ResetPassword';
-import ProfilePage from './pages/ProfilePage';
-import Dashboard from './pages/Dashboard';
-import UsersPage from './pages/UsersPage';
-import Settings from './pages/Settings';
-import Signup from './pages/Signup';
-import Signin from './pages/Signin';
-import Home from './pages/Home';
-import DirectMessage from "./components/DirectMessage";
-import NotFound from '@/pages/NotFound';
 
 // Utils
 import fetchUserData from './utils/fetchUserData';
@@ -105,8 +93,16 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#242424' }}>
-        <HashLoader color="#fff" size={80} />
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh', 
+        backgroundColor: '#242424' 
+      }}>
+        <div className="sm:scale-100 scale-75">
+          <HashLoader color="#fff" size={60} />
+        </div>
       </div>
     );
   } 
@@ -117,7 +113,7 @@ function App() {
         <div className="min-h-screen bg-white dark:bg-gray-900">
           <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
             <div className="flex flex-col min-h-screen">
-             { !shouldHideNavbar && <Navbar />}
+              {!shouldHideNavbar && <Navbar />}
               {/* <WIPBanner /> */}
               <main className="flex-grow">
                 <ScrollToTop />
@@ -145,9 +141,8 @@ function App() {
                   />
                   <Route path='*' element={<NotFound />} />
                 </Routes>
-
               </main>
-              { !shouldHideFooter && <Footer />}
+              {!shouldHideFooter && <Footer />}
             </div>
           </GoogleOAuthProvider>
         </div>

@@ -6,7 +6,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserPlus, UserCheck, MessageSquare, Mail, MapPin, Calendar, Link as LinkIcon, Loader, Info, MoreVertical } from 'lucide-react';
+import { UserPlus, UserCheck, MessageSquare, Mail, MapPin, Calendar, Link as LinkIcon, Loader, Info, MoreVertical, Flag } from 'lucide-react';
 import DefaultAvatar from '@/components/ui/DefaultAvatar';
 import AdminBadge from '@/components/ui/AdminBadge';
 import FollowModal from '@/components/FollowModal';
@@ -197,26 +197,30 @@ const ProfilePage = () => {
   // Modify the follow mutation
   const followMutation = useMutation({
     mutationFn: async (userId) => {
-      setFollowLoadingStates(prev => ({ ...prev, [userId]: true }));
       try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/user/follow/${userId}`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${auth.token}` }
-        }
-      );
-      return response.data;
-      } finally {
-        setFollowLoadingStates(prev => ({ ...prev, [userId]: false }));
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/user/follow/${userId}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${auth.token}` }
+          }
+        );
+        return response.data;
+      } catch (error) {
+        // Throw error to trigger onError callback
+        throw error;
       }
     },
     onMutate: async (userId) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['profile', username] });
+      await queryClient.cancelQueries({ queryKey: ['followers', user?._id] });
+      await queryClient.cancelQueries({ queryKey: ['following', user?._id] });
 
-      // Snapshot the previous value
+      // Snapshot the previous values
       const previousProfile = queryClient.getQueryData(['profile', username]);
+      const previousFollowers = queryClient.getQueryData(['followers', user?._id]);
+      const previousFollowing = queryClient.getQueryData(['following', user?._id]);
 
       // Optimistically update profile
       queryClient.setQueryData(['profile', username], old => ({
@@ -225,30 +229,34 @@ const ProfilePage = () => {
         followersCount: old.isFollowedByMe ? old.followersCount - 1 : old.followersCount + 1
       }));
 
-      return { previousProfile };
+      // Return context with snapshots
+      return { previousProfile, previousFollowers, previousFollowing };
     },
     onError: (err, variables, context) => {
-      // Rollback on error
+      // Revert all optimistic updates on error
       queryClient.setQueryData(['profile', username], context.previousProfile);
+      queryClient.setQueryData(['followers', user?._id], context.previousFollowers);
+      queryClient.setQueryData(['following', user?._id], context.previousFollowing);
     },
     onSettled: () => {
-      // Refetch to ensure sync
+      // Always refetch to ensure sync
       queryClient.invalidateQueries(['profile', username]);
-      if (showFollowersModal) {
-        queryClient.invalidateQueries(['followers', user?._id]);
-      }
-      if (showFollowingModal) {
-        queryClient.invalidateQueries(['following', user?._id]);
-      }
+      queryClient.invalidateQueries(['followers', user?._id]);
+      queryClient.invalidateQueries(['following', user?._id]);
     },
   });
 
-  // Update the follow toggle handler
+  // Update the handleFollowToggle function
   const handleFollowToggle = async (userId) => {
+    if (followLoadingStates[userId]) return; // Prevent multiple clicks
+    
+    setFollowLoadingStates(prev => ({ ...prev, [userId]: true }));
     try {
       await followMutation.mutateAsync(userId);
     } catch (error) {
       console.error('Error toggling follow:', error);
+    } finally {
+      setFollowLoadingStates(prev => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -291,18 +299,52 @@ const ProfilePage = () => {
       <div className="container max-w-4xl mx-auto sm:px-4">
         <Card className="overflow-hidden bg-card sm:rounded-lg rounded-none">
           {/* Cover Image - increased height */}
-          <div 
-            className="relative w-full h-[200px] bg-muted overflow-hidden"
-          >
-            {user?.bannerImage?.displayUrl ? (
-              <img
-                src={user.bannerImage.displayUrl}
-                alt="Profile banner"
-                className="w-full h-full object-cover"
+          <div className="relative w-full h-[200px] bg-muted overflow-hidden">
+            {auth.userId === user?._id ? (
+              <BannerImageUpload
+                currentImage={user.bannerImage?.displayUrl}
+                onImageUpdate={(newImage) => {
+                  queryClient.setQueryData(['profile', username], old => ({
+                    ...old,
+                    bannerImage: newImage
+                  }));
+                }}
               />
             ) : (
-              // Default banner or gradient background when no banner image exists
-              <div className="w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900" />
+              <>
+                {user?.bannerImage?.displayUrl ? (
+                  <img
+                    src={user.bannerImage.displayUrl}
+                    alt="Profile banner"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-900" />
+                )}
+                
+                {/* Add the three dots menu for non-owners */}
+                {auth.userId !== user?._id && (
+                  <div className="absolute top-4 right-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="bg-black/20 rounded-full hover:bg-black/40"
+                        >
+                          <MoreVertical className="h-4 w-4 text-white" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                          <Flag className="h-4 w-4 mr-2" />
+                          Report user
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+              </>
             )}
           </div>
           
@@ -521,26 +563,6 @@ const ProfilePage = () => {
           followLoading={followLoadingStates}
           isLoadingModalData={isLoadingFollowing}
         />
-
-        {/* Add report button in the banner area if not own profile */}
-        {auth.userId !== user?._id && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="absolute top-4 right-4 bg-black/20 hover:bg-black/40"
-              >
-                <MoreVertical className="h-4 w-4 text-white" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
-                Report user
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
 
         {/* Add Report Dialog */}
         <ReportDialog

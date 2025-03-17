@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MessageSquare, Heart, Share2, Bookmark, Send, MoreVertical, Loader2, Maximize } from 'lucide-react';
+import { MessageSquare, Heart, Share2, Bookmark, Send, MoreVertical, Loader2, Maximize, Flag } from 'lucide-react';
 import defaultAvatar from "../utils/defaultAvatar";
 import { Mentions } from '@/components/ui/Mentions';
 import { ReportDialog } from '@/components/ui/ReportDialog';
@@ -97,7 +97,11 @@ const PostCard = ({
             {/* Delete Option */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100">
+                  <Button
+                    variant="ghost"
+                    size="sm" 
+                    className="opacity-100"
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -111,6 +115,7 @@ const PostCard = ({
                   </DropdownMenuItem>
                 ) : (
                   <DropdownMenuItem onClick={() => setShowReportDialog(true)}>
+                      <Flag className="w-4 h-4 mr-2" />
                     Report post
                   </DropdownMenuItem>
                 )}

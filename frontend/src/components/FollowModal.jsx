@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import DefaultAvatar from '@/components/ui/DefaultAvatar';
 import AdminBadge from '@/components/ui/AdminBadge';
 import { Input } from "@/components/ui/input";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 const FollowModal = ({ 
   isOpen, 
@@ -20,6 +20,37 @@ const FollowModal = ({
 }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [localUsers, setLocalUsers] = useState([]);
+
+  useEffect(() => {
+    setLocalUsers(data || []);
+  }, [data]);
+
+  const filteredUsers = useMemo(() => {
+    return localUsers?.filter(user => 
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.firstname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastname.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [localUsers, searchTerm]);
+
+  const handleFollowToggle = (userId) => {
+    setLocalUsers(prevUsers => 
+      prevUsers.map(user => {
+        if (user._id === userId) {
+          const isCurrentlyFollowing = user.followers?.includes(currentUserId);
+          return {
+            ...user,
+            followers: isCurrentlyFollowing
+              ? user.followers.filter(id => id !== currentUserId)
+              : [...(user.followers || []), currentUserId]
+          };
+        }
+        return user;
+      })
+    );
+    onFollowToggle(userId);
+  };
 
   console.log('FollowModal props:', {
     isOpen,
@@ -28,14 +59,6 @@ const FollowModal = ({
     currentUserId,
     isLoadingModalData
   });
-
-  const filteredUsers = useMemo(() => {
-    return data?.filter(user => 
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.firstname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastname.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [data, searchTerm]);
 
   return (
     <Dialog 
@@ -120,17 +143,26 @@ const FollowModal = ({
                           variant={user.followers?.includes(currentUserId) ? "secondary" : "default"}
                           size="sm"
                           disabled={followLoading[user._id]}
-                          onClick={() => onFollowToggle(user._id)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleFollowToggle(user._id);
+                          }}
                           className="h-8 px-3 text-xs font-medium"
                         >
                           {followLoading[user._id] ? (
                             <LoaderIcon className="h-3.5 w-3.5 animate-spin" />
                           ) : user.followers?.includes(currentUserId) ? (
+                            <>
                             <UserCheck className="h-3.5 w-3.5 mr-1.5" />
+                              Following
+                            </>
                           ) : (
+                            <>
                             <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                              Follow
+                            </>
                           )}
-                          {user.followers?.includes(currentUserId) ? 'Following' : 'Follow'}
                         </Button>
                         <Button
                           variant="outline"
