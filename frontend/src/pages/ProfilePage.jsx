@@ -24,6 +24,8 @@ import { BannerImageUpload } from '@/components/BannerImageUpload';
 import { Mentions } from '@/components/ui/Mentions';
 import { ReportDialog } from '@/components/ui/ReportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 // Add this PostSkeleton component before the ProfilePage component
 const PostSkeleton = () => (
@@ -130,6 +132,8 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("posts");
   const [followLoadingStates, setFollowLoadingStates] = useState({});
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const { toast } = useToast();
+  const [posts, setPosts] = useState([]);
 
   // Fetch profile data with follower status and counts
   const { data: user, isLoading, error } = useQuery({
@@ -260,7 +264,7 @@ const ProfilePage = () => {
     }
   };
 
-  // Add this new query for user posts
+  // Update the posts query to store posts in local state
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
     queryKey: ['userPosts', username],
     queryFn: async () => {
@@ -274,6 +278,53 @@ const ProfilePage = () => {
     },
     enabled: !!username
   });
+
+  // Update the like mutation to be optimistic
+  const likeMutation = useMutation({
+    mutationFn: async (postId) => {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
+      );
+      return response.data;
+    },
+    onSuccess: (data, postId) => {
+      // Update with server response
+      queryClient.setQueryData(['userPosts', username], old => {
+        return old.map(post => {
+          if (post._id === postId) {
+            return {
+              ...post,
+              isLiked: data.isLiked,
+              likes: data.likes
+            };
+          }
+          return post;
+        });
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.response?.status === 403 
+          ? "You cannot like your own post"
+          : "Failed to like post",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update the handleLikePost function
+  const handleLikePost = async (postId) => {
+    try {
+      await likeMutation.mutateAsync(postId);
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -296,6 +347,7 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Toaster />
       <div className="container max-w-4xl mx-auto sm:px-4">
         <Card className="overflow-hidden bg-card sm:rounded-lg rounded-none">
           {/* Cover Image - increased height */}
@@ -495,8 +547,8 @@ const ProfilePage = () => {
                       <PostCard
                         key={post._id}
                         post={post}
-                        userBasicInfo={user}
-                        onLike={() => {}} // Implement these handlers
+                        userBasicInfo={auth}
+                        onLike={handleLikePost}
                         onDelete={() => {}}
                         onComment={() => {}}
                         showComments={false}

@@ -203,17 +203,45 @@ const Dashboard = () => {
 
   const handleLikePost = async (postId) => {
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`, {}, {
-        headers: { 'Authorization': `Bearer ${auth.token}` }
-      });
-      
-      setPosts(posts.map(post => 
-        post._id === postId 
-          ? { ...post, likes: [...post.likes, userBasicInfo._id], isLiked: true }
-          : post
-      ));
+      // Find the post
+      const post = posts.find(p => p._id === postId);
+      if (!post) return;
+
+      // Make API call first
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
+        {},
+        {
+          headers: { 'Authorization': `Bearer ${auth.token}` }
+        }
+      );
+
+      // Update state with server response
+      setPosts(currentPosts => 
+        currentPosts.map(p => 
+          p._id === postId 
+            ? { 
+                ...p, 
+                isLiked: response.data.isLiked,
+                likes: response.data.likes
+              }
+            : p
+        )
+      );
     } catch (error) {
-      console.error('Error liking post:', error);
+      if (error.response?.status === 403) {
+        toast({
+          title: "Error",
+          description: "You cannot like your own post",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to like post",
+          variant: "destructive"
+        });
+      }
     }
   };
 

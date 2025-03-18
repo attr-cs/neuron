@@ -10,8 +10,14 @@ postRouter.get('/', verifyToken, async (req, res) => {
     const posts = await Post.find()
       .populate('author', 'username firstname lastname profileImage')
       .sort({ createdAt: -1 });
-    console.log(posts);
-    res.json(posts);
+    
+    // Add isLiked field to each post
+    const postsWithLikeInfo = posts.map(post => ({
+      ...post.toObject(),
+      isLiked: post.likes.includes(req.user.id)
+    }));
+
+    res.json(postsWithLikeInfo);
   } catch (error) {
     console.error('Error fetching posts:', error);
     res.status(500).json({ message: 'Server error' });
@@ -148,9 +154,58 @@ postRouter.get('/user/:username', verifyToken, async (req, res) => {
       .populate('author', 'username firstname lastname profileImage')
       .sort({ createdAt: -1 });
       
-    res.json(posts);
+    // Add isLiked field to each post
+    const postsWithLikeInfo = posts.map(post => ({
+      ...post.toObject(),
+      likes: post.likes || [], // Ensure likes exists
+      isLiked: (post.likes || []).includes(req.user.id)
+    }));
+
+    res.json(postsWithLikeInfo);
   } catch (error) {
     console.error('Error fetching user posts:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Like/Unlike a post
+postRouter.post('/:id/like', verifyToken, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.author.toString() === req.user.id) {
+      return res.status(403).json({ message: "You can't like your own post" });
+    }
+
+    // Initialize likes array if it doesn't exist
+    if (!post.likes) {
+      post.likes = [];
+    }
+
+    const isLiked = post.likes.includes(req.user.id);
+    
+    if (isLiked) {
+      // Unlike the post
+      post.likes = post.likes.filter(id => id.toString() !== req.user.id);
+    } else {
+      // Like the post
+      post.likes.push(req.user.id);
+    }
+
+    await post.save();
+
+    // Return the updated likes array and count
+    res.json({ 
+      likes: post.likes,
+      likesCount: post.likes.length,
+      isLiked: !isLiked
+    });
+  } catch (error) {
+    console.error('Error toggling like:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

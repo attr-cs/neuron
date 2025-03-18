@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { authState } from '@/store/atoms';
 import { useToast } from '@/hooks/use-toast';
+import { Toaster } from '@/components/ui/toaster';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { Button } from '@/components/ui/button';
@@ -281,6 +282,7 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-background py-8">
+      <Toaster />
       <div className="container max-w-4xl mx-auto px-4">
         <Card className="p-6">
           <Tabs defaultValue="account" value={activeTab} onValueChange={setActiveTab}>

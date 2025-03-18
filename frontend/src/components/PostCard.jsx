@@ -12,6 +12,7 @@ import { MessageSquare, Heart, Share2, Bookmark, Send, MoreVertical, Loader2, Ma
 import defaultAvatar from "../utils/defaultAvatar";
 import { Mentions } from '@/components/ui/Mentions';
 import { ReportDialog } from '@/components/ui/ReportDialog';
+import { cn } from "@/lib/utils";
 
 // ImageDialog Component
 const ImageDialog = ({ isOpen, onClose, imageUrl }) => {
@@ -50,10 +51,22 @@ const PostCard = ({
 }) => {
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
   
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
+  };
+
+  const handleLikeClick = async (postId) => {
+    if (isLiking) return;
+    
+    try {
+      setIsLiking(true);
+      await onLike(postId);
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   return (
@@ -100,7 +113,7 @@ const PostCard = ({
                   <Button
                     variant="ghost"
                     size="sm" 
-                    className="opacity-100"
+                    className="h-8 w-8 p-0"
                   >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
@@ -158,29 +171,44 @@ const PostCard = ({
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onLike(post._id)}
-                className={`hover:text-primary ${post.isLiked ? 'text-primary' : ''}`}
+              <button
+                onClick={() => handleLikeClick(post._id)}
+                disabled={post.author?._id === userBasicInfo._id || isLiking}
+                className={cn(
+                  "flex items-center gap-2 text-sm transition-colors duration-200",
+                  "hover:text-primary disabled:hover:text-muted-foreground",
+                  "disabled:cursor-not-allowed disabled:opacity-50",
+                  post.isLiked ? "text-primary" : "text-muted-foreground"
+                )}
               >
-                <Heart className={`w-4 h-4 mr-2 ${post.isLiked ? 'fill-current' : ''}`} />
-                {post.likes?.length || 0}
-              </Button>
+                <Heart 
+                  className={cn(
+                    "w-4 h-4 transition-all duration-200",
+                    post.isLiked ? "fill-current scale-110" : "scale-100",
+                    isLiking && "animate-pulse"
+                  )} 
+                />
+                <span className="font-medium">
+                  {Array.isArray(post.likes) ? post.likes.length : 0}
+                </span>
+              </button>
 
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => setShowComments(showComments === post._id ? null : post._id)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
               >
-                <MessageSquare className="w-4 h-4 mr-2" />
+                <MessageSquare className="w-4 h-4" />
+                <span className="font-medium">
                 {post.comments?.length || 0}
-              </Button>
+                </span>
+              </button>
 
-              <Button variant="ghost" size="sm">
-                <Share2 className="w-4 h-4 mr-2" />
-                Share
-              </Button>
+              <button
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="font-medium">Share</span>
+              </button>
             </div>
 
             <Button variant="ghost" size="sm">
