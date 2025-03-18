@@ -216,47 +216,97 @@
 // module.exports = router;
 
 
+// const mongoose = require('mongoose');
+// const { Post } = require('../models/postModel');
+// const router = require('express').Router();
+
+// require('dotenv').config();
+
+// router.get('/migrate-posts', async (req, res) => {
+//     await migratePosts();
+//     res.status(200).json({ message: "Post migration process completed. Check console for details." });
+// });
+
+// const migratePosts = async () => {
+//   try {
+    
+
+//     // Log a sample document to check structure
+//     const samplePost = await Post.findOne();
+//     console.log('Sample post:', samplePost);
+
+//     // Find all posts that don't have a likes field
+//     const posts = await Post.find({ likes: { $exists: false } });
+//     console.log(`Found ${posts.length} posts without likes field`);
+
+//     if (posts.length === 0) {
+//       console.log('No posts need migration. Checking all posts...');
+//       const allPosts = await Post.find({});
+//       console.log(`Total posts: ${allPosts.length}, First post:`, allPosts[0]);
+//     }
+
+//     // Update each post to include an empty likes array
+//     for (const post of posts) {
+//       post.likes = [];
+//       await post.save();
+//       console.log(`Updated post ${post._id}`);
+//     }
+
+//     console.log('Migration completed successfully');
+//     process.exit(0);
+//   } catch (error) {
+//     console.error('Migration failed:', error);
+//     process.exit(1);
+//   }
+// };
+
+// module.exports = router;
+
+
 const mongoose = require('mongoose');
 const { Post } = require('../models/postModel');
 const router = require('express').Router();
 
 require('dotenv').config();
 
-router.get('/migrate-posts', async (req, res) => {
-    await migratePosts();
-    res.status(200).json({ message: "Post migration process completed. Check console for details." });
+router.get('/migrate-posts-comments', async (req, res) => {
+    await migratePostsComments();
+    res.status(200).json({ message: "Post comments migration process completed. Check console for details." });
 });
 
-const migratePosts = async () => {
+const migratePostsComments = async () => {
   try {
-    
-
     // Log a sample document to check structure
     const samplePost = await Post.findOne();
-    console.log('Sample post:', samplePost);
+    console.log('Sample post before migration:', samplePost);
 
-    // Find all posts that don't have a likes field
-    const posts = await Post.find({ likes: { $exists: false } });
-    console.log(`Found ${posts.length} posts without likes field`);
+    // Find all posts that don't have a comments field
+    const posts = await Post.find({ comments: { $exists: false } });
+    console.log(`Found ${posts.length} posts without comments field`);
 
     if (posts.length === 0) {
-      console.log('No posts need migration. Checking all posts...');
+      console.log('No posts need comments migration. Checking all posts...');
       const allPosts = await Post.find({});
       console.log(`Total posts: ${allPosts.length}, First post:`, allPosts[0]);
+      return;
     }
 
-    // Update each post to include an empty likes array
+    // Update each post to include an empty comments array
+    let updatedCount = 0;
     for (const post of posts) {
-      post.likes = [];
+      post.comments = [];
       await post.save();
-      console.log(`Updated post ${post._id}`);
+      updatedCount++;
+      console.log(`Updated post ${post._id} (${updatedCount}/${posts.length})`);
     }
 
-    console.log('Migration completed successfully');
-    process.exit(0);
+    // Verify migration
+    const samplePostAfter = await Post.findOne();
+    console.log('Sample post after migration:', samplePostAfter);
+    console.log(`Migration completed successfully. Updated ${updatedCount} posts.`);
   } catch (error) {
     console.error('Migration failed:', error);
-    process.exit(1);
+    throw error;
   }
 };
 

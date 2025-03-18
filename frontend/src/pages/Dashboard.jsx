@@ -207,28 +207,45 @@ const Dashboard = () => {
       const post = posts.find(p => p._id === postId);
       if (!post) return;
 
-      // Make API call first
-      const response = await axios.post(
+      // Optimistically update UI
+      setPosts(currentPosts => 
+        currentPosts.map(p => 
+          p._id === postId 
+            ? { 
+                ...p, 
+                isLiked: !p.isLiked,
+                likes: p.isLiked 
+                  ? p.likes.filter(id => id !== userBasicInfo._id)
+                  : [...p.likes, userBasicInfo._id]
+              }
+            : p
+        )
+      );
+
+      // Make API call in background
+      await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
         {},
         {
           headers: { 'Authorization': `Bearer ${auth.token}` }
         }
       );
-
-      // Update state with server response
+    } catch (error) {
+      // Revert on error
       setPosts(currentPosts => 
         currentPosts.map(p => 
           p._id === postId 
             ? { 
                 ...p, 
-                isLiked: response.data.isLiked,
-                likes: response.data.likes
+                isLiked: !p.isLiked,
+                likes: p.isLiked
+                  ? p.likes.filter(id => id !== userBasicInfo._id)
+                  : [...p.likes, userBasicInfo._id]
               }
             : p
         )
       );
-    } catch (error) {
+
       if (error.response?.status === 403) {
         toast({
           title: "Error",
@@ -250,20 +267,33 @@ const Dashboard = () => {
     
     try {
       setIsSubmittingComment(true);
-      const response = await axios.post(
+      await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/comment`,
         { content: commentText },
         { headers: { 'Authorization': `Bearer ${auth.token}` } }
       );
       
-      setPosts(posts.map(post => 
+      // Update the comments count in the posts list
+      setPosts(currentPosts => 
+        currentPosts.map(post => 
         post._id === postId 
-          ? { ...post, comments: [...post.comments, response.data] }
+            ? { ...post, commentsCount: (post.commentsCount || 0) + 1 }
           : post
-      ));
+        )
+      );
+      
       setCommentText('');
+      toast({
+        title: "Success",
+        description: "Comment added successfully",
+      });
     } catch (error) {
       console.error('Error adding comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmittingComment(false);
     }

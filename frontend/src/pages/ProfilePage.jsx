@@ -26,6 +26,7 @@ import { ReportDialog } from '@/components/ui/ReportDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import EmojiPicker from 'emoji-picker-react';
 
 // Add this PostSkeleton component before the ProfilePage component
 const PostSkeleton = () => (
@@ -134,6 +135,9 @@ const ProfilePage = () => {
   const [showReportDialog, setShowReportDialog] = useState(false);
   const { toast } = useToast();
   const [posts, setPosts] = useState([]);
+  const [commentText, setCommentText] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [showComments, setShowComments] = useState(null);
 
   // Fetch profile data with follower status and counts
   const { data: user, isLoading, error } = useQuery({
@@ -320,9 +324,97 @@ const ProfilePage = () => {
   // Update the handleLikePost function
   const handleLikePost = async (postId) => {
     try {
-      await likeMutation.mutateAsync(postId);
+      // Optimistically update UI
+      queryClient.setQueryData(['userPosts', username], old => 
+        old.map(post => 
+          post._id === postId 
+            ? { 
+                ...post, 
+                isLiked: !post.isLiked,
+                likes: post.isLiked
+                  ? post.likes.filter(id => id !== auth.userId)
+                  : [...post.likes, auth.userId]
+              }
+            : post
+        )
+      );
+
+      // Make API call in background
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
+      );
     } catch (error) {
-      console.error('Error liking post:', error);
+      // Revert on error
+      queryClient.setQueryData(['userPosts', username], old => 
+        old.map(post => 
+          post._id === postId 
+            ? { 
+                ...post, 
+                isLiked: !post.isLiked,
+                likes: post.isLiked
+                  ? post.likes.filter(id => id !== auth.userId)
+                  : [...post.likes, auth.userId]
+              }
+            : post
+        )
+      );
+
+      toast({
+        title: "Error",
+        description: error.response?.status === 403 
+          ? "You cannot like your own post"
+          : "Failed to like post",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleAddComment = async (postId) => {
+    if (!commentText.trim()) return;
+    
+    try {
+      setIsSubmittingComment(true);
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/comments`,
+        { content: commentText },
+        { headers: { 'Authorization': `Bearer ${auth.token}` } }
+      );
+      
+      // Update userPosts with new comment and increment commentsCount
+      const updatedPosts = userPosts.map(post => {
+        if (post._id === postId) {
+          return {
+            ...post,
+            commentsCount: (post.commentsCount || 0) + 1,
+            comments: post.comments 
+              ? [...post.comments, response.data]
+              : [response.data]
+          };
+        }
+        return post;
+      });
+      
+      // Update the posts in the query client
+      queryClient.setQueryData(['userPosts', username], updatedPosts);
+      
+      setCommentText('');
+      toast({
+        title: "Success",
+        description: "Comment added successfully",
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingComment(false);
     }
   };
 
@@ -550,12 +642,12 @@ const ProfilePage = () => {
                         userBasicInfo={auth}
                         onLike={handleLikePost}
                         onDelete={() => {}}
-                        onComment={() => {}}
-                        showComments={false}
-                        setShowComments={() => {}}
-                        commentText=""
-                        setCommentText={() => {}}
-                        isSubmittingComment={false}
+                        onComment={handleAddComment}
+                        showComments={showComments}
+                        setShowComments={setShowComments}
+                        commentText={commentText}
+                        setCommentText={setCommentText}
+                        isSubmittingComment={isSubmittingComment}
                       />
                     ))
                   ) : (

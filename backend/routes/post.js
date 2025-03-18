@@ -9,12 +9,13 @@ postRouter.get('/', verifyToken, async (req, res) => {
   try {
     const posts = await Post.find()
       .populate('author', 'username firstname lastname profileImage')
+      .select('-comments')
       .sort({ createdAt: -1 });
     
-    // Add isLiked field to each post
     const postsWithLikeInfo = posts.map(post => ({
       ...post.toObject(),
-      isLiked: post.likes.includes(req.user.id)
+      isLiked: post.likes.includes(req.user.id),
+      commentsCount: post.comments?.length || 0
     }));
 
     res.json(postsWithLikeInfo);
@@ -29,6 +30,7 @@ postRouter.get('/user', verifyToken, async (req, res) => {
   try {
     const posts = await Post.find({ author: req.user.id })
       .populate('author', 'username firstname lastname profileImage')
+      .select('-comments')
       .sort({ createdAt: -1 });
     res.json(posts);
   } catch (error) {
@@ -61,6 +63,56 @@ postRouter.post('/user', verifyToken, async (req, res) => {
     res.status(201).json(populatedPost);
   } catch (error) {
     console.error('Error creating post:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Add a comment to a post
+postRouter.post('/:id/comments', verifyToken, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const post = await Post.findById(req.params.id);
+    
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const newComment = {
+      author: req.user.id,
+      content,
+      createdAt: new Date()
+    };
+
+    post.comments.push(newComment);
+    await post.save();
+
+    // Populate the new comment's author information
+    const populatedPost = await Post.findById(post._id)
+      .populate('comments.author', 'username firstname lastname profileImage');
+
+    const addedComment = populatedPost.comments[populatedPost.comments.length - 1];
+
+    res.status(201).json(addedComment);
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get comments for a post
+postRouter.get('/:id/comments', verifyToken, async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id)
+      .select('comments')
+      .populate('comments.author', 'username firstname lastname profileImage');
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    res.json(post.comments);
+  } catch (error) {
+    console.error('Error fetching comments:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -152,13 +204,14 @@ postRouter.get('/user/:username', verifyToken, async (req, res) => {
 
     const posts = await Post.find({ author: user._id })
       .populate('author', 'username firstname lastname profileImage')
+      .select('-comments')
       .sort({ createdAt: -1 });
       
-    // Add isLiked field to each post
     const postsWithLikeInfo = posts.map(post => ({
       ...post.toObject(),
-      likes: post.likes || [], // Ensure likes exists
-      isLiked: (post.likes || []).includes(req.user.id)
+      likes: post.likes || [],
+      isLiked: (post.likes || []).includes(req.user.id),
+      commentsCount: post.comments?.length || 0
     }));
 
     res.json(postsWithLikeInfo);
