@@ -51,3 +51,9 @@ export const notificationState = atom({
     }
 })
 
+// Add this to your existing atoms
+export const notificationUnreadCountState = atom({
+  key: 'notificationUnreadCountState',
+  default: 0
+});
+

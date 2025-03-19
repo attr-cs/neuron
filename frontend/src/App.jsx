@@ -23,6 +23,7 @@ import RequestReset from './pages/RequestReset';
 import EmailSent from './components/EmailSent';
 import ResetPassword from './pages/ResetPassword';
 import AdminRoute from './components/routes/AdminRoute';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Atoms
 import {
@@ -137,6 +138,14 @@ function App() {
                       <AdminRoute>
                         <AdminDashboard />
                       </AdminRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/notifications" 
+                    element={
+                      <ProtectedRoutes>
+                        <NotificationsPage />
+                      </ProtectedRoutes>
                     } 
                   />
                   <Route path='*' element={<NotFound />} />

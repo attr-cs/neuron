@@ -11,6 +11,7 @@ const { toggleFollow, checkFollowStatus } = require('../controllers/userControll
 const Contact = require('../models/Contact');
 const axios = require('axios');
 const FormData = require('form-data');
+const { Notification } = require('../models/notificationModel');
 
 userRouter.use(express.json());
 
@@ -304,7 +305,62 @@ userRouter.post('/reset-password/:token', async (req, res) => {
 
 
 
-userRouter.post('/follow', verifyToken, toggleFollow);
+userRouter.post('/follow', verifyToken, async (req, res) => {
+  try {
+    const { userId, targetId } = req.body;
+
+    const user = await User.findById(userId);
+    const target = await User.findById(targetId);
+
+    if (!user || !target) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const isFollowing = user.followers.includes(targetId);
+
+    // Use $pull or $push based on current state
+    const [updatedUser, updatedTarget] = await Promise.all([
+      User.findByIdAndUpdate(
+        userId,
+        {
+          [isFollowing ? '$pull' : '$push']: {
+            followers: targetId
+          }
+        },
+        { new: true }
+      ),
+      User.findByIdAndUpdate(
+        targetId,
+        {
+          [isFollowing ? '$push' : '$pull']: {
+            following: userId
+          }
+        },
+        { new: true }
+      )
+    ]);
+
+    if (!isFollowing) {
+      // After adding the follow
+      const notification = new Notification({
+        userId: targetId,
+        type: 'follow',
+        triggeredBy: userId,
+        message: 'started following you'
+      });
+      await notification.save();
+    }
+
+    res.json({ 
+      success: true,
+      isFollowing: !isFollowing,
+      followers: updatedUser.followers 
+    });
+  } catch (error) {
+    console.error('Error updating follow status:', error);
+    res.status(500).json({ message: 'Error updating follow status' });
+  }
+});
 
 userRouter.get('/follow-status', verifyToken, checkFollowStatus)
 
@@ -566,6 +622,17 @@ userRouter.post('/follow/:userId', verifyToken, async (req, res) => {
         { new: true }
       )
     ]);
+
+    if (!isFollowing) {
+      // After adding the follow
+      const notification = new Notification({
+        userId: req.params.userId,
+        type: 'follow',
+        triggeredBy: req.user.id || req.user._id,
+        message: 'started following you'
+      });
+      await notification.save();
+    }
 
     res.json({ 
       success: true,

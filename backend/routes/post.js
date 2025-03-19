@@ -3,6 +3,7 @@ const postRouter = express.Router();
 const { Post } = require('../models/postModel');
 const verifyToken = require('../middlewares/verifyToken');
 const { User } = require('../models/userModel');
+const { Notification } = require('../models/notificationModel');
 
 // ✅ GET all posts (sorted by latest)
 postRouter.get('/', verifyToken, async (req, res) => {
@@ -39,6 +40,13 @@ postRouter.get('/user', verifyToken, async (req, res) => {
   }
 });
 
+// Helper function to extract mentions from text
+const extractMentions = (text) => {
+  const mentionRegex = /@([a-zA-Z0-9_-]+)/g;
+  const matches = text.match(mentionRegex);
+  return matches ? matches.map(match => match.slice(1)) : [];
+};
+
 // ✅ CREATE a new post
 postRouter.post('/user', verifyToken, async (req, res) => {
   try {
@@ -57,6 +65,29 @@ postRouter.post('/user', verifyToken, async (req, res) => {
 
     await newPost.save();
     
+    // Handle mentions
+    const mentions = extractMentions(content);
+    if (mentions.length > 0) {
+      // Get all mentioned users except the author
+      const mentionedUsers = await User.find({
+        username: { $in: mentions },
+        _id: { $ne: req.user.id } // Exclude the author
+      });
+
+      // Create notifications for mentioned users
+      const notifications = mentionedUsers.map(user => ({
+        userId: user._id,
+        type: 'mention',
+        triggeredBy: req.user.id,
+        postId: newPost._id,
+        message: content
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
+    }
+
     const populatedPost = await Post.findById(newPost._id)
       .populate('author', 'username firstname lastname profileImage');
 
@@ -85,6 +116,43 @@ postRouter.post('/:id/comments', verifyToken, async (req, res) => {
 
     post.comments.push(newComment);
     await post.save();
+
+    // Only create notification if commenter is not the post author
+    if (post.author.toString() !== req.user.id) {
+      const notification = new Notification({
+        userId: post.author,
+        type: 'comment',
+        triggeredBy: req.user.id,
+        postId: post._id,
+        message: content
+      });
+      await notification.save();
+    }
+
+    // Handle mentions in comments
+    const mentions = extractMentions(content);
+    if (mentions.length > 0) {
+      // Get all mentioned users except the commenter and post author
+      const mentionedUsers = await User.find({
+        username: { $in: mentions },
+        _id: { 
+          $nin: [req.user.id, post.author] // Exclude both commenter and post author
+        }
+      });
+
+      // Create notifications for mentioned users
+      const notifications = mentionedUsers.map(user => ({
+        userId: user._id,
+        type: 'mention',
+        triggeredBy: req.user.id,
+        postId: post._id,
+        message: content
+      }));
+
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
+    }
 
     // Populate the new comment's author information
     const populatedPost = await Post.findById(post._id)
@@ -234,11 +302,6 @@ postRouter.post('/:id/like', verifyToken, async (req, res) => {
       return res.status(403).json({ message: "You can't like your own post" });
     }
 
-    // Initialize likes array if it doesn't exist
-    if (!post.likes) {
-      post.likes = [];
-    }
-
     const isLiked = post.likes.includes(req.user.id);
     
     if (isLiked) {
@@ -247,6 +310,17 @@ postRouter.post('/:id/like', verifyToken, async (req, res) => {
     } else {
       // Like the post
       post.likes.push(req.user.id);
+      
+      // Create notification for post author
+      const notification = new Notification({
+        userId: post.author,
+        type: 'like',
+        triggeredBy: req.user.id,
+        postId: post._id,
+        message: post.content.substring(0, 100)
+      });
+      console.log('Creating like notification:', notification); // Debug log
+      await notification.save();
     }
 
     await post.save();

@@ -3,6 +3,7 @@ const chatRouter = express.Router();
 const { Message } = require('../models/messageModel');
 const { User } = require('../models/userModel');
 const verifyToken = require('../middlewares/verifyToken');
+const { Notification } = require('../models/notificationModel');
 
 // Get chat history
 chatRouter.get('/messages/:roomId', verifyToken, async (req, res) => {
@@ -108,6 +109,28 @@ chatRouter.post('/messages', verifyToken, async (req, res) => {
 
     if (!content || !roomId) {
       return res.status(400).json({ message: 'Message content and roomId are required' });
+    }
+
+    // Extract user IDs from roomId
+    const [user1, user2] = roomId.split('-');
+    
+    // Validate that the sender is part of the chat
+    if (user1 !== req.user.id && user2 !== req.user.id) {
+      return res.status(403).json({ message: 'Unauthorized to send message in this chat' });
+    }
+
+    // Determine recipient
+    const recipientId = user1 === req.user.id ? user2 : user1;
+
+    // Prevent self-messaging notification
+    if (recipientId !== req.user.id) {
+      const notification = new Notification({
+        userId: recipientId,
+        type: 'message',
+        triggeredBy: req.user.id,
+        message: content.substring(0, 100)
+      });
+      await notification.save();
     }
 
     const newMessage = new Message({

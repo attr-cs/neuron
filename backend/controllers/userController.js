@@ -1,10 +1,16 @@
 const { User } = require('../models/userModel');
+const { Notification } = require('../models/notificationModel');
 
 const toggleFollow = async (req, res) => {
   const { userId, targetId } = req.body;
   
   if (!userId || !targetId) {
     return res.status(400).json({ msg: "User or target not found!" });
+  }
+
+  // Prevent self-following
+  if (userId === targetId) {
+    return res.status(400).json({ msg: "You cannot follow yourself" });
   }
 
   try {
@@ -35,6 +41,16 @@ const toggleFollow = async (req, res) => {
         { _id: targetId },
         { $push: { followers: userId } }
       );
+
+      // Create follow notification
+      const notification = new Notification({
+        userId: targetId,
+        type: 'follow',
+        triggeredBy: userId,
+        message: 'started following you'
+      });
+      console.log('Creating follow notification:', notification); // Debug log
+      await notification.save();
     }
 
     return res.status(200).json({ msg: isFollowing ? "Unfollowed" : "Followed" });

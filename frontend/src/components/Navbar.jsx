@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { authState, userBasicInfoState, themeState } from '../store/atoms';
+import { authState, userBasicInfoState, themeState, notificationUnreadCountState } from '../store/atoms';
 import { Home, User, Users, LogOut, UserPlus, LogIn, Menu, Search, Brain, Settings, Bell, BookOpen, Moon, Sun, X, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
+import NotificationDropdown from './NotificationDropdown';
 
 import defaultAvatar from '../utils/defaultAvatar'
 import neuronLightLogo from "../assets/logo_circle_light.png"
@@ -43,6 +43,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef(null);
+  const unreadCount = useRecoilValue(notificationUnreadCountState);
 
   useEffect(() => {
     setIsOpen(false);
@@ -153,54 +154,7 @@ export default function Navbar() {
 
             <div className="flex items-center space-x-4">
               {auth.isAuthenticated && (
-                <div className="relative">
-                  <AnimatePresence>
-                    {isSearchOpen && (
-                      <motion.form
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 'auto', opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        onSubmit={handleSearch}
-                        className="absolute right-0 top-1/2 transform -translate-y-1/2 flex items-center bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden"
-                      >
-                        <Input
-                          ref={searchInputRef}
-                          type="text"
-                          placeholder="Search..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          className="w-64 pl-10 pr-4 py-2 bg-transparent border-none focus:outline-none focus:ring-0"
-                        />
-                        <Button
-                          type="submit"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2"
-                        >
-                          <Search className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsSearchOpen(false)}
-                          className="absolute right-7 top-1/2 transform -translate-y-1/2"
-                        >
-                          <X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                        </Button>
-                      </motion.form>
-                    )}
-                  </AnimatePresence>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsSearchOpen(!isSearchOpen)}
-                    className="relative z-10"
-                  >
-                    <Search className="h-5 w-5" />
-                  </Button>
-                </div>
+                <NotificationDropdown />
               )}
 
               <Tooltip>
@@ -274,7 +228,7 @@ export default function Navbar() {
                             <Bell className="mr-2 h-4 w-4" />
                             <span>Notifications</span>
                           </span>
-                          <Badge variant="secondary" className="ml-auto">5</Badge>
+                          <Badge variant="secondary" className="ml-auto">{unreadCount}</Badge>
                         </Link>
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
@@ -327,7 +281,7 @@ export default function Navbar() {
                         <MobileNavLink to="/settings" icon={Settings}>Settings</MobileNavLink>
                         <MobileNavLink to="/notifications" icon={Bell}>
                           Notifications
-                          <Badge variant="secondary" className="ml-auto">5</Badge>
+                          <Badge variant="secondary" className="ml-auto">{unreadCount}</Badge>
                         </MobileNavLink>
                         {userBasicInfo.isAdmin && (
                           <MobileNavLink to="/admin" icon={Shield}>Admin</MobileNavLink>
