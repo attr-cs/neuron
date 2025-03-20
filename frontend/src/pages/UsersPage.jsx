@@ -125,8 +125,8 @@ function UsersPage() {
     setFollowLoading(prev => ({ ...prev, [userId]: true }));
     try {
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/user/follow`,
-        { userId: auth.userId, targetId: userId },
+        `${import.meta.env.VITE_BACKEND_URL}/user/follow/${userId}`,
+        {},
         {
           headers: {
             Authorization: `Bearer ${auth.token}`
@@ -140,7 +140,7 @@ function UsersPage() {
             user._id === userId
               ? {
                   ...user,
-                  followers: response.data.msg === "Followed"
+                  followers: response.data.isFollowing
                     ? [...user.followers, auth.userId]
                     : user.followers.filter(id => id !== auth.userId)
                 }

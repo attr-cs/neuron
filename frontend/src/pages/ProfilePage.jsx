@@ -171,7 +171,6 @@ const ProfilePage = () => {
             headers: { Authorization: `Bearer ${auth.token}` }
           }
         );
-        // The backend returns the array directly, so no need to access .followers
         return response.data || [];
       } catch (error) {
         console.error('Error fetching followers:', error);
@@ -179,6 +178,7 @@ const ProfilePage = () => {
       }
     },
     enabled: !!user && showFollowersModal,
+    staleTime: 30000,
   });
 
   // Lazy load following list
@@ -192,7 +192,6 @@ const ProfilePage = () => {
             headers: { Authorization: `Bearer ${auth.token}` }
           }
         );
-        // The backend returns the array directly, so no need to access .following
         return response.data || [];
       } catch (error) {
         console.error('Error fetching following:', error);
@@ -200,58 +199,82 @@ const ProfilePage = () => {
       }
     },
     enabled: !!user && showFollowingModal,
+    staleTime: 30000,
   });
 
   // Modify the follow mutation
   const followMutation = useMutation({
     mutationFn: async (userId) => {
-      try {
-        const response = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/user/follow/${userId}`,
-          {},
-          {
-            headers: { Authorization: `Bearer ${auth.token}` }
-          }
-        );
-        return response.data;
-      } catch (error) {
-        // Throw error to trigger onError callback
-        throw error;
-      }
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/user/follow/${userId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
+      );
+      return response.data;
     },
     onMutate: async (userId) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['profile', username] });
-      await queryClient.cancelQueries({ queryKey: ['followers', user?._id] });
-      await queryClient.cancelQueries({ queryKey: ['following', user?._id] });
+      await queryClient.cancelQueries(['followers', user?._id]);
+      await queryClient.cancelQueries(['following', user?._id]);
+      await queryClient.cancelQueries(['profile', username]);
 
-      // Snapshot the previous values
-      const previousProfile = queryClient.getQueryData(['profile', username]);
+      // Snapshot previous values
       const previousFollowers = queryClient.getQueryData(['followers', user?._id]);
       const previousFollowing = queryClient.getQueryData(['following', user?._id]);
+      const previousProfile = queryClient.getQueryData(['profile', username]);
 
-      // Optimistically update profile
-      queryClient.setQueryData(['profile', username], old => ({
-        ...old,
-        isFollowedByMe: !old.isFollowedByMe,
-        followersCount: old.isFollowedByMe ? old.followersCount - 1 : old.followersCount + 1
-      }));
+      // Optimistically update followers/following lists
+      if (previousFollowers) {
+        queryClient.setQueryData(['followers', user?._id], old => 
+          old.map(follower => 
+            follower._id === userId 
+              ? {
+                  ...follower,
+                  followers: follower.followers.includes(auth.userId)
+                    ? follower.followers.filter(id => id !== auth.userId)
+                    : [...follower.followers, auth.userId]
+                }
+              : follower
+          )
+        );
+      }
 
-      // Return context with snapshots
-      return { previousProfile, previousFollowers, previousFollowing };
+      if (previousFollowing) {
+        queryClient.setQueryData(['following', user?._id], old =>
+          old.map(following => 
+            following._id === userId 
+              ? {
+                  ...following,
+                  followers: following.followers.includes(auth.userId)
+                    ? following.followers.filter(id => id !== auth.userId)
+                    : [...following.followers, auth.userId]
+                }
+              : following
+          )
+        );
+      }
+
+      return { previousFollowers, previousFollowing, previousProfile };
     },
     onError: (err, variables, context) => {
-      // Revert all optimistic updates on error
-      queryClient.setQueryData(['profile', username], context.previousProfile);
-      queryClient.setQueryData(['followers', user?._id], context.previousFollowers);
-      queryClient.setQueryData(['following', user?._id], context.previousFollowing);
+      // Revert optimistic updates on error
+      if (context?.previousFollowers) {
+        queryClient.setQueryData(['followers', user?._id], context.previousFollowers);
+      }
+      if (context?.previousFollowing) {
+        queryClient.setQueryData(['following', user?._id], context.previousFollowing);
+      }
+      if (context?.previousProfile) {
+        queryClient.setQueryData(['profile', username], context.previousProfile);
+      }
     },
     onSettled: () => {
-      // Always refetch to ensure sync
-      queryClient.invalidateQueries(['profile', username]);
+      // Refetch to ensure consistency
       queryClient.invalidateQueries(['followers', user?._id]);
       queryClient.invalidateQueries(['following', user?._id]);
-    },
+      queryClient.invalidateQueries(['profile', username]);
+    }
   });
 
   // Update the handleFollowToggle function

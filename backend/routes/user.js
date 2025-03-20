@@ -305,62 +305,62 @@ userRouter.post('/reset-password/:token', async (req, res) => {
 
 
 
-userRouter.post('/follow', verifyToken, async (req, res) => {
-  try {
-    const { userId, targetId } = req.body;
+// userRouter.post('/follow', verifyToken, async (req, res) => {
+//   try {
+//     const { userId, targetId } = req.body;
 
-    const user = await User.findById(userId);
-    const target = await User.findById(targetId);
+//     const user = await User.findById(userId);
+//     const target = await User.findById(targetId);
 
-    if (!user || !target) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+//     if (!user || !target) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
 
-    const isFollowing = user.followers.includes(targetId);
+//     const isFollowing = user.followers.includes(targetId);
 
-    // Use $pull or $push based on current state
-    const [updatedUser, updatedTarget] = await Promise.all([
-      User.findByIdAndUpdate(
-        userId,
-        {
-          [isFollowing ? '$pull' : '$push']: {
-            followers: targetId
-          }
-        },
-        { new: true }
-      ),
-      User.findByIdAndUpdate(
-        targetId,
-        {
-          [isFollowing ? '$push' : '$pull']: {
-            following: userId
-          }
-        },
-        { new: true }
-      )
-    ]);
+//     // Use $pull or $push based on current state
+//     const [updatedUser, updatedTarget] = await Promise.all([
+//       User.findByIdAndUpdate(
+//         userId,
+//         {
+//           [isFollowing ? '$pull' : '$push']: {
+//             followers: targetId
+//           }
+//         },
+//         { new: true }
+//       ),
+//       User.findByIdAndUpdate(
+//         targetId,
+//         {
+//           [isFollowing ? '$push' : '$pull']: {
+//             following: userId
+//           }
+//         },
+//         { new: true }
+//       )
+//     ]);
 
-    if (!isFollowing) {
-      // After adding the follow
-      const notification = new Notification({
-        userId: targetId,
-        type: 'follow',
-        triggeredBy: userId,
-        message: 'started following you'
-      });
-      await notification.save();
-    }
+//     if (!isFollowing) {
+//       // After adding the follow
+//       const notification = new Notification({
+//         userId: targetId,
+//         type: 'follow',
+//         triggeredBy: userId,
+//         message: 'started following you'
+//       });
+//       await notification.save();
+//     }
 
-    res.json({ 
-      success: true,
-      isFollowing: !isFollowing,
-      followers: updatedUser.followers 
-    });
-  } catch (error) {
-    console.error('Error updating follow status:', error);
-    res.status(500).json({ message: 'Error updating follow status' });
-  }
-});
+//     res.json({ 
+//       success: true,
+//       isFollowing: !isFollowing,
+//       followers: updatedUser.followers 
+//     });
+//   } catch (error) {
+//     console.error('Error updating follow status:', error);
+//     res.status(500).json({ message: 'Error updating follow status' });
+//   }
+// });
 
 userRouter.get('/follow-status', verifyToken, checkFollowStatus)
 
@@ -483,17 +483,17 @@ userRouter.get('/status/:userId', verifyToken, async (req, res) => {
     }
   });
 
-userRouter.get('/followers/:username', verifyToken, async (req, res) => {
-    const { username } = req.params;
-    const followers = await User.find({ following: username });
-    res.json(followers);
-  });
+// userRouter.get('/followers/:username', verifyToken, async (req, res) => {
+//     const { username } = req.params;
+//     const followers = await User.find({ following: username });
+//     res.json(followers);
+//   });
 
-userRouter.get('/following/:username', verifyToken, async (req, res) => {
-    const { username } = req.params;
-    const following = await User.find({ followers: username });
-    res.json(following);
-  });
+// userRouter.get('/following/:username', verifyToken, async (req, res) => {
+//     const { username } = req.params;
+//     const following = await User.find({ followers: username });
+//     res.json(following);
+//   });
 
 userRouter.post('/submit', async (req, res) => {
   try {
@@ -551,14 +551,17 @@ userRouter.get('/profile/:username', verifyToken, async (req, res) => {
 userRouter.get('/followers/:userId', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId)
-      .populate('followers', 'username firstname lastname profileImage isAdmin followers')
+      .select('followers')
       .lean();
     
-    // Transform the data to match the expected format
-    const followers = user.followers.map(follower => ({
-      ...follower,
-      profileImageUrl: follower.profileImage?.displayUrl // Handle the profileImage structure
-    }));
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const followers = await User.find(
+      { _id: { $in: user.followers } },
+      'username firstname lastname profileImage isAdmin followers'
+    ).lean();
     
     res.json(followers);
   } catch (error) {
@@ -571,14 +574,17 @@ userRouter.get('/followers/:userId', verifyToken, async (req, res) => {
 userRouter.get('/following/:userId', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.params.userId)
-      .populate('following', 'username firstname lastname profileImage isAdmin followers')
+      .select('following')
       .lean();
     
-    // Transform the data to match the expected format
-    const following = user.following.map(followed => ({
-      ...followed,
-      profileImageUrl: followed.profileImage?.displayUrl // Handle the profileImage structure
-    }));
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const following = await User.find(
+      { _id: { $in: user.following } },
+      'username firstname lastname profileImage isAdmin followers'
+    ).lean();
     
     res.json(following);
   } catch (error) {

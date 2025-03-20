@@ -6,12 +6,14 @@ import { useNavigate } from "react-router-dom";
 import DefaultAvatar from '@/components/ui/DefaultAvatar';
 import AdminBadge from '@/components/ui/AdminBadge';
 import { Input } from "@/components/ui/input";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 const FollowModal = ({ 
   isOpen, 
   onClose, 
-  data, 
+  data = [],
   type, 
   currentUserId, 
   onFollowToggle, 
@@ -20,36 +22,44 @@ const FollowModal = ({
 }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [localUsers, setLocalUsers] = useState([]);
-
-  useEffect(() => {
-    setLocalUsers(data || []);
-  }, [data]);
+  const [optimisticFollowStates, setOptimisticFollowStates] = useState({});
 
   const filteredUsers = useMemo(() => {
-    return localUsers?.filter(user => 
+    return data?.filter(user => 
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.firstname.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.lastname.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [localUsers, searchTerm]);
+  }, [data, searchTerm]);
 
-  const handleFollowToggle = (userId) => {
-    setLocalUsers(prevUsers => 
-      prevUsers.map(user => {
-        if (user._id === userId) {
-          const isCurrentlyFollowing = user.followers?.includes(currentUserId);
-          return {
-            ...user,
-            followers: isCurrentlyFollowing
-              ? user.followers.filter(id => id !== currentUserId)
-              : [...(user.followers || []), currentUserId]
-          };
-        }
-        return user;
-      })
-    );
-    onFollowToggle(userId);
+  const handleFollowToggle = async (userId) => {
+    if (followLoading[userId]) return;
+
+    // Get current follow state
+    const isCurrentlyFollowing = data.find(user => user._id === userId)?.followers?.includes(currentUserId);
+    
+    // Set optimistic state
+    setOptimisticFollowStates(prev => ({
+      ...prev,
+      [userId]: !isCurrentlyFollowing
+    }));
+
+    try {
+      await onFollowToggle(userId);
+    } catch (error) {
+      // Revert optimistic update on error
+      setOptimisticFollowStates(prev => ({
+        ...prev,
+        [userId]: isCurrentlyFollowing
+      }));
+    }
+  };
+
+  const isFollowing = (userId) => {
+    // Use optimistic state if available, otherwise use data state
+    return optimisticFollowStates.hasOwnProperty(userId) 
+      ? optimisticFollowStates[userId]
+      : data.find(user => user._id === userId)?.followers?.includes(currentUserId);
   };
 
   console.log('FollowModal props:', {
@@ -101,9 +111,20 @@ const FollowModal = ({
               <div className="flex items-center justify-center py-12">
                 <LoaderIcon className="w-6 h-6 text-primary animate-spin" />
               </div>
+            ) : data.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Users className="w-12 h-12 mb-3 text-muted-foreground/50" />
+                <p className="text-sm font-medium">No users found</p>
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Users className="w-12 h-12 mb-3 text-muted-foreground/50" />
+                <p className="text-sm font-medium">No matches found</p>
+                <p className="text-xs mt-1">Try a different search term</p>
+              </div>
             ) : (
               <div className="space-y-1">
-                {filteredUsers?.map((user) => (
+                {filteredUsers.map((user) => (
                   <div 
                     key={user._id}
                     className="group flex items-center justify-between px-3 py-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
@@ -113,9 +134,9 @@ const FollowModal = ({
                     }}
                   >
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      {(user.profileImage?.displayUrl || user.profileImageUrl) ? (
+                      {(user.profileImage?.thumbUrl) ? (
                         <img
-                          src={user.profileImage?.displayUrl || user.profileImageUrl}
+                          src={user.profileImage.thumbUrl}
                           alt={user.username}
                           className="w-10 h-10 rounded-full object-cover shadow-sm ring-1 ring-muted"
                           referrerPolicy="no-referrer"
@@ -140,28 +161,31 @@ const FollowModal = ({
                     {user._id !== currentUserId && (
                       <div className="flex gap-2 ml-3 shrink-0" onClick={e => e.stopPropagation()}>
                         <Button
-                          variant={user.followers?.includes(currentUserId) ? "secondary" : "default"}
-                          size="sm"
+                          variant={followLoading[user._id] ? 
+                            (isFollowing(user._id) ? "outline" : "default") :
+                            (isFollowing(user._id) ? "outline" : "default")
+                          }
+                          size="icon"
                           disabled={followLoading[user._id]}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleFollowToggle(user._id);
                           }}
-                          className="h-8 px-3 text-xs font-medium"
+                          className={cn(
+                            "shrink-0 transition-all duration-300",
+                            "h-8 w-8",
+                            isFollowing(user._id)
+                              ? "hover:bg-primary/10 hover:text-primary"
+                              : "hover:bg-primary/90"
+                          )}
                         >
                           {followLoading[user._id] ? (
-                            <LoaderIcon className="h-3.5 w-3.5 animate-spin" />
-                          ) : user.followers?.includes(currentUserId) ? (
-                            <>
-                            <UserCheck className="h-3.5 w-3.5 mr-1.5" />
-                              Following
-                            </>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isFollowing(user._id) ? (
+                            <UserCheck className="h-4 w-4" />
                           ) : (
-                            <>
-                            <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-                              Follow
-                            </>
+                            <UserPlus className="h-4 w-4" />
                           )}
                         </Button>
                         <Button
@@ -179,13 +203,6 @@ const FollowModal = ({
                     )}
                   </div>
                 ))}
-                {filteredUsers?.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                    <Users className="w-12 h-12 mb-3 text-muted-foreground/50" />
-                    <p className="text-sm font-medium">No users found</p>
-                    <p className="text-xs mt-1">Try a different search term</p>
-                  </div>
-                )}
               </div>
             )}
           </div>
