@@ -42,7 +42,7 @@ export default function NotificationDropdown() {
     setLoading(true);
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/notification`,
+        `${import.meta.env.VITE_BACKEND_URL}/notification?unreadOnly=true`,
         {
           headers: { Authorization: `Bearer ${auth.token}` }
         }
@@ -126,44 +126,64 @@ export default function NotificationDropdown() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        {loading ? (
-          <div className="flex justify-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : notifications.length > 0 ? (
-          notifications.map((notification) => (
-            <DropdownMenuItem
-              key={notification._id}
-              className="flex items-start gap-3 p-3 cursor-pointer"
-              onClick={() => handleNotificationClick(notification)}
+      <DropdownMenuContent 
+        align="end" 
+        className="w-80"
+        style={{ maxHeight: '400px' }}
+      >
+        <div className="max-h-[400px] overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : notifications.length > 0 ? (
+            notifications.map((notification) => (
+              <DropdownMenuItem
+                key={notification._id}
+                className="flex items-start gap-3 p-3 cursor-pointer"
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage
+                    src={notification.triggeredBy.profileImage?.thumbUrl || defaultAvatar}
+                    alt={notification.triggeredBy.username}
+                  />
+                  <AvatarFallback>
+                    {notification.triggeredBy.firstname[0]}
+                    {notification.triggeredBy.lastname[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm leading-none">
+                    <span className="font-medium">
+                      {notification.triggeredBy.firstname} {notification.triggeredBy.lastname}
+                    </span>{' '}
+                    {getNotificationText(notification)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
+                  </p>
+                </div>
+              </DropdownMenuItem>
+            ))
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              No new notifications
+            </div>
+          )}
+        </div>
+        {notifications.length > 0 && (
+          <div className="border-t p-2 text-center">
+            <Button
+              variant="ghost"
+              className="w-full text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                navigate('/notifications');
+                setIsOpen(false);
+              }}
             >
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={notification.triggeredBy.profileImage?.thumbUrl || defaultAvatar}
-                  alt={notification.triggeredBy.username}
-                />
-                <AvatarFallback>
-                  {notification.triggeredBy.firstname[0]}
-                  {notification.triggeredBy.lastname[0]}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm leading-none">
-                  <span className="font-medium">
-                    {notification.triggeredBy.firstname} {notification.triggeredBy.lastname}
-                  </span>{' '}
-                  {getNotificationText(notification)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
-                </p>
-              </div>
-            </DropdownMenuItem>
-          ))
-        ) : (
-          <div className="text-center py-4 text-muted-foreground">
-            No notifications
+              View all notifications
+            </Button>
           </div>
         )}
       </DropdownMenuContent>

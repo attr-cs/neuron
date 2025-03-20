@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday, isSameWeek, isThisWeek, subDays } from 'date-fns';
 import axios from 'axios';
 import { useRecoilValue, useRecoilState } from 'recoil';
 import { authState, notificationUnreadCountState } from '@/store/atoms';
@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import defaultAvatar from '@/utils/defaultAvatar';
 import { Card } from '@/components/ui/card';
 import { Mentions } from '@/components/ui/Mentions';
+import { cn } from "@/lib/utils";
 
 export default function NotificationsPage() {
   const location = useLocation();
@@ -71,27 +72,55 @@ export default function NotificationsPage() {
     }
   };
 
-  if (loading) {
+  const groupNotifications = (notifications) => {
+    // First separate by read/unread
+    const unread = notifications.filter(n => !n.isRead);
+    const read = notifications.filter(n => n.isRead);
+
+    // Function to group notifications by date
+    const groupByDate = (notifications) => {
+      return notifications.reduce((groups, notification) => {
+        const date = new Date(notification.createdAt);
+        let key;
+
+        if (isToday(date)) {
+          key = 'Today';
+        } else if (isYesterday(date)) {
+          key = 'Yesterday';
+        } else if (isThisWeek(date)) {
+          key = 'This Week';
+        } else {
+          key = 'Older';
+        }
+
+        if (!groups[key]) {
+          groups[key] = [];
+        }
+        groups[key].push(notification);
+        return groups;
+      }, {});
+    };
+
+    return {
+      unread: groupByDate(unread),
+      read: groupByDate(read)
+    };
+  };
+
+  const renderNotificationGroup = (notifications, title) => {
+    if (!notifications || notifications.length === 0) return null;
+
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto p-4 space-y-4">
-      <div className="flex items-center gap-3 mb-6">
-        <Bell className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Notifications</h1>
-      </div>
-
-      {notifications.length > 0 ? (
-        <div className="space-y-4">
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground px-1">{title}</h3>
+        <div className="space-y-2">
           {notifications.map((notification) => (
             <Card
               key={notification._id}
-              className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+              className={cn(
+                "p-4 cursor-pointer hover:bg-muted/50 transition-colors",
+                !notification.isRead && "bg-primary/5 dark:bg-primary/10"
+              )}
               onClick={() => {
                 switch (notification.type) {
                   case 'like':
@@ -137,6 +166,45 @@ export default function NotificationsPage() {
                 </div>
               </div>
             </Card>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const groupedNotifications = groupNotifications(notifications);
+
+  return (
+    <div className="max-w-2xl mx-auto p-4 space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <Bell className="h-6 w-6 text-primary" />
+        <h1 className="text-2xl font-bold">Notifications</h1>
+      </div>
+
+      {notifications.length > 0 ? (
+        <div className="space-y-8">
+          {/* Unread Notifications */}
+          {Object.entries(groupedNotifications.unread).map(([dateGroup, notifications]) => (
+            <div key={dateGroup} className="space-y-4">
+              <h2 className="text-lg font-semibold">{dateGroup}</h2>
+              {renderNotificationGroup(notifications, "Unread")}
+            </div>
+          ))}
+
+          {/* Read Notifications */}
+          {Object.entries(groupedNotifications.read).map(([dateGroup, notifications]) => (
+            <div key={dateGroup} className="space-y-4">
+              <h2 className="text-lg font-semibold">{dateGroup}</h2>
+              {renderNotificationGroup(notifications, "Earlier")}
+            </div>
           ))}
         </div>
       ) : (

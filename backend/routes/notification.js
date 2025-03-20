@@ -3,10 +3,17 @@ const router = express.Router();
 const { Notification } = require('../models/notificationModel');
 const verifyToken = require('../middlewares/verifyToken');
 
-// Get all notifications for the user
+// Get notifications for the user
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const notifications = await Notification.find({ userId: req.user.id })
+    const query = { userId: req.user.id };
+    
+    // Add isRead filter if unreadOnly is true
+    if (req.query.unreadOnly === 'true') {
+      query.isRead = false;
+    }
+
+    const notifications = await Notification.find(query)
       .populate({
         path: 'triggeredBy',
         model: 'users',
