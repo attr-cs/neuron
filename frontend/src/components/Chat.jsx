@@ -656,7 +656,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
         ref={chatContainerRef}
         className={cn(
           "messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4",
-          "bg-background/50 scroll-smooth",
+          "bg-white scroll-smooth",
           "pb-24"
         )}
       >
@@ -693,7 +693,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className={cn(
         "fixed inset-0 z-10 flex flex-col",
-        "bg-background/50" // Light mode background
+        "bg-white" // Light mode background
       )}>
         {/* Header */}
         <motion.div 
@@ -764,24 +764,15 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
             <div className="flex items-center gap-2">
               <HeaderIconButton 
                 icon={<Phone className="w-5 h-5" />}
-                className={cn(
-                  "hover:bg-accent",
-                  "text-muted-foreground hover:text-foreground"
-                )}
+                className=""
               />
               <HeaderIconButton 
                 icon={<Video className="w-5 h-5" />}
-                className={cn(
-                  "hover:bg-accent",
-                  "text-muted-foreground hover:text-foreground"
-                )}
+                className=""
               />
               <HeaderIconButton 
                 icon={<MoreVertical className="w-5 h-5" />}
-                className={cn(
-                  "hover:bg-accent",
-                  "text-muted-foreground hover:text-foreground"
-                )}
+                className=""
               />
             </div>
           </div>
@@ -792,7 +783,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   ref={chatContainerRef}
           className={cn(
             "messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4",
-            "bg-background/50 scroll-smooth",
+            "bg-white scroll-smooth",
             "pb-24"
           )}
         >
@@ -969,9 +960,9 @@ const HeaderIconButton = ({ icon }) => (
   <motion.button
     whileHover={{ scale: 1.05 }}
     whileTap={{ scale: 0.95 }}
-    className="p-2 rounded-full hover:bg-[#2A2A2A] transition-colors"
+    className="p-2 rounded-full hover:bg-[#2A2A2A] hover:text-white text-slate-800 "
   >
-    {React.cloneElement(icon, { className: "w-5 h-5 text-gray-300" })}
+    {React.cloneElement(icon, { className: "w-5 h-5     " })}
   </motion.button>
 );
 
