@@ -29,6 +29,8 @@ import { cn } from '@/lib/utils';
 import debounce from 'lodash.debounce';
 import  OnlineStatus  from '@/components/ui/OnlineStatus';
 import { Mentions } from '@/components/ui/Mentions';
+import CallInterface from './CallInterface';
+import callService from '../services/callService';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -144,6 +146,13 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   
   const [reconnecting, setReconnecting] = useState(false);
   const [messageQueue, setMessageQueue] = useState([]);
+
+  const [isCallActive, setIsCallActive] = useState(false);
+  const [isVideo, setIsVideo] = useState(false);
+  const [isCaller, setIsCaller] = useState(false);
+  const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
+  const [ringtoneAudio, setRingtoneAudio] = useState(null);
 
   // Fetch messages with React Query
   const { data: messagesData, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -689,269 +698,380 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     );
   }, [allMessages, isFetchingNextPage, auth.userId]);
 
+  useEffect(() => {
+    if (!auth.userId) return;
+    
+    // Initialize call service
+    callService.initialize(auth.userId);
+    
+    // Set up call event handlers
+    callService.onCallReceived = (call) => {
+      console.log('Call received:', call);
+      setIsCallActive(true);
+      setIsCaller(false);
+      setIsVideo(call.metadata?.isVideo || false);
+      
+      // Play ringtone
+      const audio = new Audio('/sounds/ringtone.mp3');
+      audio.loop = true;
+      audio.play().catch(console.error);
+      setRingtoneAudio(audio);
+    };
+
+    callService.onCallEnded = () => {
+      console.log('Call ended');
+      setIsCallActive(false);
+      setLocalStream(null);
+      setRemoteStream(null);
+      if (ringtoneAudio) {
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+        setRingtoneAudio(null);
+      }
+    };
+
+    callService.onStreamReceived = (stream) => {
+      console.log('Remote stream received');
+      setRemoteStream(stream);
+    };
+
+    return () => {
+      callService.cleanup();
+      if (ringtoneAudio) {
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+      }
+    };
+  }, [auth.userId]);
+
+  const startCall = async (isVideoCall) => {
+    try {
+      console.log('Starting call...');
+      // Ensure callService is initialized
+      if (!callService.isInitialized) {
+        await callService.initialize(auth.userId);
+      }
+      
+      setIsVideo(isVideoCall);
+      setIsCaller(true);
+      setIsCallActive(true);
+      
+      const stream = await callService.startCall(recipientId, isVideoCall);
+      setLocalStream(stream);
+    } catch (error) {
+      console.error('Error starting call:', error);
+      setIsCallActive(false);
+      setIsCaller(false);
+    }
+  };
+
+  const answerCall = async () => {
+    try {
+      console.log('Answering call...');
+      const stream = await callService.answerCall(callService.currentCall, isVideo);
+      setLocalStream(stream);
+    } catch (error) {
+      console.error('Error answering call:', error);
+      setIsCallActive(false);
+    }
+  };
+
+  const endCall = () => {
+    console.log('Ending call...');
+    callService.endCall();
+    setIsCallActive(false);
+    setIsCaller(false);
+    setLocalStream(null);
+    setRemoteStream(null);
+    if (ringtoneAudio) {
+      ringtoneAudio.pause();
+      ringtoneAudio.currentTime = 0;
+      setRingtoneAudio(null);
+    }
+  };
+
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className={cn(
-        "fixed inset-0 z-10 flex flex-col",
-        "bg-white" // Light mode background
-      )}>
-        {/* Header */}
-        <motion.div 
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className={cn(
-            "p-4 border-b fixed top-0 left-0 right-0 z-20",
-            "bg-white shadow-sm backdrop-blur-md",
-            "border-gray-100"
-          )}
-        >
-          <div className="flex items-center justify-between max-w-screen-xl mx-auto">
-            <div className="flex items-center gap-4">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleBack}
-                className={cn(
-                  "p-2 rounded-full",
-                  "hover:bg-accent",
-                  "text-foreground",
-                  "transition-colors"
-                )}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </motion.button>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Avatar className={cn(
-                    "w-10 h-10",
-                    "ring-2 ring-border ring-offset-2 ring-offset-background"
-                  )}>
-                   {recipientImage ? (
-  <img 
-    src={recipientImage} 
-    alt={recipientName} 
-                        className="object-cover rounded-full hover:opacity-90 transition-opacity cursor-pointer" 
-    referrerPolicy="no-referrer"
-    onClick={() => navigate(`/profile/${recipientUsername}`)}
-    onError={(e) => {
-      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
-    }}
-  />
-) : (
-                      <DefaultAvatar 
-                        onClick={() => navigate(`/profile/${recipientUsername}`)} 
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer" 
-                      />
-)}
-                  </Avatar>
-                  {onlineUsers.has(recipientId) && (
-                    <OnlineStatus userId={recipientId} className="bottom-0 right-0" />
+    <>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <div className={cn(
+          "fixed inset-0 z-10 flex flex-col",
+          "bg-white" // Light mode background
+        )}>
+          {/* Header */}
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className={cn(
+              "p-4 border-b fixed top-0 left-0 right-0 z-20",
+              "bg-white shadow-sm backdrop-blur-md",
+              "border-gray-100"
+            )}
+          >
+            <div className="flex items-center justify-between max-w-screen-xl mx-auto">
+              <div className="flex items-center gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleBack}
+                  className={cn(
+                    "p-2 rounded-full",
+                    "hover:bg-accent",
+                    "text-foreground",
+                    "transition-colors"
                   )}
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                    <span className="truncate max-w-[200px]">
-                      {recipientName}
-                    </span>
-                    {recipientIsAdmin && <AdminBadge />}
-                  </h2>
-                  <div className="text-xs text-muted-foreground">
-                    {onlineUsers.has(recipientId) ? 'Active now' : 'Offline'}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </motion.button>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Avatar className={cn(
+                      "w-10 h-10",
+                      "ring-2 ring-border ring-offset-2 ring-offset-background"
+                    )}>
+                      {recipientImage ? (
+                        <img 
+                          src={recipientImage} 
+                          alt={recipientName} 
+                          className="object-cover rounded-full hover:opacity-90 transition-opacity cursor-pointer" 
+                          referrerPolicy="no-referrer"
+                          onClick={() => navigate(`/profile/${recipientUsername}`)}
+                          onError={(e) => {
+                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
+                          }}
+                        />
+                      ) : (
+                        <DefaultAvatar 
+                          onClick={() => navigate(`/profile/${recipientUsername}`)} 
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer" 
+                        />
+                      )}
+                    </Avatar>
+                    {onlineUsers.has(recipientId) && (
+                      <OnlineStatus userId={recipientId} className="bottom-0 right-0" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                      <span className="truncate max-w-[200px]">
+                        {recipientName}
+                      </span>
+                      {recipientIsAdmin && <AdminBadge />}
+                    </h2>
+                    <div className="text-xs text-muted-foreground">
+                      {onlineUsers.has(recipientId) ? 'Active now' : 'Offline'}
+                    </div>
                   </div>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => startCall(false)}
+                  className="hover:bg-muted"
+                >
+                  <Phone className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => startCall(true)}
+                  className="hover:bg-muted"
+                >
+                  <Video className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <HeaderIconButton 
-                icon={<Phone className="w-5 h-5" />}
-                className=""
-              />
-              <HeaderIconButton 
-                icon={<Video className="w-5 h-5" />}
-                className=""
-              />
-              <HeaderIconButton 
-                icon={<MoreVertical className="w-5 h-5" />}
-                className=""
-              />
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Messages Container */}
-        <div 
-  ref={chatContainerRef}
-          className={cn(
-            "messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4",
-            "bg-white scroll-smooth",
-            "pb-24"
-          )}
-        >
+          {/* Messages Container */}
+          <div 
+            ref={chatContainerRef}
+            className={cn(
+              "messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4",
+              "bg-white scroll-smooth",
+              "pb-24"
+            )}
+          >
             {isFetchingNextPage && (
-            <div className="flex justify-center py-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+              <div className="flex justify-center py-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
               </div>
             )}
             
             <div ref={loadMoreRef} className="h-px" />
             
-          {allMessages.map((msg, index) => {
+            {allMessages.map((msg, index) => {
               const messageDate = new Date(msg.timestamp).toDateString();
-                const prevMessageDate = index > 0 ? new Date(allMessages[index - 1].timestamp).toDateString() : null;
+              const prevMessageDate = index > 0 ? new Date(allMessages[index - 1].timestamp).toDateString() : null;
 
-            return (
-              <React.Fragment key={msg._id || `temp-${index}`}>
-                {messageDate !== prevMessageDate && (
-                  <DateSeparator date={msg.timestamp} />
-                )}
-                <MessageBubble
-                  message={msg}
-                  isOwn={msg.sender._id === auth.userId}
-                />
-              </React.Fragment>
+              return (
+                <React.Fragment key={msg._id || `temp-${index}`}>
+                  {messageDate !== prevMessageDate && (
+                    <DateSeparator date={msg.timestamp} />
+                  )}
+                  <MessageBubble
+                    message={msg}
+                    isOwn={msg.sender._id === auth.userId}
+                  />
+                </React.Fragment>
               );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
+            })}
+            <div ref={messagesEndRef} />
+          </div>
 
-        {/* Typing Indicator */}
-        {recipientIsTyping && (
-          <div className="absolute bottom-24 left-0 right-0 flex justify-center">
-            <div className={cn(
-              "rounded-full px-4 py-2 text-sm",
-              "bg-gray-100 text-gray-700",
-              "shadow-sm",
-              "flex items-center gap-2"
-            )}>
-              <div className="flex gap-1">
-                <motion.span
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity}}
-                  className="w-1 h-1 bg-gray-500 rounded-full"
-                />
-                <motion.span
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity}}
-                  className="w-1 h-1 bg-gray-500 rounded-full"
-                />
-                <motion.span
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity}}
-                  className="w-1 h-1 bg-gray-500 rounded-full"
-                />
+          {/* Typing Indicator */}
+          {recipientIsTyping && (
+            <div className="absolute bottom-24 left-0 right-0 flex justify-center">
+              <div className={cn(
+                "rounded-full px-4 py-2 text-sm",
+                "bg-gray-100 text-gray-700",
+                "shadow-sm",
+                "flex items-center gap-2"
+              )}>
+                <div className="flex gap-1">
+                  <motion.span
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity}}
+                    className="w-1 h-1 bg-gray-500 rounded-full"
+                  />
+                  <motion.span
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity}}
+                    className="w-1 h-1 bg-gray-500 rounded-full"
+                  />
+                  <motion.span
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity}}
+                    className="w-1 h-1 bg-gray-500 rounded-full"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        )}    
+          )}    
 
-        {/* Input Form */}
-        <motion.form
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          onSubmit={sendMessage}
-          className={cn(
-            "p-3 fixed bottom-0 left-0 right-0",
-            "bg-background/90 backdrop-blur-md",
-            "border-t border-border"
-          )}
-        >
-          <div className="flex items-end space-x-2 max-w-screen-xl mx-auto">
-            <div className="relative flex-grow flex items-center">
-            <input
-              type="text"
-              value={message}
-                onChange={handleTyping}
-              placeholder="Type your message..."
-                className={cn(
-                  "w-full p-2.5 pr-12 rounded-full",
-                  "border border-gray-200",
-                  "bg-white",
-                  "text-gray-900",
-                  "placeholder:text-gray-400",
-                  "focus:outline-none focus:border-blue-500",
-                  "transition-none"
-                )}
-                autoComplete="off"
-                spellCheck="false"
-                autoCorrect="off"
-                autoCapitalize="off"
-                maxLength={5000}
-              />
-              {message && (
-                <button
-                  type="button"
-                  onClick={() => setMessage('')}
+          {/* Input Form */}
+          <motion.form
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            onSubmit={sendMessage}
+            className={cn(
+              "p-3 fixed bottom-0 left-0 right-0",
+              "bg-background/90 backdrop-blur-md",
+              "border-t border-border"
+            )}
+          >
+            <div className="flex items-end space-x-2 max-w-screen-xl mx-auto">
+              <div className="relative flex-grow flex items-center">
+                <input
+                  type="text"
+                  value={message}
+                  onChange={handleTyping}
+                  placeholder="Type your message..."
                   className={cn(
-                    "absolute right-3 top-1/2 -translate-y-1/2",
-                    "p-1.5 rounded-full",
-                    "hover:bg-accent",
-                    "text-muted-foreground",
+                    "w-full p-2.5 pr-12 rounded-full",
+                    "border border-gray-200",
+                    "bg-white",
+                    "text-gray-900",
+                    "placeholder:text-gray-400",
+                    "focus:outline-none focus:border-blue-500",
+                    "transition-none"
+                  )}
+                  autoComplete="off"
+                  spellCheck="false"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  maxLength={5000}
+                />
+                {message && (
+                  <button
+                    type="button"
+                    onClick={() => setMessage('')}
+                    className={cn(
+                      "absolute right-3 top-1/2 -translate-y-1/2",
+                      "p-1.5 rounded-full",
+                      "hover:bg-accent",
+                      "text-muted-foreground",
+                      "transition-colors"
+                    )}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <div ref={emojiPickerRef} className="relative">
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className={cn(
+                    "p-2.5 rounded-full",
+                    "bg-white",
+                    "border border-gray-200",
+                    "hover:bg-gray-50",
+                    "text-gray-700",
                     "transition-colors"
                   )}
                 >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+                  <Smile className="w-5 h-5" />
+                </motion.button>
+                <AnimatePresence>
+                  {showEmojiPicker && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute bottom-14 right-0 z-50"
+                    >
+                      <div className={cn(
+                        "shadow-xl rounded-lg overflow-hidden",
+                        "border border-border"
+                      )}>
+                        <EmojiPicker 
+                          theme="light"
+                          lazyLoadEmojis={true}
+                          onEmojiClick={onEmojiClick}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-            <div ref={emojiPickerRef} className="relative">
               <motion.button
-                type="button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                type="submit"
                 className={cn(
                   "p-2.5 rounded-full",
-                  "bg-white",
-                  "border border-gray-200",
-                  "hover:bg-gray-50",
-                  "text-gray-700",
-                  "transition-colors"
+                  "bg-blue-600 hover:bg-blue-700",
+                  "text-white",
+                  "transition-colors",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  "focus:ring-2 focus:ring-blue-500/20"
                 )}
+                disabled={!message.trim()}
               >
-                <Smile className="w-5 h-5" />
+                <Send className="w-5 h-5" />
               </motion.button>
-              <AnimatePresence>
-                {showEmojiPicker && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="absolute bottom-14 right-0 z-50"
-                  >
-                    <div className={cn(
-                      "shadow-xl rounded-lg overflow-hidden",
-                      "border border-border"
-                    )}>
-                      <EmojiPicker 
-                        theme="light"
-                        lazyLoadEmojis={true}
-                        onEmojiClick={onEmojiClick}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
-
-            <motion.button
-              type="submit"
-              className={cn(
-                "p-2.5 rounded-full",
-                "bg-blue-600 hover:bg-blue-700",
-                "text-white",
-                "transition-colors",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-                "focus:ring-2 focus:ring-blue-500/20"
-              )}
-              disabled={!message.trim()}
-            >
-              <Send className="w-5 h-5" />
-            </motion.button>
-          </div>
-        </motion.form>
-          </div>
-    </ErrorBoundary>
+          </motion.form>
+        </div>
+      </ErrorBoundary>
+      <CallInterface
+        isOpen={isCallActive}
+        onClose={endCall}
+        localStream={localStream}
+        remoteStream={remoteStream}
+        isVideo={isVideo}
+        isCaller={isCaller}
+        recipientName={recipientName}
+        onAnswer={answerCall}
+        onHangup={endCall}
+        onToggleAudio={() => callService.toggleAudio()}
+        onToggleVideo={() => callService.toggleVideo()}
+      />
+    </>
   );
 };
 
