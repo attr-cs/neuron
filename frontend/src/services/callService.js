@@ -19,7 +19,7 @@ class CallService {
       if (this.peer) {
         this.peer.destroy();
       }
-      
+
       this.peer = new Peer(userId, {
         host: '0.peerjs.com',
         port: 443,
@@ -29,10 +29,10 @@ class CallService {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' }
-          ]
+            { urls: 'stun:stun2.l.google.com:19302' },
+          ],
         },
-        debug: 3
+        debug: 3,
       });
 
       this.peer.on('open', (id) => {
@@ -47,6 +47,12 @@ class CallService {
         if (this.onCallReceived) {
           this.onCallReceived(call);
         }
+        call.on('stream', (remoteStream) => {
+          console.log('Received remote stream');
+          if (this.onStreamReceived) {
+            this.onStreamReceived(remoteStream);
+          }
+        });
       });
 
       this.peer.on('error', (error) => {
@@ -64,15 +70,6 @@ class CallService {
         this.handleConnectionError();
       });
 
-      // Add connection state monitoring
-      this.peer.on('connection', () => {
-        console.log('Peer connection established');
-      });
-
-      this.peer.on('network', (network) => {
-        console.log('Network state changed:', network);
-      });
-
     } catch (error) {
       console.error('Error initializing peer:', error);
       this.handleConnectionError();
@@ -82,17 +79,11 @@ class CallService {
 
   handleConnectionError() {
     this.isInitialized = false;
-    
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-      
-      // Clear any existing timeout
-      if (this.reconnectTimeout) {
-        clearTimeout(this.reconnectTimeout);
-      }
-
-      // Exponential backoff for reconnection attempts
+      if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
       this.reconnectTimeout = setTimeout(() => {
         if (this.peer && !this.peer.disconnected) {
@@ -104,7 +95,6 @@ class CallService {
     } else {
       console.error('Max reconnection attempts reached');
       this.isInitialized = false;
-      // You might want to notify the user here
     }
   }
 
@@ -116,12 +106,12 @@ class CallService {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isVideo,
-        audio: true
+        audio: true,
       });
+      this.localStream = stream;
 
-      const call = this.peer.call(recipientId, stream, {
-        metadata: { isVideo }
-      });
+      const call = this.peer.call(recipientId, stream, { metadata: { isVideo } });
+      this.currentCall = call;
 
       call.on('stream', (remoteStream) => {
         console.log('Received remote stream');
@@ -132,9 +122,7 @@ class CallService {
 
       call.on('close', () => {
         console.log('Call closed');
-        if (this.onCallEnded) {
-          this.onCallEnded();
-        }
+        this.endCall();
       });
 
       call.on('error', (error) => {
@@ -142,7 +130,6 @@ class CallService {
         this.endCall();
       });
 
-      this.currentCall = call;
       return stream;
     } catch (error) {
       console.error('Error starting call:', error);
@@ -151,23 +138,31 @@ class CallService {
   }
 
   async answerCall(call, isVideo) {
-    if (!this.peer || !this.isInitialized) {
-      throw new Error('Peer connection not initialized');
-    }
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isVideo,
-        audio: true
+        audio: true,
       });
+      this.localStream = stream;
 
       call.answer(stream);
+      call.on('stream', (remoteStream) => {
+        console.log('Remote stream received in answer');
+        if (this.onStreamReceived) {
+          this.onStreamReceived(remoteStream);
+        }
+      });
+
+      call.on('close', () => {
+        this.endCall();
+      });
 
       call.on('error', (error) => {
         console.error('Call error:', error);
         this.endCall();
       });
 
+      this.currentCall = call;
       return stream;
     } catch (error) {
       console.error('Error answering call:', error);
@@ -180,32 +175,41 @@ class CallService {
       this.currentCall.close();
       this.currentCall = null;
     }
+    if (this.localStream) {
+      this.localStream.getTracks().forEach((track) => track.stop());
+      this.localStream = null;
+    }
     if (this.onCallEnded) {
       this.onCallEnded();
     }
   }
 
   toggleAudio() {
-    if (this.currentCall) {
-      const audioTrack = this.currentCall.localStream.getAudioTracks()[0];
+    if (this.localStream) {
+      const audioTrack = this.localStream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
+        return audioTrack.enabled;
       }
     }
+    return false;
   }
 
   toggleVideo() {
-    if (this.currentCall) {
-      const videoTrack = this.currentCall.localStream.getVideoTracks()[0];
+    if (this.localStream) {
+      const videoTrack = this.localStream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
+        return videoTrack.enabled;
       }
     }
+    return false;
   }
 
   cleanup() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
+    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+    if (this.localStream) {
+      this.localStream.getTracks().forEach((track) => track.stop());
     }
     if (this.peer) {
       this.peer.destroy();
@@ -217,4 +221,4 @@ class CallService {
 }
 
 const callService = new CallService();
-export default callService; 
+export default callService;

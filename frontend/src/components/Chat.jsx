@@ -153,6 +153,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [ringtoneAudio, setRingtoneAudio] = useState(null);
+  const [callStatus, setCallStatus] = useState('idle');
 
   // Fetch messages with React Query
   const { data: messagesData, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -700,18 +701,16 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
 
   useEffect(() => {
     if (!auth.userId) return;
-    
-    // Initialize call service
+
     callService.initialize(auth.userId);
-    
-    // Set up call event handlers
+
     callService.onCallReceived = (call) => {
       console.log('Call received:', call);
       setIsCallActive(true);
       setIsCaller(false);
       setIsVideo(call.metadata?.isVideo || false);
-      
-      // Play ringtone
+      setCallStatus('ringing');
+
       const audio = new Audio('/sounds/ringtone.mp3');
       audio.loop = true;
       audio.play().catch(console.error);
@@ -723,6 +722,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       setIsCallActive(false);
       setLocalStream(null);
       setRemoteStream(null);
+      setCallStatus('idle');
       if (ringtoneAudio) {
         ringtoneAudio.pause();
         ringtoneAudio.currentTime = 0;
@@ -733,6 +733,12 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     callService.onStreamReceived = (stream) => {
       console.log('Remote stream received');
       setRemoteStream(stream);
+      setCallStatus('connected');
+      if (ringtoneAudio) {
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+        setRingtoneAudio(null);
+      }
     };
 
     return () => {
@@ -747,21 +753,22 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   const startCall = async (isVideoCall) => {
     try {
       console.log('Starting call...');
-      // Ensure callService is initialized
       if (!callService.isInitialized) {
         await callService.initialize(auth.userId);
       }
-      
+
       setIsVideo(isVideoCall);
       setIsCaller(true);
       setIsCallActive(true);
-      
+      setCallStatus('ringing');
+
       const stream = await callService.startCall(recipientId, isVideoCall);
       setLocalStream(stream);
     } catch (error) {
       console.error('Error starting call:', error);
       setIsCallActive(false);
       setIsCaller(false);
+      setCallStatus('idle');
     }
   };
 
@@ -770,9 +777,11 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       console.log('Answering call...');
       const stream = await callService.answerCall(callService.currentCall, isVideo);
       setLocalStream(stream);
+      setCallStatus('connected');
     } catch (error) {
       console.error('Error answering call:', error);
       setIsCallActive(false);
+      setCallStatus('idle');
     }
   };
 
@@ -783,6 +792,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     setIsCaller(false);
     setLocalStream(null);
     setRemoteStream(null);
+    setCallStatus('idle');
     if (ringtoneAudio) {
       ringtoneAudio.pause();
       ringtoneAudio.currentTime = 0;
@@ -1070,6 +1080,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
         onHangup={endCall}
         onToggleAudio={() => callService.toggleAudio()}
         onToggleVideo={() => callService.toggleVideo()}
+        callStatus={callStatus}
       />
     </>
   );
