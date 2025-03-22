@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Phone, Video, Mic, MicOff, PhoneOff, Camera, CameraOff } from 'lucide-react';
+import { Phone, Video, Mic, MicOff, PhoneOff, Camera, CameraOff, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
@@ -15,7 +15,7 @@ const CallInterface = ({
   onHangup,
   onToggleAudio,
   onToggleVideo,
-  callStatus // New prop to track call connection status
+  callStatus,
 }) => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
@@ -44,14 +44,32 @@ const CallInterface = ({
     };
   }, [remoteStream]);
 
+  useEffect(() => {
+    // Reset states when dialog closes
+    return () => {
+      setIsAudioEnabled(true);
+      setIsVideoEnabled(true);
+    };
+  }, [isOpen]);
+
   const handleToggleAudio = () => {
-    setIsAudioEnabled(!isAudioEnabled);
-    onToggleAudio();
+    const newState = onToggleAudio();
+    setIsAudioEnabled(newState);
   };
 
   const handleToggleVideo = () => {
-    setIsVideoEnabled(!isVideoEnabled);
-    onToggleVideo();
+    const newState = onToggleVideo();
+    setIsVideoEnabled(newState);
+  };
+
+  const handleShareScreen = async () => {
+    try {
+      const screenStream = await callService.shareScreen();
+      // Assuming callService is accessible globally or passed as prop
+      localVideoRef.current.srcObject = screenStream;
+    } catch (error) {
+      console.error('Error sharing screen:', error);
+    }
   };
 
   return (
@@ -103,18 +121,28 @@ const CallInterface = ({
               </span>
               <div className="flex items-center gap-3">
                 {isVideo && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleToggleVideo}
-                    className={`rounded-full ${!isVideoEnabled ? 'bg-gray-700' : 'bg-gray-800'} hover:bg-gray-600 transition-colors`}
-                  >
-                    {isVideoEnabled ? (
-                      <Camera className="h-5 w-5 text-white" />
-                    ) : (
-                      <CameraOff className="h-5 w-5 text-red-400" />
-                    )}
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleShareScreen}
+                      className="rounded-full bg-gray-800 hover:bg-gray-600 transition-colors"
+                    >
+                      <Monitor className="h-5 w-5 text-white" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleToggleVideo}
+                      className={`rounded-full ${!isVideoEnabled ? 'bg-gray-700' : 'bg-gray-800'} hover:bg-gray-600 transition-colors`}
+                    >
+                      {isVideoEnabled ? (
+                        <Camera className="h-5 w-5 text-white" />
+                      ) : (
+                        <CameraOff className="h-5 w-5 text-red-400" />
+                      )}
+                    </Button>
+                  </>
                 )}
                 <Button
                   variant="outline"
@@ -129,23 +157,35 @@ const CallInterface = ({
                   )}
                 </Button>
                 {!isCaller && callStatus !== 'connected' && (
+                  <>
+                    <Button
+                      variant="default"
+                      size="icon"
+                      onClick={onAnswer}
+                      className="rounded-full bg-green-600 hover:bg-green-700 transition-colors"
+                    >
+                      <Phone className="h-5 w-5" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={onHangup}
+                      className="rounded-full bg-red-600 hover:bg-red-700 transition-colors"
+                    >
+                      <PhoneOff className="h-5 w-5" />
+                    </Button>
+                  </>
+                )}
+                {(isCaller || callStatus === 'connected') && (
                   <Button
-                    variant="default"
+                    variant="destructive"
                     size="icon"
-                    onClick={onAnswer}
-                    className="rounded-full bg-green-600 hover:bg-green-700 transition-colors"
+                    onClick={onHangup}
+                    className="rounded-full bg-red-600 hover:bg-red-700 transition-colors"
                   >
-                    <Phone className="h-5 w-5" />
+                    <PhoneOff className="h-5 w-5" />
                   </Button>
                 )}
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={onHangup}
-                  className="rounded-full bg-red-600 hover:bg-red-700 transition-colors"
-                >
-                  <PhoneOff className="h-5 w-5" />
-                </Button>
               </div>
             </div>
           </div>

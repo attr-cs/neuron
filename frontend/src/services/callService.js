@@ -113,24 +113,27 @@ class CallService {
       const call = this.peer.call(recipientId, stream, { metadata: { isVideo } });
       this.currentCall = call;
 
-      call.on('stream', (remoteStream) => {
-        console.log('Received remote stream');
-        if (this.onStreamReceived) {
-          this.onStreamReceived(remoteStream);
-        }
-      });
+      return new Promise((resolve, reject) => {
+        call.on('stream', (remoteStream) => {
+          console.log('Received remote stream');
+          if (this.onStreamReceived) {
+            this.onStreamReceived(remoteStream);
+          }
+          resolve(stream);
+        });
 
-      call.on('close', () => {
-        console.log('Call closed');
-        this.endCall();
-      });
+        call.on('close', () => {
+          console.log('Call closed');
+          this.endCall();
+          reject(new Error('Call rejected or ended'));
+        });
 
-      call.on('error', (error) => {
-        console.error('Call error:', error);
-        this.endCall();
+        call.on('error', (error) => {
+          console.error('Call error:', error);
+          this.endCall();
+          reject(error);
+        });
       });
-
-      return stream;
     } catch (error) {
       console.error('Error starting call:', error);
       throw error;
@@ -170,6 +173,55 @@ class CallService {
     }
   }
 
+  async shareScreen() {
+    if (!this.currentCall) {
+      throw new Error('No active call');
+    }
+
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
+      
+      const videoTrack = screenStream.getVideoTracks()[0];
+      const sender = this.currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+      
+      if (sender) {
+        await sender.replaceTrack(videoTrack);
+      }
+
+      screenStream.getVideoTracks()[0].onended = () => {
+        this.restoreCameraStream();
+      };
+
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = screenStream;
+      return screenStream;
+    } catch (error) {
+      console.error('Error sharing screen:', error);
+      throw error;
+    }
+  }
+
+  async restoreCameraStream() {
+    if (this.localStream) {
+      const cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      const videoTrack = cameraStream.getVideoTracks()[0];
+      const sender = this.currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+      
+      if (sender) {
+        await sender.replaceTrack(videoTrack);
+      }
+      
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.localStream = cameraStream;
+    }
+  }
+
   endCall() {
     if (this.currentCall) {
       this.currentCall.close();
@@ -184,6 +236,16 @@ class CallService {
     }
   }
 
+  rejectCall() {
+    if (this.currentCall) {
+      this.currentCall.close();
+      this.currentCall = null;
+      if (this.onCallEnded) {
+        this.onCallEnded();
+      }
+    }
+  }
+
   toggleAudio() {
     if (this.localStream) {
       const audioTrack = this.localStream.getAudioTracks()[0];
@@ -192,7 +254,7 @@ class CallService {
         return audioTrack.enabled;
       }
     }
-    return false;
+    return true; // Default to enabled if no track
   }
 
   toggleVideo() {
@@ -203,7 +265,7 @@ class CallService {
         return videoTrack.enabled;
       }
     }
-    return false;
+    return true; // Default to enabled if no track
   }
 
   cleanup() {

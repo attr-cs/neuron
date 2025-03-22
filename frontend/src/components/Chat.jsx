@@ -148,12 +148,12 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   const [messageQueue, setMessageQueue] = useState([]);
 
   const [isCallActive, setIsCallActive] = useState(false);
-  const [isVideo, setIsVideo] = useState(false);
   const [isCaller, setIsCaller] = useState(false);
+  const [isVideo, setIsVideo] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
-  const [ringtoneAudio, setRingtoneAudio] = useState(null);
   const [callStatus, setCallStatus] = useState('idle');
+  const [ringtoneAudio, setRingtoneAudio] = useState(null);
 
   // Fetch messages with React Query
   const { data: messagesData, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
@@ -724,9 +724,9 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       setRemoteStream(null);
       setCallStatus('idle');
       if (ringtoneAudio) {
-        ringtoneAudio.pause();
-        ringtoneAudio.currentTime = 0;
-        setRingtoneAudio(null);
+        ringtoneAudio.pause();           // Stop the audio
+        ringtoneAudio.currentTime = 0;   // Reset to start
+        setRingtoneAudio(null);          // Clear the reference
       }
     };
 
@@ -735,9 +735,9 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       setRemoteStream(stream);
       setCallStatus('connected');
       if (ringtoneAudio) {
-        ringtoneAudio.pause();
-        ringtoneAudio.currentTime = 0;
-        setRingtoneAudio(null);
+        ringtoneAudio.pause();           // Stop the audio
+        ringtoneAudio.currentTime = 0;   // Reset to start
+        setRingtoneAudio(null);          // Clear the reference
       }
     };
 
@@ -766,9 +766,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       setLocalStream(stream);
     } catch (error) {
       console.error('Error starting call:', error);
-      setIsCallActive(false);
-      setIsCaller(false);
-      setCallStatus('idle');
+      endCall();
     }
   };
 
@@ -794,9 +792,21 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     setRemoteStream(null);
     setCallStatus('idle');
     if (ringtoneAudio) {
-      ringtoneAudio.pause();
-      ringtoneAudio.currentTime = 0;
-      setRingtoneAudio(null);
+      ringtoneAudio.pause();           // Stop the audio
+      ringtoneAudio.currentTime = 0;   // Reset to start
+      setRingtoneAudio(null);          // Clear the reference
+    }
+  };
+
+  const rejectCall = () => {
+    console.log('Rejecting call...');
+    callService.rejectCall();
+    setIsCallActive(false);
+    setCallStatus('idle');
+    if (ringtoneAudio) {
+      ringtoneAudio.pause();           // Stop the audio
+      ringtoneAudio.currentTime = 0;   // Reset to start
+      setRingtoneAudio(null);          // Clear the reference
     }
   };
 
@@ -890,6 +900,14 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
                 >
                   <Video className="h-4 w-4" />
                 </Button>
+                <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => startCall(true).then(() => callService.shareScreen())}
+          className="hover:bg-muted"
+            >
+          <Monitor className="h-4 w-4" />
+        </Button>
               </div>
             </div>
           </motion.div>
@@ -1077,7 +1095,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
         isCaller={isCaller}
         recipientName={recipientName}
         onAnswer={answerCall}
-        onHangup={endCall}
+        onHangup={rejectCall} // Use rejectCall for rejection
         onToggleAudio={() => callService.toggleAudio()}
         onToggleVideo={() => callService.toggleVideo()}
         callStatus={callStatus}
