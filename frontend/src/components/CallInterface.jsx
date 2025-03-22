@@ -79,6 +79,7 @@ const CallInterface = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onHangup()}>
       <DialogContent className="sm:max-w-[700px] p-0 gap-0 bg-gradient-to-b from-gray-900 to-black border-none rounded-xl shadow-2xl">
+        {!isVideo && remoteStream && <audio autoPlay ref={remoteVideoRef} />}
         <div className="flex flex-col h-[600px]">
           <div className="relative flex-1 bg-zinc-900 overflow-hidden">
             {isVideo && remoteStream ? (
