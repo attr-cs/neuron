@@ -31,7 +31,7 @@ const CallInterface = ({
   const [callDuration, setCallDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isBackgroundBlurred, setIsBackgroundBlurred] = useState(false);
-  const [isSelfLarge, setIsSelfLarge] = useState(false); // Toggle for swapping video sizes
+  const [isSelfLarge, setIsSelfLarge] = useState(false);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const intervalRef = useRef(null);
@@ -119,7 +119,7 @@ const CallInterface = ({
           window.innerWidth <= 768 ? 'w-full h-full m-0 max-w-none max-h-none' : 'max-w-[90vw] md:max-w-[700px] lg:max-w-[900px] h-[90vh] md:h-[600px]'
         }`}
       >
-        <div className="flex flex-col h-full relative" onDoubleClick={handleDoubleTap}>
+        <div className="flex flex-col h-full relative">
           {/* Video Container */}
           <div className="relative flex-1 bg-zinc-900 overflow-hidden">
             {callStatus === 'reconnecting' && (
@@ -129,7 +129,6 @@ const CallInterface = ({
             )}
             {isVideo && remoteStream && localStream ? (
               <>
-                {/* Large Video */}
                 <video
                   ref={isSelfLarge ? localVideoRef : remoteVideoRef}
                   autoPlay
@@ -138,9 +137,8 @@ const CallInterface = ({
                   className="w-full h-full object-cover"
                   style={{ filter: isBackgroundBlurred && !isSelfLarge ? 'blur(5px)' : 'none' }}
                 />
-                {/* Small Video */}
                 <div
-                  className="absolute bottom-6 right-6 w-24 md:w-40 h-16 md:h-24 bg-black rounded-lg overflow-hidden border-2 border-white/30 shadow-md cursor-pointer"
+                  className="absolute bottom-16 right-2 w-20 md:w-40 h-12 md:h-24 bg-black rounded-lg overflow-hidden border-2 border-white/30 shadow-md cursor-pointer z-30"
                   onClick={handleSwapVideos}
                 >
                   <video
@@ -171,7 +169,7 @@ const CallInterface = ({
           </div>
 
           {/* Controls */}
-          <div className="p-4 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 flex flex-col gap-3 z-20">
+          <div className="p-4 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 flex flex-col gap-3 absolute bottom-0 left-0 right-0 z-40">
             <div className="flex items-center justify-between text-gray-200 text-sm font-medium">
               <span>
                 {callStatus === 'connected'

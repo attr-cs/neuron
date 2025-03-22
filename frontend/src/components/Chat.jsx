@@ -715,7 +715,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       audio.play().catch(console.error);
       setRingtoneAudio(audio);
 
-      // Handle rejection by remote
       call.on('close', () => {
         setIsCallActive(false);
         setCallStatus('idle');

@@ -129,7 +129,7 @@ class CallService {
       });
 
       call.on('close', () => {
-        console.log('Call closed by remote');
+        console.log('Call closed by remote (rejected or ended)');
         this.endCall();
       });
 
