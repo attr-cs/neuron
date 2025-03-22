@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Phone, Video, Mic, MicOff, PhoneOff, Camera, CameraOff, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import callService from './CallService';
+import callService from '../services/callService';
 
 const CallInterface = ({
   isOpen,
