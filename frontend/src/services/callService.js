@@ -9,7 +9,6 @@ class CallService {
     this.onCallReceived = null;
     this.onCallEnded = null;
     this.onStreamReceived = null;
-    this.onConnectionStateChanged = null;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectTimeout = null;
@@ -17,7 +16,9 @@ class CallService {
 
   async initialize(userId) {
     try {
-      if (this.peer) this.peer.destroy();
+      if (this.peer) {
+        this.peer.destroy();
+      }
 
       this.peer = new Peer(userId, {
         host: '0.peerjs.com',
@@ -43,16 +44,15 @@ class CallService {
       this.peer.on('call', (call) => {
         console.log('Incoming call:', call);
         this.currentCall = call;
-        if (this.onCallReceived) this.onCallReceived(call);
+        if (this.onCallReceived) {
+          this.onCallReceived(call);
+        }
         call.on('stream', (remoteStream) => {
-          console.log('Received remote stream:', remoteStream.getTracks());
-          if (this.onStreamReceived) this.onStreamReceived(remoteStream);
+          console.log('Received remote stream');
+          if (this.onStreamReceived) {
+            this.onStreamReceived(remoteStream);
+          }
         });
-        call.on('close', () => {
-          console.log('Call closed by remote');
-          this.endCall();
-        });
-        this.monitorConnection(call);
       });
 
       this.peer.on('error', (error) => {
@@ -77,22 +77,12 @@ class CallService {
     }
   }
 
-  monitorConnection(call) {
-    call.peerConnection.oniceconnectionstatechange = () => {
-      const state = call.peerConnection.iceConnectionState;
-      console.log('ICE Connection State:', state);
-      if (this.onConnectionStateChanged) this.onConnectionStateChanged(state);
-      if (state === 'disconnected' || state === 'failed') this.handleConnectionError();
-    };
-  }
-
   handleConnectionError() {
     this.isInitialized = false;
-    if (this.onConnectionStateChanged) this.onConnectionStateChanged('reconnecting');
 
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`Reconnecting (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
       if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
       this.reconnectTimeout = setTimeout(() => {
@@ -104,32 +94,34 @@ class CallService {
       }, delay);
     } else {
       console.error('Max reconnection attempts reached');
-      this.endCall();
+      this.isInitialized = false;
     }
   }
 
   async startCall(recipientId, isVideo) {
-    if (!this.peer || !this.isInitialized) throw new Error('Peer connection not initialized');
+    if (!this.peer || !this.isInitialized) {
+      throw new Error('Peer connection not initialized');
+    }
 
     try {
-      const constraints = {
-        video: isVideo ? { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } : false,
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000, autoGainControl: true },
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Local stream created:', stream.getAudioTracks(), stream.getVideoTracks());
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: isVideo,
+        audio: true,
+      });
       this.localStream = stream;
 
       const call = this.peer.call(recipientId, stream, { metadata: { isVideo } });
       this.currentCall = call;
 
       call.on('stream', (remoteStream) => {
-        console.log('Received remote stream:', remoteStream.getTracks());
-        if (this.onStreamReceived) this.onStreamReceived(remoteStream);
+        console.log('Received remote stream');
+        if (this.onStreamReceived) {
+          this.onStreamReceived(remoteStream);
+        }
       });
 
       call.on('close', () => {
-        console.log('Call closed by remote (rejected or ended)');
+        console.log('Call closed');
         this.endCall();
       });
 
@@ -138,7 +130,6 @@ class CallService {
         this.endCall();
       });
 
-      this.monitorConnection(call);
       return stream;
     } catch (error) {
       console.error('Error starting call:', error);
@@ -148,22 +139,21 @@ class CallService {
 
   async answerCall(call, isVideo) {
     try {
-      const constraints = {
-        video: isVideo ? { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } : false,
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000, autoGainControl: true },
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Local stream created for answer:', stream.getAudioTracks(), stream.getVideoTracks());
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: isVideo,
+        audio: true,
+      });
       this.localStream = stream;
 
       call.answer(stream);
       call.on('stream', (remoteStream) => {
-        console.log('Remote stream received in answer:', remoteStream.getTracks());
-        if (this.onStreamReceived) this.onStreamReceived(remoteStream);
+        console.log('Remote stream received in answer');
+        if (this.onStreamReceived) {
+          this.onStreamReceived(remoteStream);
+        }
       });
 
       call.on('close', () => {
-        console.log('Call closed by remote');
         this.endCall();
       });
 
@@ -173,50 +163,12 @@ class CallService {
       });
 
       this.currentCall = call;
-      this.monitorConnection(call);
       return stream;
     } catch (error) {
       console.error('Error answering call:', error);
       throw error;
     }
   }
-
-  async switchCamera() {
-    if (!this.localStream || !this.currentCall) return;
-    const videoTracks = this.localStream.getVideoTracks();
-    if (videoTracks.length === 0) return;
-
-    videoTracks.forEach((track) => track.stop());
-    const newStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: videoTracks[0].getSettings().facingMode === 'user' ? 'environment' : 'user' },
-      audio: true,
-    });
-    this.localStream = newStream;
-    this.currentCall.peerConnection.getSenders().forEach((sender) => {
-      if (sender.track.kind === 'video') sender.replaceTrack(newStream.getVideoTracks()[0]);
-    });
-  }
-
-  async shareScreen() {
-    if (!this.currentCall) return;
-    const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-    const videoTrack = screenStream.getVideoTracks()[0];
-    videoTrack.onended = () => this.stopScreenShare();
-
-    this.localStream.getVideoTracks().forEach((track) => track.stop());
-    this.localStream = screenStream;
-    this.currentCall.peerConnection.getSenders().forEach((sender) => {
-      if (sender.track.kind === 'video') sender.replaceTrack(videoTrack);
-    });
-  }
-
-  stopScreenShare() {
-    this.startCall(this.currentCall.peer, true);
-  }
-
-  togglePiP() {}
-  adjustVolume(volume) {}
-  toggleBackgroundBlur(blur) {}
 
   endCall() {
     if (this.currentCall) {
@@ -227,7 +179,9 @@ class CallService {
       this.localStream.getTracks().forEach((track) => track.stop());
       this.localStream = null;
     }
-    if (this.onCallEnded) this.onCallEnded();
+    if (this.onCallEnded) {
+      this.onCallEnded();
+    }
   }
 
   toggleAudio() {
@@ -235,11 +189,10 @@ class CallService {
       const audioTrack = this.localStream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
-        console.log('Audio toggled:', audioTrack.enabled);
         return audioTrack.enabled;
       }
     }
-    return true;
+    return false;
   }
 
   toggleVideo() {
@@ -247,17 +200,20 @@ class CallService {
       const videoTrack = this.localStream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
-        console.log('Video toggled:', videoTrack.enabled);
         return videoTrack.enabled;
       }
     }
-    return true;
+    return false;
   }
 
   cleanup() {
     if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
-    if (this.localStream) this.localStream.getTracks().forEach((track) => track.stop());
-    if (this.peer) this.peer.destroy();
+    if (this.localStream) {
+      this.localStream.getTracks().forEach((track) => track.stop());
+    }
+    if (this.peer) {
+      this.peer.destroy();
+    }
     this.isInitialized = false;
     this.currentCall = null;
     this.localStream = null;
