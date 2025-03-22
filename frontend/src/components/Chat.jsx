@@ -705,7 +705,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     callService.initialize(auth.userId);
 
     callService.onCallReceived = (call) => {
-      console.log('Call received:', call);
       setIsCallActive(true);
       setIsCaller(false);
       setIsVideo(call.metadata?.isVideo || false);
@@ -718,7 +717,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     };
 
     callService.onCallEnded = () => {
-      console.log('Call ended');
       setIsCallActive(false);
       setLocalStream(null);
       setRemoteStream(null);
@@ -731,7 +729,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     };
 
     callService.onStreamReceived = (stream) => {
-      console.log('Remote stream received');
       setRemoteStream(stream);
       setCallStatus('connected');
       if (ringtoneAudio) {
@@ -741,22 +738,17 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       }
     };
 
-    return () => {
-      callService.cleanup();
-      if (ringtoneAudio) {
-        ringtoneAudio.pause();
-        ringtoneAudio.currentTime = 0;
-      }
+    callService.onConnectionStateChanged = (state) => {
+      if (state === 'reconnecting') setCallStatus('reconnecting');
+      else if (state === 'connected') setCallStatus('connected');
     };
-  }, [auth.userId]);
 
+    return () => callService.cleanup();
+  }, [auth.userId]);
+  
   const startCall = async (isVideoCall) => {
     try {
-      console.log('Starting call...');
-      if (!callService.isInitialized) {
-        await callService.initialize(auth.userId);
-      }
-
+      if (!callService.isInitialized) await callService.initialize(auth.userId);
       setIsVideo(isVideoCall);
       setIsCaller(true);
       setIsCallActive(true);
@@ -774,10 +766,14 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
 
   const answerCall = async () => {
     try {
-      console.log('Answering call...');
       const stream = await callService.answerCall(callService.currentCall, isVideo);
       setLocalStream(stream);
       setCallStatus('connected');
+      if (ringtoneAudio) {
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+        setRingtoneAudio(null);
+      }
     } catch (error) {
       console.error('Error answering call:', error);
       setIsCallActive(false);
@@ -786,7 +782,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
   };
 
   const endCall = () => {
-    console.log('Ending call...');
     callService.endCall();
     setIsCallActive(false);
     setIsCaller(false);
@@ -799,6 +794,16 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       setRingtoneAudio(null);
     }
   };
+
+  const switchCamera = () => callService.switchCamera();
+  const shareScreen = () => callService.shareScreen();
+  const toggleFullscreen = (fullscreen) => {
+    if (fullscreen) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  };
+  const togglePiP = () => {};
+  const adjustVolume = (volume) => {};
+  const toggleBackgroundBlur = () => {};
 
   return (
     <>
@@ -1081,6 +1086,12 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
         onToggleAudio={() => callService.toggleAudio()}
         onToggleVideo={() => callService.toggleVideo()}
         callStatus={callStatus}
+        onSwitchCamera={switchCamera}
+        onShareScreen={shareScreen}
+        onToggleFullscreen={toggleFullscreen}
+        onTogglePiP={togglePiP}
+        onAdjustVolume={adjustVolume}
+        onToggleBackgroundBlur={toggleBackgroundBlur}
       />
     </>
   );
