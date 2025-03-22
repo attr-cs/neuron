@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Phone, Video, Mic, MicOff, PhoneOff, Camera, CameraOff, RotateCcw, Monitor, Clock, Maximize, Minimize, PictureInPicture } from 'lucide-react';
+import { Phone, Video, Mic, MicOff, PhoneOff, Camera, CameraOff, RotateCcw, Monitor, Clock, PictureInPicture } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -20,7 +20,6 @@ const CallInterface = ({
   callStatus,
   onSwitchCamera,
   onShareScreen,
-  onToggleFullscreen,
   onTogglePiP,
   onAdjustVolume,
   onToggleBackgroundBlur,
@@ -28,11 +27,11 @@ const CallInterface = ({
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPiP, setIsPiP] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [isBackgroundBlurred, setIsBackgroundBlurred] = useState(false);
+  const [isSelfLarge, setIsSelfLarge] = useState(false); // Toggle for swapping video sizes
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const intervalRef = useRef(null);
@@ -88,11 +87,6 @@ const CallInterface = ({
     setIsScreenSharing(!isScreenSharing);
   };
 
-  const handleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-    onToggleFullscreen(!isFullscreen);
-  };
-
   const handlePiP = () => {
     setIsPiP(!isPiP);
     onTogglePiP();
@@ -106,6 +100,10 @@ const CallInterface = ({
   const handleBackgroundBlur = () => {
     setIsBackgroundBlurred(!isBackgroundBlurred);
     onToggleBackgroundBlur(!isBackgroundBlurred);
+  };
+
+  const handleSwapVideos = () => {
+    setIsSelfLarge(!isSelfLarge);
   };
 
   const formatDuration = (seconds) => {
@@ -129,14 +127,36 @@ const CallInterface = ({
                 <span className="text-white text-lg animate-pulse">Reconnecting...</span>
               </div>
             )}
-            {isVideo && remoteStream ? (
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-                style={{ filter: isBackgroundBlurred ? 'blur(5px)' : 'none' }}
-              />
+            {isVideo && remoteStream && localStream ? (
+              <>
+                {/* Large Video */}
+                <video
+                  ref={isSelfLarge ? localVideoRef : remoteVideoRef}
+                  autoPlay
+                  playsInline
+                  muted={isSelfLarge}
+                  className="w-full h-full object-cover"
+                  style={{ filter: isBackgroundBlurred && !isSelfLarge ? 'blur(5px)' : 'none' }}
+                />
+                {/* Small Video */}
+                <div
+                  className="absolute bottom-6 right-6 w-24 md:w-40 h-16 md:h-24 bg-black rounded-lg overflow-hidden border-2 border-white/30 shadow-md cursor-pointer"
+                  onClick={handleSwapVideos}
+                >
+                  <video
+                    ref={isSelfLarge ? remoteVideoRef : localVideoRef}
+                    autoPlay
+                    playsInline
+                    muted={!isSelfLarge}
+                    className="w-full h-full object-cover"
+                    style={{ filter: isBackgroundBlurred && isSelfLarge ? 'blur(5px)' : 'none' }}
+                  />
+                </div>
+              </>
+            ) : isVideo ? (
+              <div className="flex items-center justify-center h-full bg-zinc-800">
+                <span className="text-gray-400 text-xl">Waiting for video...</span>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-full bg-zinc-800">
                 {callStatus === 'ringing' ? (
@@ -144,19 +164,14 @@ const CallInterface = ({
                     <span className="text-5xl text-primary font-bold">{recipientName?.[0]?.toUpperCase()}</span>
                   </div>
                 ) : (
-                  <span className="text-gray-400 text-xl">No Video</span>
+                  <span className="text-gray-400 text-xl">Audio Call</span>
                 )}
-              </div>
-            )}
-            {isVideo && localStream && (
-              <div className="absolute bottom-6 right-6 w-24 md:w-40 h-16 md:h-24 bg-black rounded-lg overflow-hidden border-2 border-white/30 shadow-md">
-                <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
               </div>
             )}
           </div>
 
           {/* Controls */}
-          <div className="p-4 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 flex flex-col gap-3">
+          <div className="p-4 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 flex flex-col gap-3 z-20">
             <div className="flex items-center justify-between text-gray-200 text-sm font-medium">
               <span>
                 {callStatus === 'connected'
@@ -241,23 +256,6 @@ const CallInterface = ({
                 </Tooltip>
                 {isVideo && (
                   <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={handleFullscreen}
-                          className="rounded-full bg-gray-600 hover:bg-gray-700 transition-transform hover:scale-105 border-none"
-                        >
-                          {isFullscreen ? (
-                            <Minimize className="h-5 w-5 text-white" />
-                          ) : (
-                            <Maximize className="h-5 w-5 text-white" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}</TooltipContent>
-                    </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button

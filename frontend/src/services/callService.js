@@ -45,8 +45,12 @@ class CallService {
         this.currentCall = call;
         if (this.onCallReceived) this.onCallReceived(call);
         call.on('stream', (remoteStream) => {
-          console.log('Received remote stream:', remoteStream);
+          console.log('Received remote stream:', remoteStream.getTracks());
           if (this.onStreamReceived) this.onStreamReceived(remoteStream);
+        });
+        call.on('close', () => {
+          console.log('Call closed by remote');
+          this.endCall();
         });
         this.monitorConnection(call);
       });
@@ -113,7 +117,7 @@ class CallService {
         audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000, autoGainControl: true },
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Local stream created:', stream.getTracks());
+      console.log('Local stream created:', stream.getAudioTracks(), stream.getVideoTracks());
       this.localStream = stream;
 
       const call = this.peer.call(recipientId, stream, { metadata: { isVideo } });
@@ -124,7 +128,11 @@ class CallService {
         if (this.onStreamReceived) this.onStreamReceived(remoteStream);
       });
 
-      call.on('close', () => this.endCall());
+      call.on('close', () => {
+        console.log('Call closed by remote');
+        this.endCall();
+      });
+
       call.on('error', (error) => {
         console.error('Call error:', error);
         this.endCall();
@@ -145,7 +153,7 @@ class CallService {
         audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000, autoGainControl: true },
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      console.log('Local stream created for answer:', stream.getTracks());
+      console.log('Local stream created for answer:', stream.getAudioTracks(), stream.getVideoTracks());
       this.localStream = stream;
 
       call.answer(stream);
@@ -154,7 +162,11 @@ class CallService {
         if (this.onStreamReceived) this.onStreamReceived(remoteStream);
       });
 
-      call.on('close', () => this.endCall());
+      call.on('close', () => {
+        console.log('Call closed by remote');
+        this.endCall();
+      });
+
       call.on('error', (error) => {
         console.error('Call error:', error);
         this.endCall();
@@ -203,9 +215,7 @@ class CallService {
   }
 
   togglePiP() {}
-
   adjustVolume(volume) {}
-
   toggleBackgroundBlur(blur) {}
 
   endCall() {

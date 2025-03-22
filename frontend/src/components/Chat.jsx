@@ -714,6 +714,17 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       audio.loop = true;
       audio.play().catch(console.error);
       setRingtoneAudio(audio);
+
+      // Handle rejection by remote
+      call.on('close', () => {
+        setIsCallActive(false);
+        setCallStatus('idle');
+        if (ringtoneAudio) {
+          ringtoneAudio.pause();
+          ringtoneAudio.currentTime = 0;
+          setRingtoneAudio(null);
+        }
+      });
     };
 
     callService.onCallEnded = () => {
@@ -745,7 +756,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
 
     return () => callService.cleanup();
   }, [auth.userId]);
-  
+
   const startCall = async (isVideoCall) => {
     try {
       if (!callService.isInitialized) await callService.initialize(auth.userId);
@@ -797,10 +808,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
 
   const switchCamera = () => callService.switchCamera();
   const shareScreen = () => callService.shareScreen();
-  const toggleFullscreen = (fullscreen) => {
-    if (fullscreen) document.documentElement.requestFullscreen();
-    else document.exitFullscreen();
-  };
   const togglePiP = () => {};
   const adjustVolume = (volume) => {};
   const toggleBackgroundBlur = () => {};
@@ -1088,7 +1095,6 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
         callStatus={callStatus}
         onSwitchCamera={switchCamera}
         onShareScreen={shareScreen}
-        onToggleFullscreen={toggleFullscreen}
         onTogglePiP={togglePiP}
         onAdjustVolume={adjustVolume}
         onToggleBackgroundBlur={toggleBackgroundBlur}
