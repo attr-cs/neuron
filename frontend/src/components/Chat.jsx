@@ -718,15 +718,15 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     };
 
     callService.onCallEnded = () => {
-      console.log('Call ended');
+      console.log('Call ended by remote peer');
       setIsCallActive(false);
       setLocalStream(null);
       setRemoteStream(null);
       setCallStatus('idle');
       if (ringtoneAudio) {
-        ringtoneAudio.pause();           // Stop the audio
-        ringtoneAudio.currentTime = 0;   // Reset to start
-        setRingtoneAudio(null);          // Clear the reference
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+        setRingtoneAudio(null);
       }
     };
 
@@ -735,9 +735,9 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
       setRemoteStream(stream);
       setCallStatus('connected');
       if (ringtoneAudio) {
-        ringtoneAudio.pause();           // Stop the audio
-        ringtoneAudio.currentTime = 0;   // Reset to start
-        setRingtoneAudio(null);          // Clear the reference
+        ringtoneAudio.pause();
+        ringtoneAudio.currentTime = 0;
+        setRingtoneAudio(null);
       }
     };
 
@@ -792,9 +792,9 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     setRemoteStream(null);
     setCallStatus('idle');
     if (ringtoneAudio) {
-      ringtoneAudio.pause();           // Stop the audio
-      ringtoneAudio.currentTime = 0;   // Reset to start
-      setRingtoneAudio(null);          // Clear the reference
+      ringtoneAudio.pause();
+      ringtoneAudio.currentTime = 0;
+      setRingtoneAudio(null);
     }
   };
 
@@ -804,9 +804,9 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     setIsCallActive(false);
     setCallStatus('idle');
     if (ringtoneAudio) {
-      ringtoneAudio.pause();           // Stop the audio
-      ringtoneAudio.currentTime = 0;   // Reset to start
-      setRingtoneAudio(null);          // Clear the reference
+      ringtoneAudio.pause();
+      ringtoneAudio.currentTime = 0;
+      setRingtoneAudio(null);
     }
   };
 
@@ -1095,7 +1095,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
         isCaller={isCaller}
         recipientName={recipientName}
         onAnswer={answerCall}
-        onHangup={rejectCall} // Use rejectCall for rejection
+        onHangup={rejectCall}
         onToggleAudio={() => callService.toggleAudio()}
         onToggleVideo={() => callService.toggleVideo()}
         callStatus={callStatus}

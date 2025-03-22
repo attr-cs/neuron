@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Phone, Video, Mic, MicOff, PhoneOff, Camera, CameraOff, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import callService from './CallService'; // Import callService for screen sharing
 
 const CallInterface = ({
   isOpen,
@@ -45,7 +46,6 @@ const CallInterface = ({
   }, [remoteStream]);
 
   useEffect(() => {
-    // Reset states when dialog closes
     return () => {
       setIsAudioEnabled(true);
       setIsVideoEnabled(true);
@@ -65,10 +65,12 @@ const CallInterface = ({
   const handleShareScreen = async () => {
     try {
       const screenStream = await callService.shareScreen();
-      // Assuming callService is accessible globally or passed as prop
-      localVideoRef.current.srcObject = screenStream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = screenStream;
+      }
     } catch (error) {
       console.error('Error sharing screen:', error);
+      alert('Failed to share screen. Ensure permissions are granted.');
     }
   };
 
@@ -76,7 +78,6 @@ const CallInterface = ({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onHangup()}>
       <DialogContent className="sm:max-w-[700px] p-0 gap-0 bg-gradient-to-b from-gray-900 to-black border-none rounded-xl shadow-2xl">
         <div className="flex flex-col h-[600px]">
-          {/* Video Container */}
           <div className="relative flex-1 bg-zinc-900 overflow-hidden">
             {isVideo && remoteStream ? (
               <video
@@ -95,7 +96,6 @@ const CallInterface = ({
               </div>
             )}
 
-            {/* Local Video (Picture-in-Picture) */}
             {isVideo && localStream && (
               <div className="absolute bottom-6 right-6 w-40 h-24 bg-black rounded-lg overflow-hidden border-2 border-white/30 shadow-md">
                 <video
@@ -109,7 +109,6 @@ const CallInterface = ({
             )}
           </div>
 
-          {/* Controls */}
           <div className="p-4 bg-gray-900/95 backdrop-blur-md border-t border-gray-800">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-300 font-medium">

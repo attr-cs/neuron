@@ -53,6 +53,14 @@ class CallService {
             this.onStreamReceived(remoteStream);
           }
         });
+        call.on('close', () => {
+          console.log('Call closed remotely');
+          this.endCall();
+        });
+        call.on('error', (err) => {
+          console.error('Call error:', err);
+          this.endCall();
+        });
       });
 
       this.peer.on('error', (error) => {
@@ -69,7 +77,6 @@ class CallService {
         console.log('Peer connection closed');
         this.handleConnectionError();
       });
-
     } catch (error) {
       console.error('Error initializing peer:', error);
       this.handleConnectionError();
@@ -123,9 +130,9 @@ class CallService {
         });
 
         call.on('close', () => {
-          console.log('Call closed');
+          console.log('Call closed by remote peer');
           this.endCall();
-          reject(new Error('Call rejected or ended'));
+          reject(new Error('Call ended by remote peer'));
         });
 
         call.on('error', (error) => {
@@ -157,6 +164,7 @@ class CallService {
       });
 
       call.on('close', () => {
+        console.log('Call closed by caller');
         this.endCall();
       });
 
@@ -180,18 +188,25 @@ class CallService {
 
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
+        video: {
+          cursor: 'always', // Ensure cursor is visible
+        },
         audio: true,
       });
-      
+
       const videoTrack = screenStream.getVideoTracks()[0];
-      const sender = this.currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-      
+      const sender = this.currentCall.peerConnection.getSenders().find(s => s.track?.kind === 'video');
+
       if (sender) {
         await sender.replaceTrack(videoTrack);
+        console.log('Screen sharing started');
+      } else {
+        console.error('No video sender found');
+        throw new Error('No video sender available');
       }
 
       screenStream.getVideoTracks()[0].onended = () => {
+        console.log('Screen sharing stopped');
         this.restoreCameraStream();
       };
 
@@ -205,26 +220,31 @@ class CallService {
   }
 
   async restoreCameraStream() {
-    if (this.localStream) {
+    if (!this.currentCall) return;
+
+    try {
       const cameraStream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
       const videoTrack = cameraStream.getVideoTracks()[0];
-      const sender = this.currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-      
+      const sender = this.currentCall.peerConnection.getSenders().find(s => s.track?.kind === 'video');
+
       if (sender) {
         await sender.replaceTrack(videoTrack);
+        console.log('Restored camera stream');
       }
-      
+
       this.localStream.getTracks().forEach(track => track.stop());
       this.localStream = cameraStream;
+    } catch (error) {
+      console.error('Error restoring camera stream:', error);
     }
   }
 
   endCall() {
     if (this.currentCall) {
-      this.currentCall.close();
+      this.currentCall.close(); // This should notify the remote peer
       this.currentCall = null;
     }
     if (this.localStream) {
@@ -234,15 +254,17 @@ class CallService {
     if (this.onCallEnded) {
       this.onCallEnded();
     }
+    console.log('Call ended locally');
   }
 
   rejectCall() {
     if (this.currentCall) {
-      this.currentCall.close();
+      this.currentCall.close(); // This should notify the caller
       this.currentCall = null;
       if (this.onCallEnded) {
         this.onCallEnded();
       }
+      console.log('Call rejected locally');
     }
   }
 
@@ -254,7 +276,7 @@ class CallService {
         return audioTrack.enabled;
       }
     }
-    return true; // Default to enabled if no track
+    return true;
   }
 
   toggleVideo() {
@@ -265,7 +287,7 @@ class CallService {
         return videoTrack.enabled;
       }
     }
-    return true; // Default to enabled if no track
+    return true;
   }
 
   cleanup() {
