@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Phone, Video, Mic, MicOff, PhoneOff, Camera, CameraOff, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import callService from './CallService'; // Import callService for screen sharing
+import callService from './CallService';
 
 const CallInterface = ({
   isOpen,
@@ -26,6 +26,7 @@ const CallInterface = ({
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
+      console.log('Local video set with audio:', localStream.getAudioTracks());
     }
     return () => {
       if (localVideoRef.current) {
@@ -37,6 +38,7 @@ const CallInterface = ({
   useEffect(() => {
     if (remoteVideoRef.current && remoteStream) {
       remoteVideoRef.current.srcObject = remoteStream;
+      console.log('Remote video set with audio:', remoteStream.getAudioTracks());
     }
     return () => {
       if (remoteVideoRef.current) {
@@ -102,7 +104,7 @@ const CallInterface = ({
                   ref={localVideoRef}
                   autoPlay
                   playsInline
-                  muted
+                  muted // Mute local audio to avoid feedback
                   className="w-full h-full object-cover"
                 />
               </div>

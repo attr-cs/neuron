@@ -731,7 +731,7 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
     };
 
     callService.onStreamReceived = (stream) => {
-      console.log('Remote stream received');
+      console.log('Remote stream received with audio:', stream.getAudioTracks());
       setRemoteStream(stream);
       setCallStatus('connected');
       if (ringtoneAudio) {

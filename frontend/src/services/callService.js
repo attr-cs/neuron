@@ -48,7 +48,7 @@ class CallService {
           this.onCallReceived(call);
         }
         call.on('stream', (remoteStream) => {
-          console.log('Received remote stream');
+          console.log('Received remote stream with audio:', remoteStream.getAudioTracks());
           if (this.onStreamReceived) {
             this.onStreamReceived(remoteStream);
           }
@@ -113,8 +113,9 @@ class CallService {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isVideo,
-        audio: true,
+        audio: true, // Ensure audio is always requested
       });
+      console.log('Local stream created with audio:', stream.getAudioTracks());
       this.localStream = stream;
 
       const call = this.peer.call(recipientId, stream, { metadata: { isVideo } });
@@ -122,7 +123,7 @@ class CallService {
 
       return new Promise((resolve, reject) => {
         call.on('stream', (remoteStream) => {
-          console.log('Received remote stream');
+          console.log('Received remote stream with audio:', remoteStream.getAudioTracks());
           if (this.onStreamReceived) {
             this.onStreamReceived(remoteStream);
           }
@@ -151,13 +152,14 @@ class CallService {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: isVideo,
-        audio: true,
+        audio: true, // Ensure audio is always requested
       });
+      console.log('Local stream for answer with audio:', stream.getAudioTracks());
       this.localStream = stream;
 
       call.answer(stream);
       call.on('stream', (remoteStream) => {
-        console.log('Remote stream received in answer');
+        console.log('Remote stream received in answer with audio:', remoteStream.getAudioTracks());
         if (this.onStreamReceived) {
           this.onStreamReceived(remoteStream);
         }
@@ -189,9 +191,9 @@ class CallService {
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
-          cursor: 'always', // Ensure cursor is visible
+          cursor: 'always',
         },
-        audio: true,
+        audio: true, // Include audio for screen sharing
       });
 
       const videoTrack = screenStream.getVideoTracks()[0];
@@ -225,14 +227,14 @@ class CallService {
     try {
       const cameraStream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true,
+        audio: true, // Ensure audio is restored
       });
       const videoTrack = cameraStream.getVideoTracks()[0];
       const sender = this.currentCall.peerConnection.getSenders().find(s => s.track?.kind === 'video');
 
       if (sender) {
         await sender.replaceTrack(videoTrack);
-        console.log('Restored camera stream');
+        console.log('Restored camera stream with audio:', cameraStream.getAudioTracks());
       }
 
       this.localStream.getTracks().forEach(track => track.stop());
@@ -244,7 +246,7 @@ class CallService {
 
   endCall() {
     if (this.currentCall) {
-      this.currentCall.close(); // This should notify the remote peer
+      this.currentCall.close();
       this.currentCall = null;
     }
     if (this.localStream) {
@@ -259,7 +261,7 @@ class CallService {
 
   rejectCall() {
     if (this.currentCall) {
-      this.currentCall.close(); // This should notify the caller
+      this.currentCall.close();
       this.currentCall = null;
       if (this.onCallEnded) {
         this.onCallEnded();
@@ -273,9 +275,11 @@ class CallService {
       const audioTrack = this.localStream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
+        console.log('Audio toggled:', audioTrack.enabled);
         return audioTrack.enabled;
       }
     }
+    console.log('No audio track available to toggle');
     return true;
   }
 
