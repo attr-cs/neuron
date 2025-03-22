@@ -6,7 +6,7 @@ import { authState } from '../store/atoms';
 import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Phone, Video, MoreVertical, ArrowLeft, Copy, Check, CheckCheck, X } from 'lucide-react';
+import { Send, Smile, Phone, Monitor, Video, MoreVertical, ArrowLeft, Copy, Check, CheckCheck, X } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
