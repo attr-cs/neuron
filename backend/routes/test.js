@@ -263,51 +263,96 @@
 // module.exports = router;
 
 
-const mongoose = require('mongoose');
-const { Post } = require('../models/postModel');
-const router = require('express').Router();
+// const mongoose = require('mongoose');
+// const { Post } = require('../models/postModel');
+// const router = require('express').Router();
 
-require('dotenv').config();
+// require('dotenv').config();
 
-router.get('/migrate-posts-comments', async (req, res) => {
-    await migratePostsComments();
-    res.status(200).json({ message: "Post comments migration process completed. Check console for details." });
-});
+// router.get('/migrate-posts-comments', async (req, res) => {
+//     await migratePostsComments();
+//     res.status(200).json({ message: "Post comments migration process completed. Check console for details." });
+// });
 
-const migratePostsComments = async () => {
+// const migratePostsComments = async () => {
+//   try {
+//     // Log a sample document to check structure
+//     const samplePost = await Post.findOne();
+//     console.log('Sample post before migration:', samplePost);
+
+//     // Find all posts that don't have a comments field
+//     const posts = await Post.find({ comments: { $exists: false } });
+//     console.log(`Found ${posts.length} posts without comments field`);
+
+//     if (posts.length === 0) {
+//       console.log('No posts need comments migration. Checking all posts...');
+//       const allPosts = await Post.find({});
+//       console.log(`Total posts: ${allPosts.length}, First post:`, allPosts[0]);
+//       return;
+//     }
+
+//     // Update each post to include an empty comments array
+//     let updatedCount = 0;
+//     for (const post of posts) {
+//       post.comments = [];
+//       await post.save();
+//       updatedCount++;
+//       console.log(`Updated post ${post._id} (${updatedCount}/${posts.length})`);
+//     }
+
+//     // Verify migration
+//     const samplePostAfter = await Post.findOne();
+//     console.log('Sample post after migration:', samplePostAfter);
+//     console.log(`Migration completed successfully. Updated ${updatedCount} posts.`);
+//   } catch (error) {
+//     console.error('Migration failed:', error);
+//     throw error;
+//   }
+// };
+
+// module.exports = router;
+
+
+// routes/test.js
+const express = require('express');
+const router = express.Router();
+const { User } = require('../models/userModel');
+
+router.get('/add-is-banned', async (req, res) => {
   try {
-    // Log a sample document to check structure
-    const samplePost = await Post.findOne();
-    console.log('Sample post before migration:', samplePost);
+    console.log('Starting process to add isBanned field to all users');
 
-    // Find all posts that don't have a comments field
-    const posts = await Post.find({ comments: { $exists: false } });
-    console.log(`Found ${posts.length} posts without comments field`);
+    // Count total users before update
+    const totalUsers = await User.countDocuments();
+    console.log(`Total users found: ${totalUsers}`);
 
-    if (posts.length === 0) {
-      console.log('No posts need comments migration. Checking all posts...');
-      const allPosts = await Post.find({});
-      console.log(`Total posts: ${allPosts.length}, First post:`, allPosts[0]);
-      return;
-    }
+    // Update all users to add isBanned field with default false
+    const result = await User.updateMany(
+      { isBanned: { $exists: false } }, // Only update documents where isBanned doesn't exist
+      { $set: { isBanned: false } }
+    );
 
-    // Update each post to include an empty comments array
-    let updatedCount = 0;
-    for (const post of posts) {
-      post.comments = [];
-      await post.save();
-      updatedCount++;
-      console.log(`Updated post ${post._id} (${updatedCount}/${posts.length})`);
-    }
+    console.log(`Update result: ${JSON.stringify(result)}`);
+    console.log(`Modified ${result.modifiedCount} users`);
+    console.log(`Matched ${result.matchedCount} users`);
 
-    // Verify migration
-    const samplePostAfter = await Post.findOne();
-    console.log('Sample post after migration:', samplePostAfter);
-    console.log(`Migration completed successfully. Updated ${updatedCount} posts.`);
+    // Verify the update
+    const updatedUsersCount = await User.countDocuments({ isBanned: { $exists: true } });
+    console.log(`Users with isBanned field after update: ${updatedUsersCount}`);
+
+    res.status(200).json({
+      message: 'Successfully added isBanned field to all users',
+      totalUsers,
+      modifiedCount: result.modifiedCount,
+      updatedUsersCount
+    });
   } catch (error) {
-    console.error('Migration failed:', error);
-    throw error;
+    console.error('Error adding isBanned field to users:', error);
+    res.status(500).json({
+      message: 'Failed to add isBanned field',
+      error: error.message
+    });
   }
-};
+});
 
 module.exports = router;

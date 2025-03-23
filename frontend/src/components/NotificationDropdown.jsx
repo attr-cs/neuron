@@ -84,6 +84,10 @@ export default function NotificationDropdown() {
         return 'mentioned you in a post';
       case 'message':
         return 'sent you a message';
+      case 'broadcast':
+        return 'sent a broadcast';
+      case 'personal':
+        return 'Message for you';
       default:
         return 'interacted with you';
     }
@@ -95,13 +99,19 @@ export default function NotificationDropdown() {
       case 'like':
       case 'comment':
       case 'mention':
-        navigate(`/notifications?postId=${notification.postId}`);
+        navigate(`/post/${notification.postId._id}`);
         break;
       case 'follow':
         navigate(`/profile/${notification.triggeredBy.username}`);
         break;
       case 'message':
         navigate(`/messages/${notification.triggeredBy.username}`);
+        break;
+      case 'broadcast':
+        navigate('/notifications');
+        break;
+      case 'personal':
+        navigate('/notifications');
         break;
       default:
         navigate('/notifications');

@@ -175,47 +175,49 @@ const Dashboard = () => {
     }
   });
 
-  const handleLikePost = (postId) => {
-    likeMutation.mutate(postId);
+  const handleLikePost = async (postId) => {
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
+      );
+      queryClient.invalidateQueries(['posts']);
+      return response.data;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to like post",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleAddComment = async (postId) => {
     if (!commentText.trim()) return;
     
+    setIsSubmittingComment(true);
     try {
-      setIsSubmittingComment(true);
-      const response = await axios.post(
+      await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/comments`,
         { content: commentText },
-        { headers: { Authorization: `Bearer ${auth.token}` } }
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
       );
-      
-      // Update posts with new comment
-      queryClient.setQueryData(['posts'], old => 
-        old.map(post => {
-          if (post._id === postId) {
-            return {
-              ...post,
-              commentsCount: (post.commentsCount || 0) + 1,
-              comments: post.comments 
-                ? [response.data, ...post.comments]
-                : [response.data]
-            };
-          }
-          return post;
-        })
-      );
-      
       setCommentText('');
+      queryClient.invalidateQueries(['posts']);
+      queryClient.invalidateQueries(['comments', postId]);
       toast({
         title: "Success",
         description: "Comment added successfully",
       });
     } catch (error) {
-      console.error('Error adding comment:', error);
       toast({
         title: "Error",
-        description: "Failed to add comment",
+        description: error.response?.data?.message || "Failed to add comment",
         variant: "destructive"
       });
     } finally {
@@ -390,7 +392,8 @@ const Dashboard = () => {
             placeholder="Share your thoughts..."
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
-            className="min-h-[120px] mb-4 bg-background/80 resize-none text-base focus:ring-2 focus:ring-primary/20"
+            className="min-h-[120px] mb-4 bg-background/80 resize-none text-base focus:ring-2 focus:ring-primary/20 whitespace-pre-line"
+            rows={4}
           />
 
           {/* Image Preview */}
@@ -482,5 +485,4 @@ const Dashboard = () => {
 }
 
 export default Dashboard
-
 

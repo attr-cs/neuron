@@ -11,6 +11,9 @@ export default {
   ],
   theme: {
   	extend: {
+		maxWidth: {
+			'cell': '300px',
+		},
 		animation: {
 			'spin-slow': 'spin 3s linear infinite',
 			blink: 'blink 1s step-end infinite',
@@ -70,5 +73,5 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("tailwind-scrollbar")],
 }

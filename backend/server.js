@@ -10,6 +10,7 @@ const compression = require('compression');
 const { createServer } = require('http');
 const initializeSocket = require('./socket/index');
 
+
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 4000;
@@ -52,6 +53,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 app.use('/api', router);
+
 
 app.use((err, req, res, next) => {
   console.error(`[Error]:`, err.message);

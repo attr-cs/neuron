@@ -40,7 +40,8 @@ const userSchema = new mongoose.Schema({
   posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
   isVerified: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
-  website: String
+  website: String,
+  isBanned: { type: Boolean, default: false }
 }, { timestamps: true });
 
 const User = mongoose.model("users", userSchema);

@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,6 +22,7 @@ import { Eye, EyeOff, User, Mail, Lock, Brain, ArrowRight, ArrowLeft, CheckCircl
 import NeuralNetwork from "../assets/neural_network_actual.png"
 import uploadImage from "../utils/uploadImage"
 import defaultAvatar from '../utils/defaultAvatar'
+
 
 const InputWithIcon = ({ icon: Icon, ...props }) => (
   <div className="relative">
@@ -94,7 +96,7 @@ function Signup() {
   const setAuth = useSetRecoilState(authState)
   const setBasicInfo = useSetRecoilState(userBasicInfoState)
   const { toast } = useToast()
-
+  
   
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -110,6 +112,8 @@ function Signup() {
   const [currentStep, setCurrentStep] = useState(0)
   const [isFormValid, setIsFormValid] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -133,8 +137,29 @@ function Signup() {
       )
 
       if (response.status === 200) {
-        const { token, userId, username } = response.data
-        
+        const { token, userId, username, isBanned } = response.data
+        if (isBanned) {
+          // Log out the banned user
+          localStorage.clear();
+          
+          setAuth({
+            isAuthenticated: false,
+            token: null,
+            userId: null,
+            username: null,
+            isAdmin: false,
+          });
+          setBasicInfo({
+            firstname: null,
+            lastname: null,
+            username: null,
+            profileImage: null,
+            isAdmin: false,
+            isOnline: false,
+          });
+          navigate("/banned");
+          return;
+        }
         // Set auth state
         setAuth({ 
           isAuthenticated: true, 
@@ -240,7 +265,30 @@ function Signup() {
         user
       );
   
-      const { token, userId, username } = response.data;
+      const { token, userId, username, isBanned } = response.data;
+      if (isBanned) {
+        // Log out the banned user
+        localStorage.clear();
+        
+        setAuth({
+          isAuthenticated: false,
+          token: null,
+          userId: null,
+          username: null,
+          isAdmin: false,
+        });
+        setBasicInfo({
+          firstname: null,
+          lastname: null,
+          username: null,
+          profileImage: null,
+          isAdmin: false,
+          isOnline: false,
+        });
+        
+        navigate("/banned");
+        return;
+      }
       setAuth({ 
         isAuthenticated: true, 
         token, 
@@ -253,6 +301,7 @@ function Signup() {
       localStorage.setItem("username", username);
       
       const userData = await fetchUserData(username, token);
+      
       setBasicInfo({
         username: userData.username,
         firstname: userData.firstname,
@@ -314,6 +363,8 @@ function Signup() {
   useEffect(() => {
     validateStep()
   }, [formData, currentStep])
+
+  
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-indigo-950">
@@ -417,11 +468,27 @@ function Signup() {
               whileTap={{ scale: 0.95 }}
               className="flex justify-center w-full"
             >
-              <GoogleLogin
-                onSuccess={onSignUpSuccess}
-                onError={(err) => console.log("Failed Signup: ", err)}
-                size="large"
-              />
+              {isGoogleLoading ? (
+                <div className="flex items-center justify-center w-full">
+                  <Button disabled className="w-full">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in with Google...
+                  </Button>
+                </div>
+              ) : (
+                <GoogleLogin
+                  onSuccess={onSignUpSuccess}
+                  onError={(err) => {
+                    console.error("Failed Signin:", err)
+                    toast({
+                      variant: "destructive",
+                      title: "Error",
+                      description: "Google sign in failed",
+                    })
+                  }}
+                  size="large"
+                />
+              )}
             </motion.div>
             <p className="text-sm text-center">
               Already have an account?{" "}

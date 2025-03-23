@@ -24,6 +24,8 @@ import EmailSent from './components/EmailSent';
 import ResetPassword from './pages/ResetPassword';
 import AdminRoute from './components/routes/AdminRoute';
 import NotificationsPage from './pages/NotificationsPage';
+import BannedInterface from './pages/BannedInterface';
+import PostPage from './pages/PostPage';
 
 // Atoms
 import {
@@ -46,9 +48,10 @@ function App() {
   const [auth, setAuth] = useRecoilState(authState);
   const location = useLocation();
   const setBasicInfo = useSetRecoilState(userBasicInfoState);
+  const [isBanned, setIsBanned] = useState(false);
 
   
-  const noNavbarPages = ['/signin', '/signup', '/create-password', '/reset-password', '/email-sent'];
+  const noNavbarPages = ['/signin', '/signup', '/create-password', '/reset-password', '/email-sent', '/banned'];
   const noFooterPages = ['/dashboard', '/users', '/settings', '/signin', '/signup', '/create-password', '/reset-password', '/email-sent'];
   
   
@@ -72,6 +75,31 @@ function App() {
 
         try {
           const userData = await fetchUserData(username, token);
+          
+          if (userData.isBanned) {
+              // Log out the banned user
+              localStorage.clear();
+              setAuth({
+                isAuthenticated: false,
+                token: null,
+                userId: null,
+                username: null,
+                isAdmin: false,
+              });
+              setBasicInfo({
+                firstname: null,
+                lastname: null,
+                username: null,
+                profileImage: null,
+                isAdmin: false,
+                isOnline: false,
+              });
+              
+              setIsBanned(true);
+              
+              return;
+          }
+
           if (userData) {
             setBasicInfo({
               firstname: userData.firstname,
@@ -91,6 +119,10 @@ function App() {
 
     initializeApp();
   }, [setAuth, setBasicInfo]);
+
+  if (isBanned) {
+    return <BannedInterface />;
+  }
 
   if (loading) {
     return (
@@ -127,6 +159,7 @@ function App() {
                   <Route path="/profile/:username" element={<ProtectedRoutes><ProfilePage /></ProtectedRoutes>} />
                   <Route path="/users" element={<ProtectedRoutes><UsersPage /></ProtectedRoutes>} />
                   <Route path="/messages/:username" element={<ProtectedRoutes><DirectMessage /></ProtectedRoutes>} />
+                  <Route path="/banned" element={<BannedInterface />} />
                   <Route path="/create-password" element={<ProtectedRoutes><CreatePassword /></ProtectedRoutes>} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/request-reset" element={<RequestReset />} />
@@ -148,10 +181,18 @@ function App() {
                       </ProtectedRoutes>
                     } 
                   />
+                  <Route 
+                    path="/post/:postId" 
+                    element={
+                      <ProtectedRoutes>
+                        <PostPage />
+                      </ProtectedRoutes>
+                    } 
+                  />
                   <Route path='*' element={<NotFound />} />
                 </Routes>
               </main>
-              {!shouldHideFooter && <Footer />}
+              
             </div>
           </GoogleOAuthProvider>
         </div>
@@ -161,3 +202,6 @@ function App() {
 }
 
 export default App;
+
+
+

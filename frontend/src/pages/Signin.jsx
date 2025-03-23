@@ -9,6 +9,7 @@ import { authState, userBasicInfoState } from "../store/atoms/index"
 import fetchUserData from "../utils/fetchUserData"
 import uploadImage from "../utils/uploadImage"
 import { motion, AnimatePresence } from "framer-motion"
+import BannedInterface from './BannedInterface';
 
 
 import { Button } from "@/components/ui/button"
@@ -74,6 +75,9 @@ function Signin() {
     const [showPassword, setShowPassword] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
     const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+    const [isBanned, setIsBanned] = useState(false)
+
+    
     
     const [formData, setFormData] = useState({
       username: "",
@@ -111,7 +115,29 @@ function Signin() {
         )
         
         if (response.status === 200) {
-          const { token, userId, username } = response.data
+          const { token, userId, username, isBanned } = response.data
+        if (isBanned) {
+          // Log out the banned user
+          localStorage.clear();
+          
+          setAuth({
+            isAuthenticated: false,
+            token: null,
+            userId: null,
+            username: null,
+            isAdmin: false,
+          });
+          setBasicInfo({
+            firstname: null,
+            lastname: null,
+            username: null,
+            profileImage: null,
+            isAdmin: false,
+            isOnline: false,
+          });
+          navigate("/banned");
+          return;
+        }
 
           // Set auth state
           setAuth({ 
@@ -129,7 +155,7 @@ function Signin() {
 
           // Fetch and set user data
           const userData = await fetchUserData(username, token)
-          
+        
           // Ensure we're setting all required fields from userBasicInfoState
           setBasicInfo({
             firstname: userData.firstname,
@@ -200,7 +226,30 @@ function Signin() {
           user
         )
 
-          const { token, userId, username } = response.data
+        const { token, userId, username, isBanned } = response.data;
+      if (isBanned) {
+        // Log out the banned user
+        localStorage.clear();
+        
+        setAuth({
+          isAuthenticated: false,
+          token: null,
+          userId: null,
+          username: null,
+          isAdmin: false,
+        });
+        setBasicInfo({
+          firstname: null,
+          lastname: null,
+          username: null,
+          profileImage: null,
+          isAdmin: false,
+          isOnline: false,
+        });
+        
+        navigate("/banned");
+        return;
+      }
         
         setAuth({ 
           isAuthenticated: true, 
@@ -214,7 +263,29 @@ function Signin() {
             localStorage.setItem("username", username)
             
         const userData = await fetchUserData(username, token)
-      
+        if (userData.isBanned) {
+          // Log out the banned user
+          localStorage.clear();
+          setAuth({
+            isAuthenticated: false,
+            token: null,
+            userId: null,
+            username: null,
+            isAdmin: false,
+          });
+          setBasicInfo({
+            firstname: null,
+            lastname: null,
+            username: null,
+            profileImage: null,
+            isAdmin: false,
+            isOnline: false,
+          });
+          
+          setIsBanned(true);
+          
+          return;
+      }
             setBasicInfo({
               firstname: userData.firstname,
               lastname: userData.lastname,
@@ -257,6 +328,10 @@ function Signin() {
         return false
       }
       return true
+      }
+
+      if (isBanned) {
+        return <BannedInterface />;
       }
   
     return (

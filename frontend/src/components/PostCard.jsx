@@ -20,6 +20,7 @@ import { useRecoilValue } from 'recoil';
 import EmojiPicker from 'emoji-picker-react';
 import { Smile } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import ShareButton from './ShareButton';
 
 // ImageDialog Component
 const ImageDialog = ({ isOpen, onClose, imageUrl }) => {
@@ -267,12 +268,7 @@ const PostCard = ({
                 </span>
               </button>
 
-              <button
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
-              >
-                <Share2 className="w-4 h-4" />
-                <span className="font-medium">Share</span>
-              </button>
+              <ShareButton post={post} />
             </div>
 
             <Button variant="ghost" size="sm">
@@ -288,12 +284,12 @@ const PostCard = ({
                 <div className="relative flex-1">
                   <textarea
                     ref={commentInputRef}
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Write a comment..."
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Write a comment..."
                     className="min-h-[36px] max-h-[100px] w-full rounded-2xl px-4 py-2 pr-12 resize-none
                              bg-muted/50 border-0 focus:ring-0 focus:outline-none
-                             placeholder:text-muted-foreground text-sm"
+                             placeholder:text-muted-foreground text-sm whitespace-pre-line"
                     rows={1}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {

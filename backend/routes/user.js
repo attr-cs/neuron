@@ -5,6 +5,7 @@ const { userZod, userOAuthZod, userUpdateZod } = require('../zod/types');
 const { v4 } = require('uuid');
 const { User } = require('../models/userModel');
 const jwt = require('jsonwebtoken');
+const { adminMiddleware } = require('../middlewares/adminMiddleware');
 const verifyToken = require('../middlewares/verifyToken');
 const { sendResetEmail } = require('../services/emailService');
 const { toggleFollow, checkFollowStatus } = require('../controllers/userController');
@@ -14,6 +15,43 @@ const FormData = require('form-data');
 const { Notification } = require('../models/notificationModel');
 
 userRouter.use(express.json());
+// Ban user endpoint
+userRouter.post('/ban', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isBanned: true },
+      { new: true }
+    ).select('username firstname lastname profileImage isBanned');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ message: 'User banned successfully', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error banning user' });
+  }
+});
+
+// Add this route after the ban user endpoint
+userRouter.post('/unban', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isBanned: false },
+      { new: true }
+    ).select('username firstname lastname profileImage isBanned');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ message: 'User unbanned successfully', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Error unbanning user' });
+  }
+});
 
 userRouter.get('/status/:userId', verifyToken, async (req, res) => {
     try {
@@ -67,7 +105,7 @@ userRouter.post('/signup', async (req, res) => {
     const userId = newUser._id;
     const jwtSign = jwt.sign({ userId, username: data.username }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-    res.status(200).json({ msg: "User created successfully!", token: jwtSign, userId, username: data.username });
+    res.status(200).json({ msg: "User created successfully!", token: jwtSign, userId, username: data.username, isBanned: newUser.isBanned });
 });
 
 userRouter.post('/signin', async (req, res) => {
@@ -93,7 +131,7 @@ userRouter.post('/signin', async (req, res) => {
     const userId = fetchedUser._id;
     const token = jwt.sign({ userId, username: fetchedUser.username }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-    return res.status(200).json({ token, userId, username: fetchedUser.username });
+    return res.status(200).json({ token, userId, username: fetchedUser.username, isBanned: fetchedUser.isBanned });
 });
 
 
@@ -159,6 +197,7 @@ userRouter.get('/userdetails/:username', verifyToken, async(req,res)=>{
         profileImage: 1,
         isAdmin: 1,
         isOnline: 1,
+        isBanned: 1,
     });
     if(!user){
         return res.status(400).json({"msg":"User doesn't exist!"});
@@ -190,7 +229,8 @@ userRouter.post('/google-auth', async (req, res) => {
         msg: "User logged in successfully",
         token,
         userId: user._id,
-        username: user.username
+        username: user.username,
+        isBanned: user.isBanned
       });
     }
 
@@ -222,7 +262,8 @@ userRouter.post('/google-auth', async (req, res) => {
       msg: "User created successfully!",
       token,
       userId: newUser._id,
-      username
+      username,
+      isBanned: newUser.isBanned
     });
 
   } catch (error) {
@@ -525,7 +566,7 @@ userRouter.post('/submit', async (req, res) => {
 userRouter.get('/profile/:username', verifyToken, async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username })
-      .select('username firstname lastname bio email location website profileImage bannerImage isAdmin createdAt followers following gender birthdate')
+      .select('username firstname lastname bio email location website profileImage bannerImage isAdmin createdAt followers following gender birthdate isBanned')
       .lean();
     
     if (!user) {

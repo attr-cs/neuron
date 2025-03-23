@@ -812,78 +812,78 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
 
   return (
     <>
-      <ErrorBoundary FallbackComponent={ErrorFallback}>
-        <div className={cn(
-          "fixed inset-0 z-10 flex flex-col",
-          "bg-white" // Light mode background
-        )}>
-          {/* Header */}
-          <motion.div 
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className={cn(
-              "p-4 border-b fixed top-0 left-0 right-0 z-20",
-              "bg-white shadow-sm backdrop-blur-md",
-              "border-gray-100"
-            )}
-          >
-            <div className="flex items-center justify-between max-w-screen-xl mx-auto">
-              <div className="flex items-center gap-4">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleBack}
-                  className={cn(
-                    "p-2 rounded-full",
-                    "hover:bg-accent",
-                    "text-foreground",
-                    "transition-colors"
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className={cn(
+        "fixed inset-0 z-10 flex flex-col",
+        "bg-white" // Light mode background
+      )}>
+        {/* Header */}
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className={cn(
+            "p-4 border-b fixed top-0 left-0 right-0 z-20",
+            "bg-white shadow-sm backdrop-blur-md",
+            "border-gray-100"
+          )}
+        >
+          <div className="flex items-center justify-between max-w-screen-xl mx-auto">
+            <div className="flex items-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleBack}
+                className={cn(
+                  "p-2 rounded-full",
+                  "hover:bg-accent",
+                  "text-foreground",
+                  "transition-colors"
+                )}
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </motion.button>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Avatar className={cn(
+                    "w-10 h-10",
+                    "ring-2 ring-border ring-offset-2 ring-offset-background"
+                  )}>
+                   {recipientImage ? (
+  <img 
+    src={recipientImage} 
+    alt={recipientName} 
+                        className="object-cover rounded-full hover:opacity-90 transition-opacity cursor-pointer" 
+    referrerPolicy="no-referrer"
+    onClick={() => navigate(`/profile/${recipientUsername}`)}
+    onError={(e) => {
+      e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
+    }}
+  />
+) : (
+                      <DefaultAvatar 
+                        onClick={() => navigate(`/profile/${recipientUsername}`)} 
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer" 
+                      />
+)}
+                  </Avatar>
+                  {onlineUsers.has(recipientId) && (
+                    <OnlineStatus userId={recipientId} className="bottom-0 right-0" />
                   )}
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </motion.button>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Avatar className={cn(
-                      "w-10 h-10",
-                      "ring-2 ring-border ring-offset-2 ring-offset-background"
-                    )}>
-                      {recipientImage ? (
-                        <img 
-                          src={recipientImage} 
-                          alt={recipientName} 
-                          className="object-cover rounded-full hover:opacity-90 transition-opacity cursor-pointer" 
-                          referrerPolicy="no-referrer"
-                          onClick={() => navigate(`/profile/${recipientUsername}`)}
-                          onError={(e) => {
-                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(recipientName)}&background=random`;
-                          }}
-                        />
-                      ) : (
-                        <DefaultAvatar 
-                          onClick={() => navigate(`/profile/${recipientUsername}`)} 
-                          className="w-10 h-10 rounded-full object-cover cursor-pointer" 
-                        />
-                      )}
-                    </Avatar>
-                    {onlineUsers.has(recipientId) && (
-                      <OnlineStatus userId={recipientId} className="bottom-0 right-0" />
-                    )}
-                  </div>
-                  <div>
-                    <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
-                      <span className="truncate max-w-[200px]">
-                        {recipientName}
-                      </span>
-                      {recipientIsAdmin && <AdminBadge />}
-                    </h2>
-                    <div className="text-xs text-muted-foreground">
-                      {onlineUsers.has(recipientId) ? 'Active now' : 'Offline'}
-                    </div>
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <span className="truncate max-w-[200px]">
+                      {recipientName}
+                    </span>
+                    {recipientIsAdmin && <AdminBadge />}
+                  </h2>
+                  <div className="text-xs text-muted-foreground">
+                    {onlineUsers.has(recipientId) ? 'Active now' : 'Offline'}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+            </div>
+            <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -908,184 +908,184 @@ const Chat = ({ recipientId, recipientName, recipientUsername, recipientImage, r
             >
           <Monitor className="h-4 w-4" />
         </Button>
-              </div>
             </div>
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Messages Container */}
-          <div 
-            ref={chatContainerRef}
-            className={cn(
-              "messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4",
-              "bg-white scroll-smooth",
-              "pb-24"
-            )}
-          >
+        {/* Messages Container */}
+        <div 
+  ref={chatContainerRef}
+          className={cn(
+            "messages-container flex-1 overflow-y-auto px-2 py-4 space-y-4",
+            "bg-white scroll-smooth",
+            "pb-24"
+          )}
+        >
             {isFetchingNextPage && (
-              <div className="flex justify-center py-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
+            <div className="flex justify-center py-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary"></div>
               </div>
             )}
             
             <div ref={loadMoreRef} className="h-px" />
             
-            {allMessages.map((msg, index) => {
+          {allMessages.map((msg, index) => {
               const messageDate = new Date(msg.timestamp).toDateString();
-              const prevMessageDate = index > 0 ? new Date(allMessages[index - 1].timestamp).toDateString() : null;
+                const prevMessageDate = index > 0 ? new Date(allMessages[index - 1].timestamp).toDateString() : null;
 
-              return (
-                <React.Fragment key={msg._id || `temp-${index}`}>
-                  {messageDate !== prevMessageDate && (
-                    <DateSeparator date={msg.timestamp} />
-                  )}
-                  <MessageBubble
-                    message={msg}
-                    isOwn={msg.sender._id === auth.userId}
-                  />
-                </React.Fragment>
+            return (
+              <React.Fragment key={msg._id || `temp-${index}`}>
+                {messageDate !== prevMessageDate && (
+                  <DateSeparator date={msg.timestamp} />
+                )}
+                <MessageBubble
+                  message={msg}
+                  isOwn={msg.sender._id === auth.userId}
+                />
+              </React.Fragment>
               );
-            })}
-            <div ref={messagesEndRef} />
-          </div>
+          })}
+          <div ref={messagesEndRef} />
+        </div>
 
-          {/* Typing Indicator */}
-          {recipientIsTyping && (
-            <div className="absolute bottom-24 left-0 right-0 flex justify-center">
-              <div className={cn(
-                "rounded-full px-4 py-2 text-sm",
-                "bg-gray-100 text-gray-700",
-                "shadow-sm",
-                "flex items-center gap-2"
-              )}>
-                <div className="flex gap-1">
-                  <motion.span
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity}}
-                    className="w-1 h-1 bg-gray-500 rounded-full"
-                  />
-                  <motion.span
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity}}
-                    className="w-1 h-1 bg-gray-500 rounded-full"
-                  />
-                  <motion.span
-                    animate={{ opacity: [0, 1, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity}}
-                    className="w-1 h-1 bg-gray-500 rounded-full"
-                  />
-                </div>
+        {/* Typing Indicator */}
+        {recipientIsTyping && (
+          <div className="absolute bottom-24 left-0 right-0 flex justify-center">
+            <div className={cn(
+              "rounded-full px-4 py-2 text-sm",
+              "bg-gray-100 text-gray-700",
+              "shadow-sm",
+              "flex items-center gap-2"
+            )}>
+              <div className="flex gap-1">
+                <motion.span
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity}}
+                  className="w-1 h-1 bg-gray-500 rounded-full"
+                />
+                <motion.span
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity}}
+                  className="w-1 h-1 bg-gray-500 rounded-full"
+                />
+                <motion.span
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity}}
+                  className="w-1 h-1 bg-gray-500 rounded-full"
+                />
               </div>
             </div>
-          )}    
+          </div>
+        )}    
 
-          {/* Input Form */}
-          <motion.form
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            onSubmit={sendMessage}
-            className={cn(
-              "p-3 fixed bottom-0 left-0 right-0",
-              "bg-background/90 backdrop-blur-md",
-              "border-t border-border"
-            )}
-          >
-            <div className="flex items-end space-x-2 max-w-screen-xl mx-auto">
-              <div className="relative flex-grow flex items-center">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={handleTyping}
-                  placeholder="Type your message..."
-                  className={cn(
-                    "w-full p-2.5 pr-12 rounded-full",
-                    "border border-gray-200",
-                    "bg-white",
-                    "text-gray-900",
-                    "placeholder:text-gray-400",
-                    "focus:outline-none focus:border-blue-500",
-                    "transition-none"
-                  )}
-                  autoComplete="off"
-                  spellCheck="false"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  maxLength={5000}
-                />
-                {message && (
-                  <button
-                    type="button"
-                    onClick={() => setMessage('')}
-                    className={cn(
-                      "absolute right-3 top-1/2 -translate-y-1/2",
-                      "p-1.5 rounded-full",
-                      "hover:bg-accent",
-                      "text-muted-foreground",
-                      "transition-colors"
-                    )}
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+        {/* Input Form */}
+        <motion.form
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          onSubmit={sendMessage}
+          className={cn(
+            "p-3 fixed bottom-0 left-0 right-0",
+            "bg-background/90 backdrop-blur-md",
+            "border-t border-border"
+          )}
+        >
+          <div className="flex items-end space-x-2 max-w-screen-xl mx-auto">
+            <div className="relative flex-grow flex items-center">
+            <input
+              type="text"
+              value={message}
+                onChange={handleTyping}
+              placeholder="Type your message..."
+                className={cn(
+                  "w-full p-2.5 pr-12 rounded-full",
+                  "border border-gray-200",
+                  "bg-white",
+                  "text-gray-900",
+                  "placeholder:text-gray-400",
+                  "focus:outline-none focus:border-blue-500",
+                  "transition-none"
                 )}
-              </div>
-
-              <div ref={emojiPickerRef} className="relative">
-                <motion.button
+                autoComplete="off"
+                spellCheck="false"
+                autoCorrect="off"
+                autoCapitalize="off"
+                maxLength={5000}
+              />
+              {message && (
+                <button
                   type="button"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  onClick={() => setMessage('')}
                   className={cn(
-                    "p-2.5 rounded-full",
-                    "bg-white",
-                    "border border-gray-200",
-                    "hover:bg-gray-50",
-                    "text-gray-700",
+                    "absolute right-3 top-1/2 -translate-y-1/2",
+                    "p-1.5 rounded-full",
+                    "hover:bg-accent",
+                    "text-muted-foreground",
                     "transition-colors"
                   )}
                 >
-                  <Smile className="w-5 h-5" />
-                </motion.button>
-                <AnimatePresence>
-                  {showEmojiPicker && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute bottom-14 right-0 z-50"
-                    >
-                      <div className={cn(
-                        "shadow-xl rounded-lg overflow-hidden",
-                        "border border-border"
-                      )}>
-                        <EmojiPicker 
-                          theme="light"
-                          lazyLoadEmojis={true}
-                          onEmojiClick={onEmojiClick}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
 
+            <div ref={emojiPickerRef} className="relative">
               <motion.button
-                type="submit"
+                type="button"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 className={cn(
                   "p-2.5 rounded-full",
-                  "bg-blue-600 hover:bg-blue-700",
-                  "text-white",
-                  "transition-colors",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  "focus:ring-2 focus:ring-blue-500/20"
+                  "bg-white",
+                  "border border-gray-200",
+                  "hover:bg-gray-50",
+                  "text-gray-700",
+                  "transition-colors"
                 )}
-                disabled={!message.trim()}
               >
-                <Send className="w-5 h-5" />
+                <Smile className="w-5 h-5" />
               </motion.button>
+              <AnimatePresence>
+                {showEmojiPicker && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute bottom-14 right-0 z-50"
+                  >
+                    <div className={cn(
+                      "shadow-xl rounded-lg overflow-hidden",
+                      "border border-border"
+                    )}>
+                      <EmojiPicker 
+                        theme="light"
+                        lazyLoadEmojis={true}
+                        onEmojiClick={onEmojiClick}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </motion.form>
-        </div>
-      </ErrorBoundary>
+
+            <motion.button
+              type="submit"
+              className={cn(
+                "p-2.5 rounded-full",
+                "bg-blue-600 hover:bg-blue-700",
+                "text-white",
+                "transition-colors",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "focus:ring-2 focus:ring-blue-500/20"
+              )}
+              disabled={!message.trim()}
+            >
+              <Send className="w-5 h-5" />
+            </motion.button>
+          </div>
+        </motion.form>
+          </div>
+    </ErrorBoundary>
       <CallInterface
         isOpen={isCallActive}
         onClose={endCall}

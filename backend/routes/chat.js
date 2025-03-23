@@ -4,7 +4,7 @@ const { Message } = require('../models/messageModel');
 const { User } = require('../models/userModel');
 const verifyToken = require('../middlewares/verifyToken');
 const { Notification } = require('../models/notificationModel');
-
+const { adminMiddleware } = require('../middlewares/adminMiddleware');
 // Get chat history
 chatRouter.get('/messages/:roomId', verifyToken, async (req, res) => {
   try {
@@ -99,6 +99,25 @@ chatRouter.post('/pin-message', verifyToken, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Error updating pin status' });
+  }
+});
+
+chatRouter.get('/latest-messages', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const messages = await Message.find()
+      .populate('sender', 'username firstname lastname profileImage isBanned isAdmin')
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.json({ messages });
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    res.status(500).json({ message: 'Error fetching messages', error: error.message });
   }
 });
 

@@ -6,7 +6,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserPlus, UserCheck, MessageSquare, Mail, MapPin, Calendar, Link as LinkIcon, Loader, Info, MoreVertical, Flag } from 'lucide-react';
+import { UserPlus, UserCheck, MessageSquare, Mail, MapPin, Calendar, Link as LinkIcon, Loader, Info, MoreVertical, Flag, Ban } from 'lucide-react';
 import DefaultAvatar from '@/components/ui/DefaultAvatar';
 import AdminBadge from '@/components/ui/AdminBadge';
 import FollowModal from '@/components/FollowModal';
@@ -291,7 +291,7 @@ const ProfilePage = () => {
     }
   };
 
-  // Update the posts query to store posts in local state
+  // Update the posts query to include full post details
   const { data: userPosts, isLoading: isLoadingPosts } = useQuery({
     queryKey: ['userPosts', username],
     queryFn: async () => {
@@ -306,9 +306,9 @@ const ProfilePage = () => {
     enabled: !!username
   });
 
-  // Update the like mutation to be optimistic
-  const likeMutation = useMutation({
-    mutationFn: async (postId) => {
+  // Update the like handler to match PostPage
+  const handleLikePost = async (postId) => {
+    try {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
         {},
@@ -316,124 +316,41 @@ const ProfilePage = () => {
           headers: { Authorization: `Bearer ${auth.token}` }
         }
       );
+      queryClient.invalidateQueries(['userPosts', username]);
       return response.data;
-    },
-    onSuccess: (data, postId) => {
-      // Update with server response
-      queryClient.setQueryData(['userPosts', username], old => {
-        return old.map(post => {
-          if (post._id === postId) {
-            return {
-              ...post,
-              isLiked: data.isLiked,
-              likes: data.likes
-            };
-          }
-          return post;
-        });
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.status === 403 
-          ? "You cannot like your own post"
-          : "Failed to like post",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Update the handleLikePost function
-  const handleLikePost = async (postId) => {
-    try {
-      // Optimistically update UI
-      queryClient.setQueryData(['userPosts', username], old => 
-        old.map(post => 
-          post._id === postId 
-            ? { 
-                ...post, 
-                isLiked: !post.isLiked,
-                likes: post.isLiked
-                  ? post.likes.filter(id => id !== auth.userId)
-                  : [...post.likes, auth.userId]
-              }
-            : post
-        )
-      );
-
-      // Make API call in background
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
-        {},
-        {
-          headers: { Authorization: `Bearer ${auth.token}` }
-        }
-      );
     } catch (error) {
-      // Revert on error
-      queryClient.setQueryData(['userPosts', username], old => 
-        old.map(post => 
-          post._id === postId 
-            ? { 
-                ...post, 
-                isLiked: !post.isLiked,
-                likes: post.isLiked
-                  ? post.likes.filter(id => id !== auth.userId)
-                  : [...post.likes, auth.userId]
-              }
-            : post
-        )
-      );
-
       toast({
         title: "Error",
-        description: error.response?.status === 403 
-          ? "You cannot like your own post"
-          : "Failed to like post",
+        description: error.response?.data?.message || "Failed to like post",
         variant: "destructive"
       });
     }
   };
 
+  // Update the comment handler to match PostPage
   const handleAddComment = async (postId) => {
     if (!commentText.trim()) return;
     
+    setIsSubmittingComment(true);
     try {
-      setIsSubmittingComment(true);
-      const response = await axios.post(
+      await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/comments`,
         { content: commentText },
-        { headers: { 'Authorization': `Bearer ${auth.token}` } }
-      );
-      
-      // Update userPosts with new comment and increment commentsCount
-      const updatedPosts = userPosts.map(post => {
-        if (post._id === postId) {
-          return {
-            ...post,
-            commentsCount: (post.commentsCount || 0) + 1,
-            comments: post.comments 
-              ? [...post.comments, response.data]
-              : [response.data]
-          };
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
         }
-        return post;
-      });
-      
-      // Update the posts in the query client
-      queryClient.setQueryData(['userPosts', username], updatedPosts);
-      
+      );
       setCommentText('');
+      queryClient.invalidateQueries(['userPosts', username]);
+      queryClient.invalidateQueries(['comments', postId]);
       toast({
         title: "Success",
         description: "Comment added successfully",
       });
     } catch (error) {
-      console.error('Error adding comment:', error);
       toast({
         title: "Error",
-        description: "Failed to add comment",
+        description: error.response?.data?.message || "Failed to add comment",
         variant: "destructive"
       });
     } finally {
@@ -560,9 +477,11 @@ const ProfilePage = () => {
                     onClick={() => setShowUserInfo(true)}
                   >
                     <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                    
                   </Button>
                   </div>
-                <p className="text-sm text-muted-foreground mt-1">@{user?.username}</p>
+                  {user?.isBanned && <span className="font-bold rounded-full p-1 bg-red-500/20 my-2 gap-1 text-md text-red-500 flex justify-center items-center"> <Ban className="w-4 h-4 " strokeWidth={3} /> Banned</span>}
+                <p className="text-sm text-muted-foreground mt-1">@{user?.username} </p>
             </div>
 
               {/* Action Buttons */}

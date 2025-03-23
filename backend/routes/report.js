@@ -2,8 +2,43 @@ const express = require('express');
 const router = express.Router();
 const { Report } = require('../models/reportModel');
 const verifyToken = require('../middlewares/verifyToken');
+const { adminMiddleware } = require('../middlewares/adminMiddleware');
 
+router.get('/all', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
+    const reports = await Report.find()
+      .populate('reporter', 'username firstname lastname profileImage')
+      .populate('targetUser', 'username firstname lastname profileImage isBanned isAdmin')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    
+    res.json({ reports });
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    res.status(500).json({ message: 'Error fetching reports', error: error.message });
+  }
+});
+
+router.put('/resolve/:reportId', verifyToken, adminMiddleware, async (req, res) => {
+  try {
+    const report = await Report.findByIdAndUpdate(
+      req.params.reportId,
+      { status: 'resolved' },
+      { new: true }
+    );
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    res.json({ message: 'Report resolved successfully', report });
+  } catch (error) {
+    res.status(500).json({ message: 'Error resolving report' });
+  }
+});
 // Create a new report
 router.post('/create', verifyToken, async (req, res) => {
   try {

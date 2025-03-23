@@ -67,6 +67,10 @@ export default function NotificationsPage() {
         return 'mentioned you in a post';
       case 'message':
         return 'sent you a message';
+      case 'broadcast':
+        return 'sent a broadcast';
+      case 'personal':
+        return 'Message for you';
       default:
         return 'interacted with you';
     }
@@ -126,7 +130,7 @@ export default function NotificationsPage() {
                   case 'like':
                   case 'comment':
                   case 'mention':
-                    navigate(`/post/${notification.postId}`);
+                    navigate(`/post/${notification.postId._id}`);
                     break;
                   case 'follow':
                     navigate(`/profile/${notification.triggeredBy.username}`);
@@ -134,6 +138,14 @@ export default function NotificationsPage() {
                   case 'message':
                     navigate(`/messages/${notification.triggeredBy.username}`);
                     break;
+                  case 'broadcast':
+                    navigate('/notifications');
+                    break;
+                  case 'personal':
+                    navigate('/notifications');
+                    break;
+                  default:
+                    navigate('/notifications');
                 }
               }}
             >
@@ -160,6 +172,12 @@ export default function NotificationsPage() {
                       <Mentions text={notification.message} />
                     </div>
                   )}
+                  {notification.type === 'broadcast' && (
+                    <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md mt-2">
+                      <Mentions text={notification.message} />
+                    </p>
+                  )}
+
                   <p className="text-xs text-muted-foreground">
                     {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
                   </p>

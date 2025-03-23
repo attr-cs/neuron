@@ -4,22 +4,39 @@ const { Post } = require('../models/postModel');
 const verifyToken = require('../middlewares/verifyToken');
 const { User } = require('../models/userModel');
 const { Notification } = require('../models/notificationModel');
+const mongoose = require('mongoose');
+
+// Add this helper function at the top
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // ✅ GET all posts (sorted by latest)
 postRouter.get('/', verifyToken, async (req, res) => {
   try {
     const posts = await Post.find()
       .populate('author', 'username firstname lastname profileImage')
-      .select('-comments')
-      .sort({ createdAt: -1 });
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'author',
+          select: 'username firstname lastname profileImage'
+        }
+      })
+      .sort({ createdAt: -1 }); // Sort by latest first
     
-    const postsWithLikeInfo = posts.map(post => ({
+    if (!posts) {
+      return res.status(404).json({ message: 'Posts not found' });
+    }
+
+    // Transform each post to include like info and comment count
+    const postsWithDetails = posts.map(post => ({
       ...post.toObject(),
       isLiked: post.likes.includes(req.user.id),
-      commentsCount: post.comments?.length || 0
+      commentsCount: post.comments?.length || 0,
+      // Sort comments by newest first
+      comments: post.comments.sort((a, b) => b.createdAt - a.createdAt)
     }));
 
-    res.json(postsWithLikeInfo);
+    res.json(postsWithDetails);
   } catch (error) {
     console.error('Error fetching posts:', error);
     res.status(500).json({ message: 'Server error' });
@@ -185,59 +202,6 @@ postRouter.get('/:id/comments', verifyToken, async (req, res) => {
   }
 });
 
-// ✅ GET a single post by ID
-postRouter.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const post = await Post.findById(id)
-      .populate('author', 'username firstname lastname profileImage');
-
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
-    }
-
-    res.json(post);
-  } catch (error) {
-    console.error('Error fetching post:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-// ✅ UPDATE a post (only owner can update)
-postRouter.put('/:id', verifyToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { content, images } = req.body;
-    const post = await Post.findById(id);
-
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
-    }
-
-    if (post.author.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Unauthorized to edit this post' });
-    }
-
-    post.content = content;
-    post.images = images.map(img => ({
-      imageId: img.imageId,
-      url: img.url,
-      thumbUrl: img.thumbUrl,
-      displayUrl: img.displayUrl
-    }));
-    
-    await post.save();
-
-    const updatedPost = await Post.findById(id)
-      .populate('author', 'username firstname lastname profileImage');
-
-    res.json(updatedPost);
-  } catch (error) {
-    console.error('Error updating post:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
 // ✅ DELETE a post (only owner can delete)
 postRouter.delete('/:id', verifyToken, async (req, res) => {
   try {
@@ -260,7 +224,7 @@ postRouter.delete('/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Add this new route to get user's posts by username
+// Update the user posts route to include comments
 postRouter.get('/user/:username', verifyToken, async (req, res) => {
   try {
     const { username } = req.params;
@@ -272,17 +236,24 @@ postRouter.get('/user/:username', verifyToken, async (req, res) => {
 
     const posts = await Post.find({ author: user._id })
       .populate('author', 'username firstname lastname profileImage')
-      .select('-comments')
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'author',
+          select: 'username firstname lastname profileImage'
+        }
+      })
       .sort({ createdAt: -1 });
       
-    const postsWithLikeInfo = posts.map(post => ({
+    const postsWithDetails = posts.map(post => ({
       ...post.toObject(),
-      likes: post.likes || [],
-      isLiked: (post.likes || []).includes(req.user.id),
-      commentsCount: post.comments?.length || 0
+      isLiked: post.likes.includes(req.user.id),
+      commentsCount: post.comments?.length || 0,
+      // Sort comments by newest first
+      comments: post.comments.sort((a, b) => b.createdAt - a.createdAt)
     }));
 
-    res.json(postsWithLikeInfo);
+    res.json(postsWithDetails);
   } catch (error) {
     console.error('Error fetching user posts:', error);
     res.status(500).json({ message: 'Server error' });
@@ -333,6 +304,43 @@ postRouter.post('/:id/like', verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error toggling like:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get a single post with full details including comments
+postRouter.get('/:id/single', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    
+
+    const post = await Post.findById(id)
+      .populate('author', 'username firstname lastname profileImage')
+      .populate({
+        path: 'comments',
+        populate: {
+          path: 'author',
+          select: 'username firstname lastname profileImage'
+        }
+      });
+    
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    // Transform the post to include like info and comment count
+    const postWithDetails = {
+      ...post.toObject(),
+      isLiked: post.likes.includes(req.user.id),
+      commentsCount: post.comments?.length || 0,
+      // Sort comments by newest first
+      comments: post.comments.sort((a, b) => b.createdAt - a.createdAt)
+    };
+
+    res.json(postWithDetails);
+  } catch (error) {
+    console.error('Error fetching post:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

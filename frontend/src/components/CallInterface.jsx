@@ -83,12 +83,12 @@ const CallInterface = ({
         <div className="flex flex-col h-[600px]">
           <div className="relative flex-1 bg-zinc-900 overflow-hidden">
             {isVideo && remoteStream ? (
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
+                    <video
+                      ref={remoteVideoRef}
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
             ) : (
               <div className="flex items-center justify-center h-full bg-zinc-800">
                 <div className="w-32 h-32 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
@@ -101,16 +101,16 @@ const CallInterface = ({
 
             {isVideo && localStream && (
               <div className="absolute bottom-6 right-6 w-40 h-24 bg-black rounded-lg overflow-hidden border-2 border-white/30 shadow-md">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  playsInline
+                    <video
+                      ref={localVideoRef}
+                      autoPlay
+                      playsInline
                   muted // Mute local audio to avoid feedback
                   className="w-full h-full object-cover"
-                />
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
           <div className="p-4 bg-gray-900/95 backdrop-blur-md border-t border-gray-800">
             <div className="flex items-center justify-between">
@@ -121,20 +121,20 @@ const CallInterface = ({
                   ? `Calling ${recipientName}...`
                   : `Incoming call from ${recipientName}`}
               </span>
-              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                 {isVideo && (
-                  <>
-                    <Button
+                    <>
+                      <Button
                       variant="outline"
-                      size="icon"
+                        size="icon"
                       onClick={handleShareScreen}
                       className="rounded-full bg-gray-800 hover:bg-gray-600 transition-colors"
                     >
                       <Monitor className="h-5 w-5 text-white" />
-                    </Button>
-                    <Button
+                      </Button>
+                        <Button
                       variant="outline"
-                      size="icon"
+                          size="icon"
                       onClick={handleToggleVideo}
                       className={`rounded-full ${!isVideoEnabled ? 'bg-gray-700' : 'bg-gray-800'} hover:bg-gray-600 transition-colors`}
                     >
@@ -159,15 +159,15 @@ const CallInterface = ({
                   )}
                 </Button>
                 {!isCaller && callStatus !== 'connected' && (
-                  <>
-                    <Button
-                      variant="default"
+                    <>
+                      <Button
+                        variant="default"
                       size="icon"
-                      onClick={onAnswer}
+                        onClick={onAnswer}
                       className="rounded-full bg-green-600 hover:bg-green-700 transition-colors"
-                    >
-                      <Phone className="h-5 w-5" />
-                    </Button>
+                      >
+                        <Phone className="h-5 w-5" />
+                      </Button>
                     <Button
                       variant="destructive"
                       size="icon"
@@ -186,8 +186,8 @@ const CallInterface = ({
                     className="rounded-full bg-red-600 hover:bg-red-700 transition-colors"
                   >
                     <PhoneOff className="h-5 w-5" />
-                  </Button>
-                )}
+                    </Button>
+                  )}
               </div>
             </div>
           </div>
@@ -197,4 +197,4 @@ const CallInterface = ({
   );
 };
 
-export default CallInterface;
+export default CallInterface; 
