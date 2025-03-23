@@ -176,20 +176,49 @@ const Dashboard = () => {
   });
 
   const handleLikePost = async (postId) => {
+    // Find the post to update
+    const currentPosts = queryClient.getQueryData(['posts']);
+    const postToUpdate = currentPosts.find(p => p._id === postId);
+    
+    if (!postToUpdate) return;
+
+    // Immediately update UI optimistically
+    queryClient.setQueryData(['posts'], old => 
+      old.map(post => 
+        post._id === postId 
+          ? {
+              ...post,
+              isLiked: !post.isLiked,
+              likes: post.isLiked 
+                ? post.likes.filter(id => id !== auth.userId)
+                : [...post.likes, auth.userId]
+            }
+          : post
+      )
+    );
+
+    // Make API call in background
     try {
-      const response = await axios.post(
+      await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
         {},
         {
           headers: { Authorization: `Bearer ${auth.token}` }
         }
       );
-      queryClient.invalidateQueries(['posts']);
-      return response.data;
     } catch (error) {
+      // Revert on error
+      queryClient.setQueryData(['posts'], old => 
+        old.map(post => 
+          post._id === postId ? postToUpdate : post
+        )
+      );
+      
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to like post",
+        description: error.response?.status === 403 
+          ? "You cannot like your own post"
+          : "Failed to like post",
         variant: "destructive"
       });
     }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { useRecoilValue } from 'recoil';
 import { authState, userBasicInfoState } from '../store/atoms';
@@ -40,20 +40,38 @@ const PostPage = () => {
   });
 
   const handleLike = async (postId) => {
+    // Store current post state
+    const currentPost = queryClient.getQueryData(['post', postId]);
+    
+    if (!currentPost) return;
+
+    // Immediately update UI optimistically
+    queryClient.setQueryData(['post', postId], {
+      ...currentPost,
+      isLiked: !currentPost.isLiked,
+      likes: currentPost.isLiked 
+        ? currentPost.likes.filter(id => id !== auth.userId)
+        : [...currentPost.likes, auth.userId]
+    });
+
+    // Make API call in background
     try {
-      const response = await axios.post(
+      await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
         {},
         {
           headers: { Authorization: `Bearer ${auth.token}` }
         }
       );
-      queryClient.invalidateQueries(['post', postId]);
-      return response.data;
     } catch (error) {
+      // Revert on error
+      queryClient.setQueryData(['post', postId], currentPost);
+      
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to like post",
+        description: error.response?.status === 403 
+          ? "You cannot like your own post"
+          : "Failed to like post",
         variant: "destructive"
       });
     }

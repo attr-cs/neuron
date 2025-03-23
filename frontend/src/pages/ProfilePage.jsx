@@ -202,7 +202,7 @@ const ProfilePage = () => {
     staleTime: 30000,
   });
 
-  // Modify the follow mutation
+  // Update the follow mutation to handle optimistic updates better
   const followMutation = useMutation({
     mutationFn: async (userId) => {
       const response = await axios.post(
@@ -215,79 +215,48 @@ const ProfilePage = () => {
       return response.data;
     },
     onMutate: async (userId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries(['profile', username]);
       await queryClient.cancelQueries(['followers', user?._id]);
       await queryClient.cancelQueries(['following', user?._id]);
-      await queryClient.cancelQueries(['profile', username]);
 
-      // Snapshot previous values
-      const previousFollowers = queryClient.getQueryData(['followers', user?._id]);
-      const previousFollowing = queryClient.getQueryData(['following', user?._id]);
+      // Snapshot the previous value
       const previousProfile = queryClient.getQueryData(['profile', username]);
 
-      // Optimistically update followers/following lists
-      if (previousFollowers) {
-        queryClient.setQueryData(['followers', user?._id], old => 
-          old.map(follower => 
-            follower._id === userId 
-              ? {
-                  ...follower,
-                  followers: follower.followers.includes(auth.userId)
-                    ? follower.followers.filter(id => id !== auth.userId)
-                    : [...follower.followers, auth.userId]
-                }
-              : follower
-          )
-        );
-      }
+      // Optimistically update profile
+      queryClient.setQueryData(['profile', username], old => ({
+        ...old,
+        isFollowedByMe: !old.isFollowedByMe,
+        followersCount: old.isFollowedByMe ? old.followersCount - 1 : old.followersCount + 1
+      }));
 
-      if (previousFollowing) {
-        queryClient.setQueryData(['following', user?._id], old =>
-          old.map(following => 
-            following._id === userId 
-              ? {
-                  ...following,
-                  followers: following.followers.includes(auth.userId)
-                    ? following.followers.filter(id => id !== auth.userId)
-                    : [...following.followers, auth.userId]
-                }
-              : following
-          )
-        );
-      }
-
-      return { previousFollowers, previousFollowing, previousProfile };
+      return { previousProfile };
     },
-    onError: (err, variables, context) => {
-      // Revert optimistic updates on error
-      if (context?.previousFollowers) {
-        queryClient.setQueryData(['followers', user?._id], context.previousFollowers);
-      }
-      if (context?.previousFollowing) {
-        queryClient.setQueryData(['following', user?._id], context.previousFollowing);
-      }
-      if (context?.previousProfile) {
+    onError: (err, userId, context) => {
+      // Revert the optimistic update on error
         queryClient.setQueryData(['profile', username], context.previousProfile);
-      }
+      
+      toast({
+        title: "Error",
+        description: "Failed to update follow status",
+        variant: "destructive"
+      });
     },
     onSettled: () => {
       // Refetch to ensure consistency
+      queryClient.invalidateQueries(['profile', username]);
       queryClient.invalidateQueries(['followers', user?._id]);
       queryClient.invalidateQueries(['following', user?._id]);
-      queryClient.invalidateQueries(['profile', username]);
     }
   });
 
   // Update the handleFollowToggle function
   const handleFollowToggle = async (userId) => {
-    if (followLoadingStates[userId]) return; // Prevent multiple clicks
-    
-    setFollowLoadingStates(prev => ({ ...prev, [userId]: true }));
+    if (followLoadingStates[userId]) return;
     try {
       await followMutation.mutateAsync(userId);
     } catch (error) {
       console.error('Error toggling follow:', error);
-    } finally {
-      setFollowLoadingStates(prev => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -306,9 +275,9 @@ const ProfilePage = () => {
     enabled: !!username
   });
 
-  // Update the like handler to match PostPage
-  const handleLikePost = async (postId) => {
-    try {
+  // Update the like mutation to handle optimistic updates better
+  const likeMutation = useMutation({
+    mutationFn: async (postId) => {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
         {},
@@ -316,12 +285,86 @@ const ProfilePage = () => {
           headers: { Authorization: `Bearer ${auth.token}` }
         }
       );
-      queryClient.invalidateQueries(['userPosts', username]);
       return response.data;
-    } catch (error) {
+    },
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries(['userPosts', username]);
+      const previousPosts = queryClient.getQueryData(['userPosts', username]);
+
+      // Optimistically update the post
+      queryClient.setQueryData(['userPosts', username], old => 
+        old.map(post => 
+          post._id === postId 
+            ? { 
+              ...post,
+                isLiked: !post.isLiked,
+                likes: post.isLiked
+                  ? post.likes.filter(id => id !== auth.userId)
+                  : [...post.likes, auth.userId]
+              }
+            : post
+        )
+      );
+
+      return { previousPosts };
+    },
+    onError: (err, postId, context) => {
+      queryClient.setQueryData(['userPosts', username], context.previousPosts);
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to like post",
+        description: err.response?.status === 403 
+          ? "You cannot like your own post"
+          : "Failed to like post",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Update the handleLikePost function
+  const handleLikePost = async (postId) => {
+    // Find the post to update
+    const currentPosts = queryClient.getQueryData(['userPosts', username]);
+    const postToUpdate = currentPosts.find(p => p._id === postId);
+    
+    if (!postToUpdate) return;
+
+    // Immediately update UI optimistically
+      queryClient.setQueryData(['userPosts', username], old => 
+        old.map(post => 
+          post._id === postId 
+            ? { 
+                ...post, 
+                isLiked: !post.isLiked,
+                likes: post.isLiked
+                  ? post.likes.filter(id => id !== auth.userId)
+                  : [...post.likes, auth.userId]
+              }
+            : post
+        )
+      );
+
+      // Make API call in background
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/post/${postId}/like`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        }
+      );
+    } catch (error) {
+      // Revert on error
+      queryClient.setQueryData(['userPosts', username], old => 
+        old.map(post => 
+          post._id === postId ? postToUpdate : post
+        )
+      );
+
+      toast({
+        title: "Error",
+        description: error.response?.status === 403 
+          ? "You cannot like your own post"
+          : "Failed to like post",
         variant: "destructive"
       });
     }
