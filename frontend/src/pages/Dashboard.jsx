@@ -403,12 +403,13 @@ const Dashboard = () => {
         <div className="p-6">
           <div className="flex items-center gap-4 mb-6">
             <Avatar className="h-12 w-12 ring-2 ring-primary/10 transition-transform hover:scale-105">
-              <AvatarImage 
-                src={userBasicInfo?.profileImage?.displayUrl || defaultAvatar} 
-                alt={userBasicInfo?.firstname} 
-              />
-              <AvatarFallback>{userBasicInfo?.firstname?.[0]}</AvatarFallback>
-            </Avatar>
+  <AvatarImage 
+    src={userBasicInfo?.profileImage?.displayUrl || defaultAvatar} 
+    alt={userBasicInfo?.firstname} 
+    className="object-cover w-full h-full" // Add this class to maintain aspect ratio
+  />
+  <AvatarFallback>{userBasicInfo?.firstname?.[0]}</AvatarFallback>
+</Avatar>
             <div>
               <h3 className="font-semibold text-lg text-foreground">
                 {userBasicInfo?.firstname} {userBasicInfo?.lastname}
