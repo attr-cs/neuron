@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer")
 
-const createTransporter = async ()=>{
+const createTransporter = async () => {
     return nodemailer.createTransport({
         service: "Gmail",
         host: 'smtp.gmail.email',
@@ -16,7 +16,7 @@ const createTransporter = async ()=>{
     });
 }
 
-const sendResetEmail = async (to, resetToken)=>{
+const sendResetEmail = async (to, resetToken) => {
     const transporter = await createTransporter();
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`
@@ -80,7 +80,7 @@ const sendResetEmail = async (to, resetToken)=>{
             </table>
         </body>`
     };
-    
+
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Message send: %s', info.messageId);
@@ -88,4 +88,4 @@ const sendResetEmail = async (to, resetToken)=>{
 
 }
 
-module.exports = {sendResetEmail}
+module.exports = { sendResetEmail }

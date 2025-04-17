@@ -566,7 +566,7 @@ userRouter.post('/submit', async (req, res) => {
 userRouter.get('/profile/:username', verifyToken, async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username })
-      .select('username firstname lastname bio email location website profileImage bannerImage isAdmin createdAt followers following gender birthdate isBanned')
+      .select('username firstname lastname bio location website profileImage bannerImage isAdmin createdAt followers following gender birthdate isBanned')
       .lean();
     
     if (!user) {

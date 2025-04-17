@@ -64,13 +64,6 @@ const UserInfoDialog = ({ isOpen, onClose, user }) => {
           )}
           
           <div className="grid grid-cols-2 gap-4">
-            {user?.email && (
-              <div>
-                <h4 className="text-sm font-semibold mb-1">Email</h4>
-                <p className="text-sm text-muted-foreground">{user.email}</p>
-              </div>
-            )}
-            
             {user?.location && (
               <div>
                 <h4 className="text-sm font-semibold mb-1">Location</h4>

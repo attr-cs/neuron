@@ -50,11 +50,11 @@ function App() {
   const setBasicInfo = useSetRecoilState(userBasicInfoState);
   const [isBanned, setIsBanned] = useState(false);
 
-  
+
   const noNavbarPages = ['/signin', '/signup', '/create-password', '/reset-password', '/email-sent', '/banned'];
   const noFooterPages = ['/dashboard', '/users', '/settings', '/signin', '/signup', '/create-password', '/reset-password', '/email-sent'];
-  
-  
+
+
   // Check if current path matches any pattern in pagesWithNavbar
   const shouldHideNavbar = noNavbarPages.includes(location.pathname) || location.pathname.startsWith('/messages/');
   const shouldHideFooter = noFooterPages.includes(location.pathname) || location.pathname.startsWith('/messages/');
@@ -63,7 +63,7 @@ function App() {
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
-    
+
     const initializeApp = async () => {
       if (token && userId) {
         setAuth({
@@ -75,29 +75,29 @@ function App() {
 
         try {
           const userData = await fetchUserData(username, token);
-          
+
           if (userData.isBanned) {
-              // Log out the banned user
-              localStorage.clear();
-              setAuth({
-                isAuthenticated: false,
-                token: null,
-                userId: null,
-                username: null,
-                isAdmin: false,
-              });
-              setBasicInfo({
-                firstname: null,
-                lastname: null,
-                username: null,
-                profileImage: null,
-                isAdmin: false,
-                isOnline: false,
-              });
-              
-              setIsBanned(true);
-              
-              return;
+            // Log out the banned user
+            localStorage.clear();
+            setAuth({
+              isAuthenticated: false,
+              token: null,
+              userId: null,
+              username: null,
+              isAdmin: false,
+            });
+            setBasicInfo({
+              firstname: null,
+              lastname: null,
+              username: null,
+              profileImage: null,
+              isAdmin: false,
+              isOnline: false,
+            });
+
+            setIsBanned(true);
+
+            return;
           }
 
           if (userData) {
@@ -126,19 +126,19 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh', 
-        backgroundColor: '#242424' 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#242424'
       }}>
         <div className="sm:scale-100 scale-75">
           <HashLoader color="#fff" size={60} />
         </div>
       </div>
     );
-  } 
+  }
 
   return (
     <>
@@ -165,34 +165,34 @@ function App() {
                   <Route path="/request-reset" element={<RequestReset />} />
                   <Route path="/email-sent" element={<EmailSent />} />
                   <Route path="/reset-password/:token" element={<ResetPassword />} />
-                  <Route 
-                    path="/admin" 
+                  <Route
+                    path="/admin"
                     element={
                       <AdminRoute>
                         <AdminDashboard />
                       </AdminRoute>
-                    } 
+                    }
                   />
-                  <Route 
-                    path="/notifications" 
+                  <Route
+                    path="/notifications"
                     element={
                       <ProtectedRoutes>
                         <NotificationsPage />
                       </ProtectedRoutes>
-                    } 
+                    }
                   />
-                  <Route 
-                    path="/post/:postId" 
+                  <Route
+                    path="/post/:postId"
                     element={
                       <ProtectedRoutes>
                         <PostPage />
                       </ProtectedRoutes>
-                    } 
+                    }
                   />
                   <Route path='*' element={<NotFound />} />
                 </Routes>
               </main>
-              
+
             </div>
           </GoogleOAuthProvider>
         </div>
