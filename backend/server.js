@@ -23,17 +23,16 @@ if (!process.env.CLIENT_URL || !process.env.DB_URL) {
 // Connect to database
 connectDb();
 
-// Trust proxy headers (for rate limiting and deployment setups)
+// Trust proxy headers
 app.set('trust proxy', 1);
 
 // Parse allowed origins from env variable
 const allowedOrigins = process.env.CLIENT_URL.split(',');
 
-// CORS configuration with dynamic origin checking
+// CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like curl, Postman)
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); // Allow curl, Postman, etc.
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -41,22 +40,26 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
   maxAge: 86400,
 };
 
+// Apply CORS middleware
 app.use(cors(corsOptions));
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 app.use(helmet({
-  crossOriginResourcePolicy: false,
-  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 }));
 app.use(compression());
 
 // Rate limiter setup
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 3000,
   keyGenerator: (req) => {
     const forwarded = req.headers['x-forwarded-for'] || req.ip;
@@ -71,6 +74,11 @@ app.use(limiter);
 // API routes
 app.use('/api', router);
 
+// Root route
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
+
 // Error handling
 app.use((err, req, res, next) => {
   console.error(`[Error]:`, err.message);
@@ -83,11 +91,6 @@ app.use((err, req, res, next) => {
 // Socket.IO setup
 const io = initializeSocket(httpServer);
 app.set('io', io);
-
-// Root route
-app.get('/', (req, res) => {
-  res.send('Server is running');
-});
 
 // Start server
 httpServer.listen(PORT, () => {
