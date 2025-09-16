@@ -10,22 +10,37 @@ const compression = require('compression');
 const { createServer } = require('http');
 const initializeSocket = require('./socket/index');
 
-
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 4000;
 
+// Validate required env vars
 if (!process.env.CLIENT_URL || !process.env.DB_URL) {
   console.error("Missing required environment variables. Ensure CLIENT_URL and DB_URL are set.");
   process.exit(1);
 }
 
+// Connect to database
 connectDb();
 
+// Trust proxy headers (for rate limiting and deployment setups)
 app.set('trust proxy', 1);
 
+// Parse allowed origins from env variable
+const allowedOrigins = process.env.CLIENT_URL.split(',');
+
+// CORS configuration with dynamic origin checking
 const corsOptions = {
-  origin: process.env.CLIENT_URL,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like curl, Postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
   maxAge: 86400,
@@ -39,12 +54,13 @@ app.use(helmet({
 }));
 app.use(compression());
 
+// Rate limiter setup
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3000, // Limit each IP to 3000 requests
+  max: 3000,
   keyGenerator: (req) => {
     const forwarded = req.headers['x-forwarded-for'] || req.ip;
-    return forwarded.split(',').shift().trim(); // Handle multiple IPs in x-forwarded-for
+    return forwarded.split(',').shift().trim();
   },
   handler: (req, res) => {
     res.status(429).json({ error: true, message: 'Too many requests, please try again later.' });
@@ -52,9 +68,10 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
+// API routes
 app.use('/api', router);
 
-
+// Error handling
 app.use((err, req, res, next) => {
   console.error(`[Error]:`, err.message);
   res.status(err.status || 500).json({
@@ -63,22 +80,19 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize Socket.IO
+// Socket.IO setup
 const io = initializeSocket(httpServer);
-
-// Store io instance on app for potential use in routes
 app.set('io', io);
 
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-
-
+// Root route
 app.get('/', (req, res) => {
   res.send('Server is running');
 });
 
+// Start server
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
