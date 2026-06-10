@@ -1,108 +1,66 @@
-
 <div align="center">
-  <img src="https://i.ibb.co/3hxxBHJ/1000047457-modified-11zon.png" alt="Neuron Logo" width="200"/>
+  <img src="https://i.ibb.co/3hxxBHJ/1000047457-modified-11zon.png" alt="Neuron Logo" width="120"/>
+  
+  # 🧠 Neuron
+  ### A Modern Social Media Platform
+  
+  [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://reactjs.org/)
+  [![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite)](https://vitejs.dev/)
+  [![Express](https://img.shields.io/badge/Express-4-000000?logo=express)](https://expressjs.com/)
+  [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248?logo=mongodb)](https://mongoosejs.com/)
+  [![Socket.IO](https://img.shields.io/badge/Socket.IO-4-010101?logo=socket.io)](https://socket.io/)
 
-  # 🧠 Neuron Social Media App
-
-  [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-  [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-  [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-
-  Connect, Share, Evolve - The Next Generation Social Media Experience
-
-  [Live Demo](https://neuronix.vercel.app) | [Report Bug](https://github.com/attr-cs/neuron/issues) | [Request Feature](https://github.com/attr-cs/neuron/issues)
+  [Live Demo](https://neuronix.vercel.app) · [Report Bug](https://github.com/attr-cs/neuron/issues)
 
 </div>
-
-## 🌟 Features
-
-Neuron is not just another social media app - it's a comprehensive platform designed to revolutionize the way we connect and interact online. Here's what makes Neuron special:
-
-- 👤 **Rich User Profiles**: Showcase your personality with customizable profiles
-- 📝 **Dynamic Posts**: Share your thoughts, images, and videos with the world
-- 🎥 **Audio & Video Calls**: Connect face-to-face with crystal-clear audio and video
-- 🔔 **Smart Notifications**: Stay updated with real-time, AI-powered notifications
-- 💬 **Direct Messages**: Have private conversations with end-to-end encryption
-- 👥 **Group Chats**: Create and manage group conversations effortlessly
-- 🖼️ **Media Sharing**: Share photos, videos, and files seamlessly
-- 🌓 **Dark/Light Mode**: Customize your viewing experience
-- 📊 **Analytics Dashboard**: Gain insights into your social media impact
-- 🔒 **Privacy Controls**: Manage your data with robust privacy settings
-- 🌍 **Global Reach**: Connect with users worldwide
-- 🧠 **AI-Powered Features**: Enjoy smart filters, content recommendations, and more
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js (v14.0.0 or later)
-- npm (v6.0.0 or later)
-
-### Installation
-
-1. Clone the repo
-   ```sh
-   git clone https://github.com/attr-cs/neuron.git
-   ```
-
-2. Navigate to the project directory
-   ```sh
-   cd neuron
-   ```
-
-3. Install dependencies
-   ```sh
-   npm install
-   ```
-
-4. Set up environment variables
-   ```sh
-   cp .env
-   ```
-   Edit `.env` with your configuration
-
-5. Run the development server
-   ```sh
-   npm run dev
-   ```
-
-6. Open [http://localhost:5173](http://localhost:5173) in your browser
-
-## 💻 Usage
-
-After logging in, you can:
-
-- Create and customize your profile
-- Make posts and share media
-- Connect with friends and join communities
-- Start audio/video calls
-- Explore trending content
-- Manage your privacy settings
-
-For detailed documentation, visit our [Wiki](https://github.com/attr-cs/neuron/wiki).
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more details.
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgements
-
-- [React](https://reactjs.org/)
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [Lucide Icons](https://lucide.dev/)
 
 ---
 
-<div align="center">
-  Made with ❤️ by the Neuron Team
-</div>
+## 🚀 What is Neuron?
 
+Neuron is a full-stack social media application built with the MERN stack. It enables users to connect, share posts, chat in real-time, and make video/audio calls—all in a responsive, modern interface.
 
+---
+
+## ✨ Actual Features
+
+| Feature | Description |
+|---------|-------------|
+| **🔐 Authentication** | JWT-based auth + Google OAuth signup/signin |
+| **👤 User Profiles** | Customizable profiles with bio, location, website, profile/banner images |
+| **👥 Social Graph** | Follow/unfollow users, view followers/following lists |
+| **📝 Posts** | Create posts, like posts, comment system |
+| **💬 Real-time Chat** | Private messaging with Socket.IO |
+| **📹 Video/Audio Calls** | Peer-to-peer calls via PeerJS |
+| **🔔 Notifications** | Real-time notification system |
+| **🛡️ Admin Panel** | User management, ban/unban users, view reports |
+| **🌓 Dark/Light Mode** | Theme switching support |
+| **📱 PWA Ready** | Progressive Web App with offline support |
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React 18** – UI library
+- **Vite** – Build tool
+- **Tailwind CSS** – Styling
+- **Radix UI** – Headless UI components
+- **Recoil** – State management
+- **Socket.IO Client** – Real-time communication
+- **PeerJS** – WebRTC for video calls
+- **Framer Motion** – Animations
+
+### Backend
+- **Express.js** – Node.js framework
+- **MongoDB + Mongoose** – Database
+- **Socket.IO** – Real-time events
+- **JWT** – Authentication
+- **Bcryptjs** – Password hashing
+- **Nodemailer** – Email services
+- **Zod** – Schema validation
+
+---
+
+## 📁 Project Structure
 
