@@ -13,13 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { formatDistanceToNow } from 'date-fns';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import defaultAvatar from '../utils/defaultAvatar';
 import OnlineStatus from '@/components/ui/OnlineStatus';
 
-// Custom Online Status Dot component
+// Custom Online Status Dot component with clean, professional alignment
 const OnlineStatusDot = ({ userId }) => {
   const socket = useSocket();
   const auth = useRecoilValue(authState);
@@ -52,9 +49,9 @@ const OnlineStatusDot = ({ userId }) => {
   return (
     <div 
       className={cn(
-        "w-3 h-3 rounded-full border-2 border-background",
-        "absolute -bottom-0.5 -right-0.5",
-        "bg-green-500 shadow-sm",
+        "w-3 h-3 rounded-full border-2 border-white dark:border-black",
+        "absolute bottom-0 right-0",
+        "bg-emerald-500 shadow-sm",
         "animate-in fade-in-0 duration-300"
       )}
       title="Online"
@@ -172,19 +169,19 @@ function UsersPage() {
   }, [users, searchTerm]);
 
   const LoadingSkeleton = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="bg-card rounded-lg p-3 sm:p-4 border border-border">
-          <div className="flex items-center gap-3 sm:gap-4">
+        <div key={i} className="bg-white dark:bg-zinc-950 rounded-2xl p-6 border border-zinc-150 dark:border-zinc-900/80">
+          <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
-              <Skeleton className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full" />
+              <Skeleton className="w-12 h-12 rounded-full" />
+              <Skeleton className="absolute bottom-0 right-0 w-3 h-3 rounded-full" />
             </div>
             <div className="flex-grow space-y-2 min-w-0">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-28 rounded-md" />
+              <Skeleton className="h-3 w-20 rounded-md" />
             </div>
-            <Skeleton className="h-8 w-8 rounded-md shrink-0" />
+            <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
           </div>
         </div>
       ))}
@@ -193,15 +190,15 @@ function UsersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background/50 p-3 sm:p-4">
-        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
-          <div className="text-center space-y-4 animate-in fade-in-50 duration-500">
-            <div className="flex justify-center items-center gap-2">
-              <Users2 className="w-6 h-6 sm:w-8 sm:h-8 text-primary animate-pulse" />
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Loading Users</h1>
+      <div className="min-h-screen bg-zinc-50 dark:bg-black p-4 sm:p-8">
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div className="text-center space-y-3">
+            <div className="flex justify-center items-center gap-3">
+              <Users2 className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-900 dark:text-white animate-pulse" />
+              <h1 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Index Directory</h1>
             </div>
-            <div className="max-w-xl mx-auto px-3 sm:px-0">
-              <Skeleton className="h-9 sm:h-10 w-full rounded-lg" />
+            <div className="max-w-xl mx-auto">
+              <Skeleton className="h-11 w-full rounded-xl" />
             </div>
           </div>
           <LoadingSkeleton />
@@ -211,153 +208,151 @@ function UsersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background/50 p-3 sm:p-4">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-        <div className="text-center space-y-2 sm:space-y-3">
-          <div className="flex justify-center items-center gap-2">
-            <Users2 className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-              Connect with Others
+    <div className="min-h-screen bg-zinc-50 dark:bg-black p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
+        
+        {/* Editorial Directory Header */}
+        <div className="text-center space-y-3">
+          <div className="flex justify-center items-center gap-3">
+            <Users2 className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-950 dark:text-white" />
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-zinc-950 dark:text-white tracking-tight">
+              Community Directory
             </h1>
           </div>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Find and follow other users in the community
+          <p className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 font-medium max-w-lg mx-auto">
+            Discover and curate authentic connections with intellectual profiles within the network.
           </p>
         </div>
 
         {error && (
-          <Alert variant="destructive" className="bg-destructive/10 animate-in fade-in-50 duration-300 mx-3 sm:mx-0">
-            <AlertDescription>{error}</AlertDescription>
+          <Alert variant="destructive" className="border-red-200/40 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 max-w-xl mx-auto rounded-2xl animate-in fade-in-50 duration-300">
+            <AlertDescription className="text-red-600 dark:text-red-400 font-medium text-center">{error}</AlertDescription>
           </Alert>
         )}
 
-        <div className="relative max-w-xl mx-auto px-3 sm:px-0">
-          <Search className="absolute left-6 sm:left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+        {/* Minimal High-Contrast Search Block */}
+        <div className="relative max-w-xl mx-auto w-full">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 w-4.5 h-4.5 pointer-events-none" />
           <Input
             type="text"
-            placeholder="Search by name or username..."
+            placeholder="Search profiles by name or username..."
             value={searchTerm}
             onChange={handleSearch}
-            className="pl-9 sm:pl-9 h-9 sm:h-10 bg-background/50 focus-visible:ring-primary/20"
+            className="pl-11 pr-4 h-11 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 focus-visible:ring-zinc-200 dark:focus-visible:ring-zinc-800 rounded-xl text-zinc-900 dark:text-white font-medium text-sm transition-all shadow-sm"
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {/* Grid Ledger System */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredUsers.map(user => (
             <motion.div
               key={user._id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
             >
-              <motion.div
-              className={cn(
-                "group bg-card rounded-lg border",
-                "transition-all duration-300 hover:shadow-lg",
-                user.isAdmin 
-                  ? "border-primary/20 hover:border-primary/40 dark:bg-primary/5" 
-                  : "border-border hover:border-border/80 dark:bg-card/40",
-                "animate-in fade-in-50 duration-500"
-              )}
-            >
-              <div className="p-3 sm:p-4 flex items-center gap-3 sm:gap-4">
-                <div className="relative shrink-0">
-                  {user.profileImage?.thumbUrl ? (
-                    <img
-                      src={user.profileImage.thumbUrl}
-                      alt={user.username}
-                      className={cn(
-                        "w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover",
-                        "ring-2",
-                        user.isAdmin 
-                          ? "ring-primary/20 group-hover:ring-primary/40" 
-                          : "ring-border/50 group-hover:ring-border",
-                        "cursor-pointer transition-all duration-300",
-                        "hover:scale-105"
-                      )}
-                      onClick={() => navigate(`/profile/${user.username}`)}
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <DefaultAvatar 
-                      onClick={() => navigate(`/profile/${user.username}`)} 
-                      className={cn(
-                        "w-10 h-10 sm:w-12 sm:h-12",
-                        "ring-2",
-                        user.isAdmin 
-                          ? "ring-primary/20 group-hover:ring-primary/40" 
-                          : "ring-border/50 group-hover:ring-border",
-                        "cursor-pointer transition-all duration-300",
-                        "hover:scale-105"
-                      )}
-                    />
-                  )}
-                  <OnlineStatus userId={user._id} />
-                </div>
-                
-                <div className="flex-grow min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 
-                      className={cn(
-                        "font-medium truncate cursor-pointer",
-                        "transition-colors duration-200",
-                        "text-sm sm:text-base",
-                        user.isAdmin 
-                          ? "text-primary group-hover:text-primary/80" 
-                          : "text-foreground group-hover:text-primary"
-                      )}
-                      onClick={() => navigate(`/profile/${user.username}`)}
-                    >
-                      {user.firstname} {user.lastname}
-                    </h2>
-                    {user.isAdmin && (
-                      <div className="flex items-center gap-1 bg-primary/10 text-primary text-xs px-1.5 py-0.5 rounded-full animate-in slide-in-from-left-5">
-                        <Shield className="w-3 h-3" />
-                        <span>Admin</span>
-                      </div>
+              <div
+                className={cn(
+                  "group rounded-2xl bg-white dark:bg-zinc-950 border transition-all duration-300",
+                  user.isAdmin 
+                    ? "border-zinc-300 dark:border-zinc-800 hover:border-zinc-400" 
+                    : "border-zinc-150 dark:border-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-800",
+                  "shadow-sm hover:shadow-md"
+                )}
+              >
+                <div className="p-5 flex items-center gap-4">
+                  
+                  {/* Portrait & Custom Status Dot */}
+                  <div className="relative shrink-0">
+                    {user.profileImage?.thumbUrl ? (
+                      <img
+                        src={user.profileImage.thumbUrl}
+                        alt={user.username}
+                        className={cn(
+                          "w-12 h-12 rounded-full object-cover",
+                          "border border-zinc-200/50 dark:border-zinc-800/80",
+                          "cursor-pointer transition-transform duration-300",
+                          "hover:scale-105"
+                        )}
+                        onClick={() => navigate(`/profile/${user.username}`)}
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <DefaultAvatar 
+                        onClick={() => navigate(`/profile/${user.username}`)} 
+                        className={cn(
+                          "w-12 h-12 rounded-full",
+                          "border border-zinc-200/50 dark:border-zinc-800/80",
+                          "cursor-pointer transition-transform duration-300",
+                          "hover:scale-105"
+                        )}
+                      />
                     )}
+                    <OnlineStatus userId={user._id} />
                   </div>
-                  <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                    @{user.username}
-                  </p>
-                </div>
+                  
+                  {/* Context Text Box */}
+                  <div className="flex-grow min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 
+                        className={cn(
+                          "font-bold text-sm sm:text-base truncate cursor-pointer leading-tight",
+                          "transition-colors duration-200",
+                          "text-zinc-900 dark:text-zinc-100 group-hover:text-zinc-950 dark:group-hover:text-white"
+                        )}
+                        onClick={() => navigate(`/profile/${user.username}`)}
+                      >
+                        {user.firstname} {user.lastname}
+                      </h2>
+                      {user.isAdmin && (
+                        <div className="inline-flex items-center gap-1 bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 text-[10px] font-mono px-2 py-0.5 rounded-md border border-zinc-200/50 dark:border-zinc-800">
+                          <Shield className="w-3 h-3 text-zinc-400" />
+                          <span>Admin</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium truncate mt-0.5">
+                      @{user.username}
+                    </p>
+                  </div>
 
-                <Button
+                  {/* High Contrast Tactile Follow Trigger */}
+                  <Button
                     variant={followStatus[user._id] ? "outline" : "default"}
-                  size="icon"
-                  disabled={followLoading[user._id]}
-                  onClick={() => handleFollowToggle(user._id)}
-                  className={cn(
-                    "shrink-0 transition-all duration-300",
-                    "h-8 w-8",
+                    size="icon"
+                    disabled={followLoading[user._id]}
+                    onClick={() => handleFollowToggle(user._id)}
+                    className={cn(
+                      "shrink-0 h-9 w-9 rounded-xl transition-all duration-300",
                       followStatus[user._id]
-                      ? "hover:bg-primary/10 hover:text-primary"
-                      : "hover:bg-primary/90"
-                  )}
-                >
-                  {followLoading[user._id] ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                        ? "border-zinc-200 dark:border-zinc-800 hover:bg-red-50 hover:text-red-600 hover:border-red-200 dark:hover:bg-red-950/20 text-zinc-500 bg-transparent"
+                        : "bg-zinc-950 text-white hover:bg-zinc-850 dark:bg-white dark:text-black dark:hover:bg-zinc-100"
+                    )}
+                  >
+                    {followLoading[user._id] ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : followStatus[user._id] ? (
-                    <UserCheck className="h-4 w-4" />
-                  ) : (
-                    <UserPlus className="h-4 w-4" />
-                  )}
-                </Button>
+                      <UserCheck className="h-4.5 w-4.5" />
+                    ) : (
+                      <UserPlus className="h-4.5 w-4.5" />
+                    )}
+                  </Button>
+                </div>
               </div>
-              </motion.div>
             </motion.div>
           ))}
         </div>
 
+        {/* Dynamic Empty Ledger Screen */}
         {filteredUsers.length === 0 && (
-          <div className="text-center py-8 sm:py-12 text-muted-foreground bg-card/40 rounded-lg border border-border mx-3 sm:mx-0">
-            <Users2 className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 text-muted-foreground/50" />
-            <p className="text-base sm:text-lg font-medium mb-1">
-              {searchTerm ? "No users found matching your search" : "No users available"}
+          <div className="text-center py-16 sm:py-24 text-zinc-400 dark:text-zinc-500 bg-white dark:bg-zinc-950/20 rounded-2xl border border-zinc-150 dark:border-zinc-900">
+            <Users2 className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-zinc-300 dark:text-zinc-850" />
+            <p className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-1 tracking-tight">
+              {searchTerm ? "No results matched your parameters" : "Index is completely empty"}
             </p>
             {searchTerm && (
-              <p className="text-xs sm:text-sm">
-                Try adjusting your search terms
+              <p className="text-xs sm:text-sm text-zinc-400 dark:text-zinc-500 font-medium">
+                Try searching for a different name or username combination.
               </p>
             )}
           </div>

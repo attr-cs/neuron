@@ -47,10 +47,9 @@ export default function NotificationDropdown() {
           headers: { Authorization: `Bearer ${auth.token}` }
         }
       );
-      console.log('Received notifications:', response.data);
       setNotifications(response.data);
       
-      // Mark notifications as read
+      // Mark notifications as read inside DB
       await axios.put(
         `${import.meta.env.VITE_BACKEND_URL}/notification/mark-read`,
         {},
@@ -87,7 +86,7 @@ export default function NotificationDropdown() {
       case 'broadcast':
         return 'sent a broadcast';
       case 'personal':
-        return 'Message for you';
+        return 'message for you';
       default:
         return 'interacted with you';
     }
@@ -108,11 +107,7 @@ export default function NotificationDropdown() {
         navigate(`/messages/${notification.triggeredBy.username}`);
         break;
       case 'broadcast':
-        navigate('/notifications');
-        break;
       case 'personal':
-        navigate('/notifications');
-        break;
       default:
         navigate('/notifications');
     }
@@ -124,12 +119,12 @@ export default function NotificationDropdown() {
       if (open) fetchNotifications();
     }}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] font-bold bg-red-600 border border-white dark:border-zinc-950"
             >
               {unreadCount}
             </Badge>
@@ -138,55 +133,55 @@ export default function NotificationDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
-        className="w-80"
-        style={{ maxHeight: '400px' }}
+        className="w-80 mt-1 rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-900/50 shadow-xl overflow-hidden p-0"
       >
-        <div className="max-h-[400px] overflow-y-auto">
+        <div className="max-h-[350px] overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-900">
           {loading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
             </div>
           ) : notifications.length > 0 ? (
             notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification._id}
-                className="flex items-start gap-3 p-3 cursor-pointer"
+                className="flex items-start gap-3 p-3.5 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors focus:bg-zinc-50 dark:focus:bg-zinc-900/40"
                 onClick={() => handleNotificationClick(notification)}
               >
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-8 w-8 border border-zinc-100 dark:border-zinc-800">
                   <AvatarImage
                     src={notification.triggeredBy.profileImage?.thumbUrl || defaultAvatar}
                     alt={notification.triggeredBy.username}
                   />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-zinc-100 dark:bg-zinc-900 text-[10px] font-bold">
                     {notification.triggeredBy.firstname[0]}
                     {notification.triggeredBy.lastname[0]}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-1">
-                  <p className="text-sm leading-none">
-                    <span className="font-medium">
+                  <p className="text-xs text-zinc-800 dark:text-zinc-200 leading-normal">
+                    <span className="font-bold text-zinc-950 dark:text-white">
                       {notification.triggeredBy.firstname} {notification.triggeredBy.lastname}
                     </span>{' '}
                     {getNotificationText(notification)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
                     {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
                   </p>
                 </div>
               </DropdownMenuItem>
             ))
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
+            <div className="text-center py-8 text-xs text-zinc-500 dark:text-zinc-400">
               No new notifications
             </div>
           )}
         </div>
+        
         {notifications.length > 0 && (
-          <div className="border-t p-2 text-center">
+          <div className="border-t border-zinc-100 dark:border-zinc-900 p-2 text-center bg-zinc-50/50 dark:bg-zinc-950">
             <Button
               variant="ghost"
-              className="w-full text-sm text-muted-foreground hover:text-foreground"
+              className="w-full text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white h-9 rounded-xl hover:bg-transparent"
               onClick={() => {
                 navigate('/notifications');
                 setIsOpen(false);
@@ -199,4 +194,4 @@ export default function NotificationDropdown() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-} 
+}

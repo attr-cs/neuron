@@ -1,39 +1,75 @@
 import { useNavigate } from 'react-router-dom';
+import { ShieldAlert, Mail, LogOut } from 'lucide-react';
+import { useSetRecoilState } from 'recoil';
+import { authState, userBasicInfoState } from '../store/atoms/index';
+import { Button } from '@/components/ui/button';
 
 function BannedInterface() {
-    const navigate = useNavigate();
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full px-6 py-8 bg-white shadow-lg rounded-lg">
-          <div className="text-center">
-            <svg 
-              className="mx-auto h-16 w-16 text-red-500" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" 
-              />
-            </svg>
-            <h2 className="mt-4 text-2xl font-bold text-gray-900">Account Suspended</h2>
-            <p className="mt-2 text-gray-600">
-              Your account has been suspended due to violation of our community guidelines.
-            </p>
-            <div className="mt-6">
-              <p className="text-sm text-gray-500">
-                If you believe this is a mistake, please contact our support team at{' '}
-                <a href="mailto:neuronspaceofficial@gmail.com" className="text-blue-600 hover:text-blue-800">
-                  neuronspaceofficial@gmail.com
-                </a>
-              </p>
-            </div>
-          </div>
+  const navigate = useNavigate();
+  const setAuth = useSetRecoilState(authState);
+  const setBasicInfo = useSetRecoilState(userBasicInfoState);
+
+  const handleResetExit = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    setAuth({
+      isAuthenticated: false,
+      token: null,
+      userId: null,
+      username: null,
+      isAdmin: false,
+    });
+    setBasicInfo({
+      firstname: null,
+      lastname: null,
+      username: null,
+      profileImage: null,
+      isAdmin: false,
+      isOnline: false,
+    });
+    navigate('/signin');
+  };
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center p-6 bg-zinc-50 dark:bg-black font-sans">
+      <div className="max-w-md w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-900 rounded-[32px] p-8 sm:p-10 shadow-sm text-center space-y-6">
+        
+        {/* Dynamic Warning Emblem */}
+        <div className="mx-auto h-16 w-16 rounded-2xl bg-red-500/10 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/50 flex items-center justify-center text-red-500">
+          <ShieldAlert className="h-8 w-8" />
         </div>
+
+        <div className="space-y-3">
+          <h2 className="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">Account Suspended</h2>
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed max-w-xs mx-auto font-medium">
+            Your access has been suspended due to violations of our chronological community guidelines.
+          </p>
+        </div>
+
+        <div className="bg-zinc-50 dark:bg-zinc-900/35 border border-zinc-150 dark:border-zinc-900/60 rounded-2xl p-4 text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 leading-normal">
+          <p className="font-semibold text-zinc-700 dark:text-zinc-300 flex items-center justify-center gap-1.5 mb-1">
+            <Mail className="h-4 w-4" /> Need assistance?
+          </p>
+          If you believe this is an error, appeal to our support desk:
+          <a 
+            href="mailto:neuronspaceofficial@gmail.com" 
+            className="block text-zinc-950 dark:text-white font-bold hover:underline mt-1 transition-colors"
+          >
+            neuronspaceofficial@gmail.com
+          </a>
+        </div>
+
+        <Button
+          onClick={handleResetExit}
+          className="w-full bg-zinc-950 hover:bg-zinc-850 dark:bg-white dark:text-black dark:hover:bg-zinc-100 text-white font-semibold h-11 rounded-xl transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Exit Workspace</span>
+        </Button>
+
       </div>
-    );
-  }
-export default BannedInterface;  
+    </div>
+  );
+}
+
+export default BannedInterface;

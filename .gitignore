@@ -23,7 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-*.env
+.env
+.env.*
+
+!.env.example
+
 # Frontend specific files
 frontend/node_modules/
 frontend/package-lock.json

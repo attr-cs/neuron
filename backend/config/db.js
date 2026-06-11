@@ -5,9 +5,10 @@ const connectDb = async()=>{
         await mongoose.connect(process.env.DB_URL);
         console.log("database connected successfully ✔️");
     }catch(error){
-        console.warn("database connection failed ❌")
-        process.exit(0);
-    }
+    console.log("database connection failed ❌");
+    console.error("FULL ERROR:", error);
+}
 }
 
 module.exports = connectDb;
+
